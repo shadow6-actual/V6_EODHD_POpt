@@ -97,7 +97,8 @@ def get_ticker_historical_data(client: EODHDClient, symbol: str, from_date: str,
             'api_token': client.api_token,
             'from': from_date,
             'to': to_date,
-            'fmt': 'json'
+            'fmt': 'json',
+            'period': 'd'   # <--- ADD THIS FORCE DAILY DATA
         }
 
         response = requests.get(url, params=params, timeout=30)

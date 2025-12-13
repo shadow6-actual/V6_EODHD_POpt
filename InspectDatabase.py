@@ -1,11 +1,13 @@
 #Database review:
 # Quick Database Inspector
+# Price Coverage and Data Quality Inspector
 import config_v6
 from models_v6 import Asset, AssetPrice, get_session
-from sqlalchemy import inspect, text
+from sqlalchemy import text, func
+from datetime import datetime, timedelta
 
 print("=" * 70)
-print("DATABASE INSPECTOR")
+print("PRICE DATA COVERAGE & QUALITY ANALYSIS")
 print("=" * 70)
 print()
 
@@ -171,6 +173,29 @@ with get_session(pg_engine) as session:
     print(f"Assets WITH Price Data: {assets_with_prices:,} ({coverage_pct:.1f}%)")
     print(f"Assets WITHOUT Price Data: {assets_without_prices:,}")
     print()
+
+    # ========================================================================
+    # OPTIMIZATION CANDIDATE CHECK (Deep History)
+    # ========================================================================
+    print("🧠 OPTIMIZATION CANDIDATES (Data Depth)")
+    print("-" * 70)
+    
+    # Check for assets with > 5 years of data (approx 1250 trading days)
+    # This assumes 250 trading days per year
+    deep_history_count = session.execute(text("""
+        SELECT COUNT(*) FROM (
+            SELECT symbol, COUNT(*) as cnt 
+            FROM asset_prices 
+            GROUP BY symbol 
+            HAVING COUNT(*) > 1250
+        ) as qualified
+    """)).scalar()
+
+    print(f"Assets with > 5 years history: {deep_history_count:,}")
+    print(f"  (These are viable for long-term Portfolio Optimization)")
+    print()
+    
+    # Total price records
     
     # Total price records
     total_records = session.query(AssetPrice).count()
