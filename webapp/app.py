@@ -1,0 +1,570 @@
+# webapp/app.py
+# PURPOSE: Main entry point. Handles API requests, connects UI to DataManager and Optimizer.
+
+import sys
+import logging
+import json
+import numpy as np
+from pathlib import Path
+from datetime import datetime
+from flask import Flask, render_template, jsonify, request
+
+# 1. SETUP PATHS & LOGGING
+# ============================================================================
+CURRENT_DIR = Path(__file__).resolve().parent
+PARENT_DIR = CURRENT_DIR.parent
+sys.path.append(str(PARENT_DIR))
+
+try:
+    import config_v6
+    from models_v6 import Asset, SavedPortfolio
+    from webapp.data_manager import data_manager
+    from webapp.optimization_engine import PortfolioOptimizer
+except ImportError as e:
+    print(f"❌ CRITICAL ERROR: Import failed. {e}")
+    sys.exit(1)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger("WebApp")
+
+# 2. INIT APP
+# ============================================================================
+app = Flask(__name__)
+app.secret_key = "folio_visualizer_v6_secret"
+
+# 3. ROUTES - PAGE VIEWS
+# ============================================================================
+@app.route('/')
+def index():
+    """Renders the main dashboard."""
+    return render_template('index.html')
+
+# 4. ROUTES - API ENDPOINTS
+# ============================================================================
+
+@app.route('/api/search')
+def search_assets():
+    """Smart Search: Prioritizes Exact Matches > Starts With > US Assets > Others."""
+    query = request.args.get('q', '').strip().upper()
+    if not query or len(query) < 2:
+        return jsonify([])
+
+    try:
+        with data_manager._get_postgres_session() as session:
+            results = session.query(Asset)\
+                .filter(
+                    (Asset.symbol.ilike(f"%{query}%")) | 
+                    (Asset.name.ilike(f"%{query}%"))
+                )\
+                .filter(Asset.is_active == True)\
+                .limit(50)\
+                .all()
+            
+            hits = []
+            for r in results:
+                hits.append({
+                    'symbol': r.symbol,
+                    'name': r.name,
+                    'exchange': r.exchange,
+                    'type': r.asset_type
+                })
+
+            def rank_score(asset):
+                sym = asset['symbol']
+                base_sym = sym.split('.')[0]
+                exact_base = (base_sym == query)
+                starts_with = sym.startswith(query)
+                is_us = asset['exchange'] in ['US', 'NYSE', 'NASDAQ', 'AMEX']
+                return (not exact_base, not starts_with, not is_us, len(sym), sym)
+
+            hits.sort(key=rank_score)
+            return jsonify(hits[:10])
+
+    except Exception as e:
+        logger.error(f"Search error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/asset-metadata', methods=['POST'])
+def get_asset_metadata():
+    """Get asset metadata including group classifications"""
+    try:
+        data = request.json
+        tickers = data.get('tickers', [])
+        
+        if not tickers:
+            return jsonify({'error': 'No tickers provided'}), 400
+        
+        # Fetch metadata from data_manager
+        metadata = data_manager.get_asset_metadata(tickers)
+        
+        if not metadata:
+            return jsonify({'error': 'No metadata found'}), 404
+        
+        # Build group summary
+        group_summary = {}
+        for ticker, info in metadata.items():
+            group = info['group']
+            if group not in group_summary:
+                group_summary[group] = {'count': 0, 'tickers': []}
+            group_summary[group]['count'] += 1
+            group_summary[group]['tickers'].append(ticker)
+        
+        return jsonify({
+            'metadata': metadata,
+            'group_summary': group_summary
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching asset metadata: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/available-groups', methods=['GET'])
+def get_available_groups():
+    """Get list of all possible asset groups"""
+    try:
+        # Get mapping from data_manager
+        asset_type_mapping = data_manager.ASSET_TYPE_TO_GROUP
+        
+        # Build reverse mapping
+        group_descriptions = {}
+        for asset_type, group in asset_type_mapping.items():
+            if group not in group_descriptions:
+                group_descriptions[group] = []
+            group_descriptions[group].append(asset_type)
+        
+        # Format descriptions
+        formatted_descriptions = {
+            group: ', '.join(sorted(types)) 
+            for group, types in group_descriptions.items()
+        }
+        
+        return jsonify({
+            'groups': sorted(group_descriptions.keys()),
+            'descriptions': formatted_descriptions
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching available groups: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/optimize', methods=['POST'])
+def run_optimization():
+    data = request.json
+    tickers = data.get('tickers', [])
+    user_weights = data.get('user_weights', {})
+    constraints = data.get('constraints', {})
+    opt_goal = data.get('optimization_goal', 'max_sharpe')
+    target_return = data.get('target_return')
+    target_volatility = data.get('target_volatility')
+    benchmark_ticker = data.get('benchmark', 'SPY.US')
+    user_benchmark_id = data.get('user_benchmark_id')
+    use_group_constraints = data.get('use_group_constraints', False)
+    group_constraints_input = data.get('group_constraints', {})
+    
+    req_start_str = data.get('start_date', '2015-01-01')
+    try:
+        req_start = datetime.strptime(req_start_str, '%Y-%m-%d').date()
+    except:
+        req_start = datetime(2018, 1, 1).date()
+
+    end_date = data.get('end_date')
+
+    if not tickers:
+        return jsonify({'error': 'No tickers provided'}), 400
+
+    logger.info(f"Optimization: {opt_goal} for {tickers}")
+
+    try:
+        # A. COVERAGE CHECK
+        coverage = data_manager.get_ticker_coverage(tickers)
+        if not coverage:
+             return jsonify({'error': 'No data found for these tickers in database.'}), 404
+
+        max_min_date = max(info['start'] for info in coverage.values())
+        if req_start < max_min_date:
+            bad_actors = [f"{t} (starts {info['start']})" for t, info in coverage.items() if info['start'] > req_start]
+            msg = f"Data Gap: Requested {req_start_str}, but earliest common date is {max_min_date}.\nLimiting: {', '.join(bad_actors)}"
+            return jsonify({
+                'error': 'coverage_gap',
+                'message': msg,
+                'suggested_start_date': max_min_date.strftime('%Y-%m-%d'),
+                'details': bad_actors
+            }), 400
+
+        # B. FETCH DATA
+        # For tracking error methods, auto-include benchmark in data fetch
+        fetch_tickers = tickers.copy()
+        is_tracking_error_method = opt_goal in ['min_tracking_error', 'max_information_ratio', 'max_excess_return_target_te']
+        
+        # Always add benchmark if specified (for both tracking error AND comparison)
+        if benchmark_ticker and benchmark_ticker not in fetch_tickers:
+            fetch_tickers.append(benchmark_ticker)
+            logger.info(f"Auto-added benchmark {benchmark_ticker} for comparison")
+        
+        df = data_manager.get_price_history(fetch_tickers, start_date=req_start_str, end_date=end_date)
+        if df.empty:
+            return jsonify({'error': 'No data found for the selected tickers/dates'}), 404
+
+        # C1. PREPARE GROUP CONSTRAINTS (NEW)
+        group_constraints = None
+        ticker_groups = None
+        
+        if use_group_constraints and group_constraints_input:
+            # Fetch asset metadata to get groups
+            metadata = data_manager.get_asset_metadata(tickers)
+            
+            # Build ticker -> group mapping
+            ticker_groups = {
+                ticker: metadata[ticker]['group'] 
+                for ticker in tickers if ticker in metadata
+            }
+            
+            # Convert percentage inputs to decimals
+            group_constraints = {}
+            for group, bounds in group_constraints_input.items():
+                group_constraints[group] = {
+                    'min': bounds.get('min', 0.0) / 100.0,
+                    'max': bounds.get('max', 100.0) / 100.0
+                }
+            
+            logger.info(f"Group constraints enabled: {group_constraints}")
+            logger.info(f"Ticker groups: {ticker_groups}")
+
+        # C2. RUN OPTIMIZATION
+        optimizer = PortfolioOptimizer(
+            df,
+            group_constraints=group_constraints,
+            ticker_groups=ticker_groups
+        )
+        
+        # Run requested optimization method
+        if opt_goal == 'max_sharpe':
+            optimized = optimizer.optimize_sharpe_ratio(constraints)
+        elif opt_goal == 'min_volatility':
+            optimized = optimizer.optimize_min_volatility(constraints)
+        elif opt_goal == 'min_vol_target_return':
+            optimized = optimizer.optimize_min_vol_target_return(target_return, constraints)
+        elif opt_goal == 'max_return_target_vol':
+            optimized = optimizer.optimize_max_return_target_vol(target_volatility, constraints)
+        elif opt_goal == 'risk_parity':
+            optimized = optimizer.optimize_risk_parity()
+        elif opt_goal == 'equal_weight':
+            optimized = optimizer.equal_weight_portfolio()
+        elif opt_goal == 'min_cvar':
+            optimized = optimizer.optimize_min_cvar(constraints)
+        elif opt_goal == 'min_cvar_target_return':
+            optimized = optimizer.optimize_min_cvar_target_return(target_return, constraints)
+        elif opt_goal == 'max_return_target_cvar':
+            target_cvar = data.get('target_cvar')
+            optimized = optimizer.optimize_max_return_target_cvar(target_cvar, constraints)
+        elif opt_goal == 'min_tracking_error':
+            optimized = optimizer.optimize_min_tracking_error(benchmark_ticker, constraints)
+        elif opt_goal == 'max_information_ratio':
+            optimized = optimizer.optimize_max_information_ratio(benchmark_ticker, constraints)
+        elif opt_goal == 'max_excess_return_target_te':
+            target_te = data.get('target_tracking_error')
+            optimized = optimizer.optimize_max_excess_return_target_te(benchmark_ticker, target_te, constraints)
+        elif opt_goal == 'max_kelly':
+            optimized = optimizer.optimize_kelly_criterion(constraints)
+        elif opt_goal == 'min_drawdown_target_return':
+            optimized = optimizer.optimize_min_drawdown_target_return(target_return, constraints)
+        elif opt_goal == 'max_omega_target_return':
+            optimized = optimizer.optimize_max_omega_target_return(target_return, constraints)
+        elif opt_goal == 'max_sortino_target_return':
+            optimized = optimizer.optimize_max_sortino_target_return(target_return, constraints)
+        else:
+            optimized = optimizer.optimize_sharpe_ratio(constraints)
+        
+        # D. USER'S PROVIDED PORTFOLIO (if weights given)
+        user_portfolio = None
+        if user_weights:
+            # Use only original tickers that actually exist in the data
+            user_tickers = [t for t in tickers if t in df.columns]
+            
+            if len(user_tickers) > 0:
+                user_df = df[user_tickers]
+                user_optimizer = PortfolioOptimizer(user_df)
+                
+                # Convert dict to array matching column order
+                user_weights_array = np.array([user_weights.get(t, 0) for t in user_tickers])
+                
+                # Normalize if needed
+                if np.sum(user_weights_array) > 0:
+                    user_weights_array = user_weights_array / np.sum(user_weights_array)
+                    user_portfolio = user_optimizer.calculate_portfolio_stats(user_weights_array)
+                    user_portfolio['allocation'] = {t: round(w*100, 2) for t, w in zip(user_tickers, user_weights_array)}
+
+        # E. BENCHMARK PORTFOLIO
+        benchmark_portfolio = None
+        if user_benchmark_id:
+            # Use saved portfolio as benchmark
+            try:
+                with data_manager._get_sqlite_session() as session:
+                    bench_port = session.query(SavedPortfolio).filter_by(id=user_benchmark_id).first()
+                    if bench_port:
+                        bench_tickers = json.loads(bench_port.tickers)
+                        bench_weights_dict = json.loads(bench_port.weights)
+                        bench_df = data_manager.get_price_history(bench_tickers, start_date=req_start_str, end_date=end_date)
+                        
+                        if not bench_df.empty:
+                            bench_optimizer = PortfolioOptimizer(bench_df)
+                            bench_weights_array = np.array([bench_weights_dict.get(t, 0) for t in bench_tickers])
+                            if np.sum(bench_weights_array) > 0:
+                                bench_weights_array = bench_weights_array / np.sum(bench_weights_array)
+                                benchmark_portfolio = bench_optimizer.calculate_portfolio_stats(bench_weights_array)
+                                benchmark_portfolio['name'] = bench_port.name
+                                benchmark_portfolio['allocation'] = {t: round(w*100, 2) for t, w in zip(bench_tickers, bench_weights_array)}
+            except Exception as e:
+                logger.warning(f"Failed to load user benchmark: {e}")
+        
+        elif benchmark_ticker and benchmark_ticker in df.columns:
+            # Use standard benchmark (e.g., SPY.US)
+            try:
+                bench_df = df[[benchmark_ticker]]
+                bench_optimizer = PortfolioOptimizer(bench_df)
+                bench_weights = np.array([1.0])  # 100% in benchmark
+                benchmark_portfolio = bench_optimizer.calculate_portfolio_stats(bench_weights)
+                benchmark_portfolio['name'] = benchmark_ticker
+                benchmark_portfolio['allocation'] = {benchmark_ticker: 100.0}
+            except Exception as e:
+                logger.warning(f"Failed to calculate benchmark {benchmark_ticker}: {e}")
+        
+        # F. EFFICIENT FRONTIER SCATTER
+        frontier_points = []
+        for i in range(200):
+            weights = np.random.random(len(df.columns))
+            weights /= np.sum(weights)
+            ret, vol, sharpe = optimizer.performance_stats(weights)
+            frontier_points.append({
+                'return': round(ret * 100, 2),
+                'volatility': round(vol * 100, 2),
+                'sharpe': round(sharpe, 2)
+            })
+
+        # G. BUILD RESPONSE
+        response = {
+            'status': 'success',
+            'analysis_period': {
+                'start': df.index[0].strftime('%Y-%m-%d'),
+                'end': df.index[-1].strftime('%Y-%m-%d'),
+                'trading_days': len(df)
+            },
+            'optimized_portfolio': optimized,
+            'user_portfolio': user_portfolio,
+            'benchmark_portfolio': benchmark_portfolio,
+            'frontier_scatter': frontier_points,
+            'correlation_matrix': optimizer.returns.corr().round(2).to_dict()
+        }
+        
+        # Add group allocation breakdown if group constraints were used
+        if use_group_constraints and ticker_groups:
+            user_group_alloc = {}
+            opt_group_alloc = {}
+            
+            # Calculate group allocations
+            for ticker, group in ticker_groups.items():
+                if ticker not in user_weights:
+                    continue
+                    
+                if group not in user_group_alloc:
+                    user_group_alloc[group] = 0.0
+                    opt_group_alloc[group] = 0.0
+                
+                # User allocation
+                user_group_alloc[group] += user_weights[ticker]
+                
+                # Optimized allocation
+                if 'allocation' in optimized and ticker in optimized['allocation']:
+                    opt_group_alloc[group] += optimized['allocation'][ticker] / 100.0
+            
+            # Convert to percentages for display
+            response['group_allocations'] = {
+                'user': {g: round(v * 100, 2) for g, v in user_group_alloc.items()},
+                'optimized': {g: round(v * 100, 2) for g, v in opt_group_alloc.items()},
+                'constraints': group_constraints_input  # Original % values
+            }
+        
+        # Sanitize NaN values before JSON serialization
+        def sanitize_dict(obj):
+            """Recursively replace NaN with 0 in nested dicts"""
+            if isinstance(obj, dict):
+                return {k: sanitize_dict(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize_dict(item) for item in obj]
+            elif isinstance(obj, float):
+                if np.isnan(obj) or np.isinf(obj):
+                    return 0.0
+                return obj
+            return obj
+        
+        response = sanitize_dict(response)
+        
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error(f"Optimization failed: {e}", exc_info=True)
+        return jsonify({'error': f"Optimization failed: {str(e)}"}), 500
+
+
+@app.route('/api/portfolios', methods=['GET'])
+def list_portfolios():
+    """List all saved portfolios"""
+    try:
+        with data_manager._get_sqlite_session() as session:
+            portfolios = session.query(SavedPortfolio).order_by(SavedPortfolio.updated_at.desc()).all()
+            result = [{
+                'id': p.id,
+                'name': p.name,
+                'created_at': p.created_at.isoformat(),
+                'updated_at': p.updated_at.isoformat()
+            } for p in portfolios]
+            return jsonify(result)
+    except Exception as e:
+        logger.error(f"List portfolios error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/portfolios/<int:portfolio_id>', methods=['GET'])
+def get_portfolio(portfolio_id):
+    """Get a specific saved portfolio"""
+    try:
+        with data_manager._get_sqlite_session() as session:
+            portfolio = session.query(SavedPortfolio).filter_by(id=portfolio_id).first()
+            if not portfolio:
+                return jsonify({'error': 'Portfolio not found'}), 404
+            
+            return jsonify({
+                'id': portfolio.id,
+                'name': portfolio.name,
+                'tickers': json.loads(portfolio.tickers),
+                'weights': json.loads(portfolio.weights),
+                'constraints': json.loads(portfolio.constraints) if portfolio.constraints else {},
+                'created_at': portfolio.created_at.isoformat(),
+                'updated_at': portfolio.updated_at.isoformat()
+            })
+    except Exception as e:
+        logger.error(f"Get portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/portfolios', methods=['POST'])
+def save_portfolio():
+    """Save a new portfolio"""
+    data = request.json
+    name = data.get('name')
+    tickers = data.get('tickers', [])
+    weights = data.get('weights', {})
+    constraints = data.get('constraints', {})
+    
+    if not name or not tickers:
+        return jsonify({'error': 'Name and tickers required'}), 400
+    
+    try:
+        with data_manager._get_sqlite_session() as session:
+            portfolio = SavedPortfolio(
+                name=name,
+                tickers=json.dumps(tickers),
+                weights=json.dumps(weights),
+                constraints=json.dumps(constraints) if constraints else None
+            )
+            session.add(portfolio)
+            session.commit()
+            
+            return jsonify({
+                'id': portfolio.id,
+                'name': portfolio.name,
+                'message': 'Portfolio saved successfully'
+            })
+    except Exception as e:
+        logger.error(f"Save portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/portfolios/<int:portfolio_id>', methods=['DELETE'])
+def delete_portfolio(portfolio_id):
+    """Delete a saved portfolio"""
+    try:
+        with data_manager._get_sqlite_session() as session:
+            portfolio = session.query(SavedPortfolio).filter_by(id=portfolio_id).first()
+            if not portfolio:
+                return jsonify({'error': 'Portfolio not found'}), 404
+            
+            session.delete(portfolio)
+            session.commit()
+            return jsonify({'message': 'Portfolio deleted successfully'})
+    except Exception as e:
+        logger.error(f"Delete portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/compare-portfolios', methods=['POST'])
+def compare_portfolios():
+    """Compare multiple saved portfolios and/or benchmarks"""
+    data = request.json
+    portfolio_ids = data.get('portfolio_ids', [])
+    start_date = data.get('start_date', '2018-01-01')
+    end_date = data.get('end_date')
+    
+    if not portfolio_ids:
+        return jsonify({'error': 'No portfolios selected'}), 400
+    
+    try:
+        results = []
+        
+        for pid in portfolio_ids:
+            # Handle SPY benchmark
+            if pid == 'SPY.US':
+                df = data_manager.get_price_history(['SPY.US'], start_date=start_date, end_date=end_date)
+                if not df.empty:
+                    optimizer = PortfolioOptimizer(df)
+                    weights = np.array([1.0])
+                    stats = optimizer.calculate_portfolio_stats(weights)
+                    stats['name'] = 'S&P 500 (SPY)'
+                    results.append(stats)
+                continue
+            
+            # Handle saved portfolios
+            with data_manager._get_sqlite_session() as session:
+                portfolio = session.query(SavedPortfolio).filter_by(id=int(pid)).first()
+                if not portfolio:
+                    continue
+                
+                tickers = json.loads(portfolio.tickers)
+                weights_dict = json.loads(portfolio.weights)
+                
+                df = data_manager.get_price_history(tickers, start_date=start_date, end_date=end_date)
+                if df.empty:
+                    continue
+                
+                optimizer = PortfolioOptimizer(df)
+                weights_array = np.array([weights_dict.get(t, 0) for t in tickers])
+                
+                if np.sum(weights_array) > 0:
+                    weights_array /= np.sum(weights_array)
+                    stats = optimizer.calculate_portfolio_stats(weights_array)
+                    stats['name'] = portfolio.name
+                    results.append(stats)
+        
+        return jsonify({'portfolios': results})
+        
+    except Exception as e:
+        logger.error(f"Portfolio comparison error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# 5. ENTRY POINT
+# ============================================================================
+if __name__ == '__main__':
+    print("="*60)
+    print("🚀 PORTFOLIO VISUALIZER V6 RUNNING")
+    print("   URL: http://127.0.0.1:5000")
+    print("="*60)
+    app.run(debug=True, port=5000)

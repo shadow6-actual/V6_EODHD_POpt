@@ -24,6 +24,7 @@ POSTGRES_CONFIG = {
     'host': 'localhost',
     'port': 5432,
     'database': 'portfolio_master',
+    #'database': 'portfolio_master_test',  # TEST MODE
     'user': 'postgres',
     'password': 'Germany11',  
 }

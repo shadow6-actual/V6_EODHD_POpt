@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # CONFIGURATION
 # ============================================================================
 
-BATCH_SIZE = 15000  # Tickers to load per run (aggressive overnight mode)
+MAX_BATCH_SIZE = 15000  # Maximum tickers per run
 HISTORICAL_START_DATE = "1995-01-01"  # Start from 1995 (30 years)
 API_RATE_LIMIT_DELAY = 0.3  # Seconds between API calls (0.3 = very aggressive, ~75 min runtime)
 
@@ -185,8 +185,7 @@ def calculate_asset_priority(asset: Asset) -> int:
     
     return score
 
-
-def get_next_batch_to_load(engine, batch_size: int = BATCH_SIZE) -> List[dict]:
+def get_next_batch_to_load(engine, batch_size: int = MAX_BATCH_SIZE) -> List[dict]:
     """
     Get next batch of tickers to load, intelligently prioritized
     
@@ -509,7 +508,7 @@ def main():
     """Main function to load batch of historical data"""
     logger.info("=" * 70)
     logger.info("SMART BATCH HISTORICAL DATA LOADER")
-    logger.info(f"Batch Size: {BATCH_SIZE:,} tickers")
+    logger.info(f"Max Batch Size: {MAX_BATCH_SIZE:,} tickers")
     logger.info("=" * 70)
     logger.info("")
     
@@ -539,7 +538,12 @@ def main():
         return
     
     # Get next batch
-    batch = get_next_batch_to_load(engine, BATCH_SIZE)
+    # Calculate dynamic batch size
+    remaining = stats['assets_never_loaded']
+    batch_size = min(remaining, MAX_BATCH_SIZE) if remaining > 0 else 0
+    remaining = stats['assets_never_loaded']
+    batch_size = min(remaining, MAX_BATCH_SIZE) if remaining > 0 else MAX_BATCH_SIZE
+    batch = get_next_batch_to_load(engine, batch_size)
     
     if not batch:
         logger.warning("⚠️  No assets found to load")
@@ -609,8 +613,8 @@ def main():
     
     # Calculate runs needed
     if updated_stats['assets_never_loaded'] > 0:
-        runs_needed = (updated_stats['assets_never_loaded'] + BATCH_SIZE - 1) // BATCH_SIZE
-        logger.info(f"💡 Runs remaining: ~{runs_needed} (at {BATCH_SIZE:,} tickers per run)")
+        runs_needed = (updated_stats['assets_never_loaded'] + MAX_BATCH_SIZE - 1) // MAX_BATCH_SIZE
+        logger.info(f"💡 Runs remaining: ~{runs_needed} (at {MAX_BATCH_SIZE:,} tickers per run)")
         logger.info(f"💡 Run again tomorrow to load next batch")
     else:
         logger.info(f"🎉 All assets loaded! Database is complete.")

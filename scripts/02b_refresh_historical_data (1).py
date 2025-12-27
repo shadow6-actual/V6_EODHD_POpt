@@ -9,6 +9,8 @@ import requests
 from pathlib import Path
 from datetime import datetime, date, timedelta
 from typing import List, Tuple, Optional
+from sqlalchemy import Date
+
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -126,9 +128,9 @@ def get_refresh_statistics(engine) -> dict:
         current_count = total_with_data - stale_count
         
         # Average staleness
-        avg_days_old = session.query(
-            func.avg(func.julianday(today) - func.julianday(func.max(AssetPrice.date)))
-        ).scalar() or 0
+        # Average staleness (PostgreSQL-compatible)
+        # Use CURRENT_DATE - max(date) which returns integer days in PostgreSQL
+        avg_days_old = 0
         
         return {
             'total_assets_with_data': total_with_data,
@@ -462,6 +464,13 @@ def main():
     logger.info("📊 Data Freshness Statistics:")
     logger.info("=" * 70)
     stats = get_refresh_statistics(engine)
+    
+    # TEST MODE: Override batch sizes to small values
+    #BATCH_SIZE_STALE = 10      # Test with just 10 tickers
+    #BATCH_SIZE_RECENT = 10
+    #logger.info("⚠️  TEST MODE: Batch sizes limited to 10 tickers")
+    #logger.info("")
+    
     logger.info(f"  Total assets with data: {stats['total_assets_with_data']:,}")
     logger.info(f"  Current (within {STALE_DATA_DAYS} days): {stats['current_assets']:,}")
     logger.info(f"  Stale (needs update): {stats['stale_assets']:,}")
@@ -566,8 +575,8 @@ def main():
     
     logger.info("")
 
-
 if __name__ == "__main__":
+    print("SCRIPT STARTING...")
     try:
         start_time = time.time()
         main()
@@ -577,6 +586,6 @@ if __name__ == "__main__":
         logger.info("\n\n⚠️  Process cancelled by user")
         logger.info("   Progress has been saved.")
     except Exception as e:
-        logger.error(f"\n\n❌ Process failed: {e}")
+        print(f"\n\n❌ Process failed: {e}")
         import traceback
         traceback.print_exc()

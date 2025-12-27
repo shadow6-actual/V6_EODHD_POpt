@@ -6,7 +6,7 @@ from datetime import date, datetime
 from contextlib import contextmanager
 
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Float, Date, DateTime,
+    create_engine, Column, Integer, String, Float, Date, DateTime, BigInteger,
     ForeignKey, UniqueConstraint, Boolean, Text, Index
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
@@ -27,27 +27,27 @@ class Asset(Base):
     
     # Primary identification
     symbol = Column(String(20), primary_key=True, index=True)  # e.g., 'AAPL.US'
-    code = Column(String(20), nullable=False, index=True)  # Changed from String(10)
+    code = Column(String(20), nullable=False, index=True)
     exchange = Column(String(10), nullable=False, index=True)  # e.g., 'US'
     
     # Basic info
     name = Column(String(255))
     asset_type = Column(String(50))  # Common Stock, ETF, FUND, etc.
-    isin = Column(String(20))        # International Securities ID
-    currency = Column(String(10))     # USD, GBP, EUR, etc.
-    country = Column(String(50))      # Country of exchange
+    isin = Column(String(20))
+    currency = Column(String(10))
+    country = Column(String(50))
     
     # Status tracking
-    is_active = Column(Boolean, default=True, index=True)  # Track delistings
-    is_in_working_db = Column(Boolean, default=False)      # Is it in SQLite?
+    is_active = Column(Boolean, default=True, index=True)
+    is_in_working_db = Column(Boolean, default=False)
     
     # Timestamps
     first_seen = Column(DateTime, default=datetime.utcnow)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_price_date = Column(Date)  # Date of most recent price data
+    last_price_date = Column(Date)
     
     # Data source tracking
-    data_source = Column(String(20), default='EODHD')  # EODHD, Yahoo, etc.
+    data_source = Column(String(20), default='EODHD')
     
     # Relationships
     prices = relationship("AssetPrice", back_populates="asset", cascade="all, delete-orphan")
@@ -97,7 +97,7 @@ class AssetPrice(Base):
     
     __table_args__ = (
         UniqueConstraint('symbol', 'date', name='_symbol_date_uc'),
-        Index('idx_date_symbol', 'date', 'symbol'),  # For date-range queries
+        Index('idx_date_symbol', 'date', 'symbol'),
     )
     
     def __repr__(self):
@@ -112,10 +112,10 @@ class AssetMetadata(Base):
     symbol = Column(String(20), ForeignKey('assets.symbol'), nullable=False, index=True)
     key = Column(String(100), nullable=False)
     value = Column(Text)
-    category = Column(String(50))  # For grouping metadata
+    category = Column(String(50))
     last_updated = Column(DateTime, default=datetime.utcnow)
     
-    asset = relationship("Asset", back_populates="asset_metadata")  # ← FIXED
+    asset = relationship("Asset", back_populates="asset_metadata")
     
     __table_args__ = (
         UniqueConstraint('symbol', 'key', name='_symbol_key_uc'),
@@ -130,12 +130,12 @@ class UpdateLog(Base):
     update_time = Column(DateTime, default=datetime.utcnow, index=True)
     
     # What was updated
-    update_type = Column(String(50))  # 'prices', 'splits', 'dividends', 'universe'
-    exchange = Column(String(10))     # Which exchange
-    symbol = Column(String(20))       # Specific ticker (if applicable)
+    update_type = Column(String(50))
+    exchange = Column(String(10))
+    symbol = Column(String(20))
     
     # Status
-    status = Column(String(20), nullable=False)  # success, error, warning
+    status = Column(String(20), nullable=False)
     message = Column(Text)
     
     # API usage tracking
@@ -150,39 +150,59 @@ class UpdateLog(Base):
 
 
 # ============================================================================
+# SAVED PORTFOLIOS (NEW FOR WEB APP)
+# ============================================================================
+
+class SavedPortfolio(Base):
+    """User-saved portfolio configurations"""
+    __tablename__ = 'saved_portfolios'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False, index=True)
+    tickers = Column(Text, nullable=False)  # JSON: ["AAPL.US", "MSFT.US"]
+    weights = Column(Text, nullable=False)  # JSON: {"AAPL.US": 0.50, "MSFT.US": 0.50}
+    constraints = Column(Text)  # JSON: {"AAPL.US": {"min": 0.1, "max": 0.7}}
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<SavedPortfolio(name='{self.name}', created='{self.created_at}')>"
+
+
+# ============================================================================
 # ENHANCED TABLES (Fundamentals, Classification, etc.)
 # ============================================================================
 
 class AssetFundamentals(Base):
-    """Fundamental data (price-based calculations since we're not subscribing to Fundamentals API)"""
+    """Fundamental data (price-based calculations)"""
     __tablename__ = 'asset_fundamentals'
     
     symbol = Column(String(20), ForeignKey('assets.symbol'), primary_key=True)
     
-    # Price-based metrics (we can calculate these ourselves)
-    market_cap = Column(Float)            # Estimated from price * shares
-    beta = Column(Float)                   # Calculated vs market index
-    volatility_30d = Column(Float)         # 30-day rolling volatility
-    volatility_90d = Column(Float)         # 90-day rolling volatility
-    volatility_1y = Column(Float)          # 1-year volatility
+    # Price-based metrics
+    market_cap = Column(Float)
+    beta = Column(Float)
+    volatility_30d = Column(Float)
+    volatility_90d = Column(Float)
+    volatility_1y = Column(Float)
     
     # Trading metrics
-    average_volume_30d = Column(Float)     # 30-day average volume
-    average_volume_90d = Column(Float)     # 90-day average volume
+    average_volume_30d = Column(Float)
+    average_volume_90d = Column(Float)
     
-    # Dividend metrics (calculated from dividend history)
-    dividend_yield_ttm = Column(Float)     # Trailing twelve month yield
-    dividend_frequency = Column(String(20)) # Annual, Quarterly, Monthly, etc.
+    # Dividend metrics
+    dividend_yield_ttm = Column(Float)
+    dividend_frequency = Column(String(20))
     last_dividend_date = Column(Date)
     last_dividend_amount = Column(Float)
     
-    # For ETFs/Funds (if available from EODHD or calculated)
-    expense_ratio = Column(Float)          # Annual expense ratio
-    assets_under_management = Column(Float) # AUM
+    # For ETFs/Funds
+    expense_ratio = Column(Float)
+    assets_under_management = Column(Float)
     
     # Timestamps
     last_calculated = Column(DateTime, default=datetime.utcnow)
-    calculation_period_end = Column(Date)   # Data current as of this date
+    calculation_period_end = Column(Date)
     
     asset = relationship("Asset", back_populates="fundamentals")
     
@@ -197,129 +217,111 @@ class AssetClassification(Base):
     symbol = Column(String(20), ForeignKey('assets.symbol'), primary_key=True)
     
     # Primary classification
-    asset_class = Column(String(50))       # equity, fixed_income, commodity, real_estate, cash, alternative
-    asset_subclass = Column(String(50))    # large_cap, mid_cap, small_cap, micro_cap
+    asset_class = Column(String(50))
+    asset_subclass = Column(String(50))
     
     # Geographic classification
-    geography = Column(String(50))         # us, international, emerging, developed, global
-    region = Column(String(50))            # north_america, europe, asia_pacific, etc.
-    country_exposure = Column(String(50))  # Primary country exposure
+    geography = Column(String(50))
+    region = Column(String(50))
+    country_exposure = Column(String(50))
     
-    # Sector classification (for stocks)
-    sector = Column(String(100))           # Technology, Healthcare, Financials, etc.
-    industry = Column(String(100))         # Software, Biotechnology, Banks, etc.
+    # Sector classification
+    sector = Column(String(100))
+    industry = Column(String(100))
     
     # Fund-specific classification
-    fund_category = Column(String(100))    # Large Cap Growth, Bond Fund, etc.
-    morningstar_category = Column(String(100))
+    fund_category = Column(String(100))
+    fund_family = Column(String(100))
+    fund_strategy = Column(String(100))
     
-    # Special characteristics
-    is_leveraged = Column(Boolean, default=False)
-    leverage_factor = Column(Float)        # 2x, 3x, etc.
-    is_inverse = Column(Boolean, default=False)
-    is_esg = Column(Boolean, default=False)
-    is_dividend_focused = Column(Boolean, default=False)
+    # Factor exposures
+    value_score = Column(Float)
+    growth_score = Column(Float)
+    momentum_score = Column(Float)
+    quality_score = Column(Float)
     
     # Timestamps
     last_updated = Column(DateTime, default=datetime.utcnow)
     
     asset = relationship("Asset", back_populates="classification")
-    
-    def __repr__(self):
-        return f"<AssetClassification(symbol='{self.symbol}', class='{self.asset_class}', sector='{self.sector}')>"
 
 
 class CorporateActions(Base):
-    """Track splits, dividends, and other corporate actions"""
+    """Stock splits, dividends, and other corporate actions"""
     __tablename__ = 'corporate_actions'
     
     action_id = Column(Integer, primary_key=True)
     symbol = Column(String(20), ForeignKey('assets.symbol'), nullable=False, index=True)
-    
-    # Action details
     action_date = Column(Date, nullable=False, index=True)
-    action_type = Column(String(50), nullable=False)  # split, dividend, special_dividend, merger, spinoff
+    action_type = Column(String(20), nullable=False)
     
-    # Split information
-    split_ratio = Column(Float)            # e.g., 2.0 for 2-for-1 split
-    split_from = Column(Float)             # Numerator
-    split_to = Column(Float)               # Denominator
+    # Split data
+    split_ratio = Column(Float)
     
-    # Dividend information
-    dividend_amount = Column(Float)        # Amount per share
-    dividend_currency = Column(String(10)) # Currency of dividend
-    dividend_type = Column(String(50))     # regular, special, etc.
+    # Dividend data
+    dividend_amount = Column(Float)
+    dividend_currency = Column(String(10))
+    ex_dividend_date = Column(Date)
+    payment_date = Column(Date)
     
-    # Extended dividend dates (for US stocks, available from EODHD)
-    ex_dividend_date = Column(Date)        # Ex-dividend date
-    record_date = Column(Date)             # Record date
-    payment_date = Column(Date)            # Payment date
-    declaration_date = Column(Date)        # Declaration date
-    
-    # Additional details
-    details = Column(Text)
-    notes = Column(Text)
-    
-    # Source tracking
+    # Status
+    is_processed = Column(Boolean, default=False)
     data_source = Column(String(20), default='EODHD')
     loaded_at = Column(DateTime, default=datetime.utcnow)
     
     asset = relationship("Asset", back_populates="corporate_actions")
     
     __table_args__ = (
-        Index('idx_action_date_type', 'action_date', 'action_type'),
+        Index('idx_symbol_action_date', 'symbol', 'action_date'),
     )
-    
-    def __repr__(self):
-        return f"<CorporateAction(symbol='{self.symbol}', type='{self.action_type}', date='{self.action_date}')>"
 
 
 class RiskMetrics(Base):
-    """Pre-calculated risk metrics for performance optimization"""
+    """Pre-calculated risk metrics for various periods"""
     __tablename__ = 'risk_metrics'
     
     metric_id = Column(Integer, primary_key=True)
     symbol = Column(String(20), ForeignKey('assets.symbol'), nullable=False, index=True)
     
     # Period covered
-    period = Column(String(10), nullable=False)  # 1m, 3m, 6m, 1y, 3y, 5y, 10y, all
+    period = Column(String(10), nullable=False)
     start_date = Column(Date)
     end_date = Column(Date)
     
     # Return metrics
-    total_return = Column(Float)           # Total return over period
-    annualized_return = Column(Float)      # Annualized return
-    cagr = Column(Float)                   # Compound annual growth rate
+    total_return = Column(Float)
+    annualized_return = Column(Float)
+    cagr = Column(Float)
     
     # Volatility metrics
-    volatility = Column(Float)             # Annualized standard deviation
-    downside_deviation = Column(Float)     # Downside volatility (semi-deviation)
-    upside_capture = Column(Float)         # Upside capture ratio
-    downside_capture = Column(Float)       # Downside capture ratio
+    volatility = Column(Float)
+    downside_deviation = Column(Float)
+    upside_capture = Column(Float)
+    downside_capture = Column(Float)
     
     # Drawdown metrics
-    max_drawdown = Column(Float)           # Maximum peak-to-trough decline
-    max_drawdown_duration = Column(Integer) # Days in max drawdown
-    current_drawdown = Column(Float)       # Current drawdown from peak
+    max_drawdown = Column(Float)
+    max_drawdown_duration = Column(Integer)
+    current_drawdown = Column(Float)
     
     # Risk-adjusted returns
-    sharpe_ratio = Column(Float)           # Risk-adjusted return (vs risk-free rate)
-    sortino_ratio = Column(Float)          # Return vs downside risk
-    calmar_ratio = Column(Float)           # Return vs max drawdown
-    omega_ratio = Column(Float)            # Probability-weighted ratio
+    sharpe_ratio = Column(Float)
+    sortino_ratio = Column(Float)
+    calmar_ratio = Column(Float)
+    omega_ratio = Column(Float)
     
     # Value at Risk
-    var_95 = Column(Float)                 # Value at Risk (95% confidence)
-    var_99 = Column(Float)                 # Value at Risk (99% confidence)
-    cvar_95 = Column(Float)                # Conditional VaR (Expected Shortfall)
+    var_95 = Column(Float)
+    var_99 = Column(Float)
+    cvar_95 = Column(Float)
     
     # Distribution metrics
-    skewness = Column(Float)               # Return distribution skewness
-    kurtosis = Column(Float)               # Return distribution kurtosis
+    skewness = Column(Float)
+    kurtosis = Column(Float)
     
-    # Correlation (vs market benchmark)
-    correlation_spy = Column(Float)        # Correlation with S&P 500
-    correlation_agg = Column(Float)        # Correlation with bond aggregate
+    # Correlation
+    correlation_spy = Column(Float)
+    correlation_agg = Column(Float)
     
     # Timestamps
     last_calculated = Column(DateTime, default=datetime.utcnow)
@@ -380,8 +382,8 @@ class DataQualityIssue(Base):
     date = Column(Date, nullable=False, index=True)
     
     # Issue details
-    issue_type = Column(String(50), nullable=False)  # missing_data, outlier, suspicious_jump, etc.
-    severity = Column(String(20))                     # low, medium, high, critical
+    issue_type = Column(String(50), nullable=False)
+    severity = Column(String(20))
     description = Column(Text)
     
     # Values involved
@@ -435,8 +437,6 @@ def init_database(engine, drop_existing=False):
         drop_all_tables(engine)
     
     create_all_tables(engine)
-    
-    # Create additional indexes for performance
     logger.info("Database initialized successfully")
 
 

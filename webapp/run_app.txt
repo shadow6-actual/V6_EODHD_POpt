@@ -1,0 +1,3 @@
+d:
+cd FolioData\FolioF\PortfolioOptimizationPythonFiles\V6_EODHD_Hybrid
+python webapp/app.py

@@ -1,0 +1,405 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="row">
+        
+        <!-- LEFT PANEL: Configuration -->
+        <div class="col-md-4 border-end" id="configPanel">
+            <h4 class="mb-4 text-primary"><i class="fas fa-sliders-h me-2"></i>Portfolio Configuration</h4>
+            
+            <!-- Time Period -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 small fw-bold">TIME PERIOD</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small">Start Date</label>
+                            <input type="date" class="form-control form-control-sm" id="startDate" value="2018-01-01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">End Date</label>
+                            <input type="date" class="form-control form-control-sm" id="endDate">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Settings -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 small fw-bold">OPTIMIZATION</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label small">Optimization Goal</label>
+                        <select class="form-select form-select-sm" id="optGoal" onchange="updateConditionalFields()">
+                            <optgroup label="Mean-Variance">
+                                <option value="max_sharpe">Maximize Sharpe Ratio</option>
+                                <option value="min_volatility">Minimize Volatility</option>
+                                <option value="min_vol_target_return">Minimize Volatility subject to Target Return</option>
+                                <option value="max_return_target_vol">Maximize Return subject to Target Volatility</option>
+                            </optgroup>
+                            <optgroup label="Risk Metrics">
+                                <option value="risk_parity">Risk Parity</option>
+                                <option value="min_cvar">CVaR - Minimize Conditional Value-at-Risk</option>
+                                <option value="min_cvar_target_return">CVaR - Min CVaR subject to Target Return</option>
+                                <option value="max_return_target_cvar">CVaR - Max Return subject to Target CVaR</option>
+                            </optgroup>
+                            <optgroup label="Tracking Error">
+                                <option value="min_tracking_error">Minimize Tracking Error</option>
+                                <option value="max_information_ratio">Maximize Information Ratio</option>
+                                <option value="max_excess_return_target_te">Max Excess Return subject to Target TE</option>
+                            </optgroup>
+                            <optgroup label="Advanced">
+                                <option value="max_kelly">Maximize Kelly Criterion</option>
+                                <option value="min_drawdown_target_return">Min Max Drawdown subject to Target Return</option>
+                                <option value="max_omega_target_return">Max Omega Ratio subject to Target Return</option>
+                                <option value="max_sortino_target_return">Max Sortino Ratio subject to Target Return</option>
+                            </optgroup>
+                            <optgroup label="Baseline">
+                                <option value="equal_weight">Equal Weight</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-2" id="targetReturnField" style="display:none;">
+                        <label class="form-label small">Target Annual Return (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetReturn" value="15" step="0.5">
+                    </div>
+                    
+                    <div class="mb-2" id="targetVolField" style="display:none;">
+                        <label class="form-label small">Target Annual Volatility (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetVolatility" value="15" step="0.5">
+                    </div>
+                    
+                    <div class="mb-2" id="targetCVaRField" style="display:none;">
+                        <label class="form-label small">Target Monthly CVaR (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetCVaR" value="-2" step="0.1">
+                    </div>
+                    
+                    <div class="mb-2" id="targetTEField" style="display:none;">
+                        <label class="form-label small">Target Tracking Error (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetTE" value="5" step="0.5">
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label small">Benchmark</label>
+                        <select class="form-select form-select-sm" id="benchmark">
+                            <option value="SPY.US">S&P 500 (SPY)</option>
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useUserBenchmark" onchange="toggleUserBenchmark()">
+                        <label class="form-check-label small" for="useUserBenchmark">Use Saved Portfolio as Benchmark</label>
+                    </div>
+                    
+                    <div class="mb-2" id="userBenchmarkField" style="display:none;">
+                        <label class="form-label small">Saved Portfolio Benchmark</label>
+                        <select class="form-select form-select-sm" id="userBenchmark">
+                            <option value="">Select a saved portfolio...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useConstraints" checked onchange="toggleConstraints()">
+                        <label class="form-check-label small" for="useConstraints">Use Asset Constraints</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets Table -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">PORTFOLIO ASSETS</h6>
+                    <button class="btn btn-xs btn-outline-primary py-0 px-2" onclick="addAssetRow()">
+                        <i class="fas fa-plus small"></i> Add
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0 small" id="assetsTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 35%">Ticker</th>
+                                    <th style="width: 20%">Alloc %</th>
+                                    <th style="width: 18%" class="constraint-col">Min %</th>
+                                    <th style="width: 18%" class="constraint-col">Max %</th>
+                                    <th style="width: 9%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="assetsTableBody"></tbody>
+                            <tfoot class="table-light sticky-bottom">
+                                <tr>
+                                    <td class="text-end">Total:</td>
+                                    <td id="totalAllocation" class="text-primary">0%</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer p-2 bg-white">
+                    <button class="btn btn-primary w-100" id="runOptimizeBtn">
+                        <i class="fas fa-bolt me-2"></i>Run Optimization
+                    </button>
+                </div>
+            </div>
+
+            <!-- Group Constraints (NEW) -->
+            <div class="card mt-3 shadow-sm" id="groupConstraintsCard" style="display:none;">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">GROUP CONSTRAINTS</h6>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="useGroupConstraints">
+                        <label class="form-check-label small" for="useGroupConstraints">Enable</label>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <p class="small text-muted mb-2">
+                        <i class="fas fa-info-circle me-1"></i>Set allocation limits by asset group
+                    </p>
+                    
+                    <div class="table-responsive" style="max-height: 25vh; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0 small" id="groupConstraintsTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 30%">Group</th>
+                                    <th style="width: 12%" class="text-center">Assets</th>
+                                    <th style="width: 16%" class="text-center">Current</th>
+                                    <th style="width: 21%">Min %</th>
+                                    <th style="width: 21%">Max %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groupConstraintsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Portfolio -->
+            <div class="card mt-3 shadow-sm">
+                <div class="card-body p-2">
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control" id="portfolioName" placeholder="Portfolio name">
+                        <button class="btn btn-outline-secondary" onclick="savePortfolio()">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="loadPortfolioModal()">
+                            <i class="fas fa-folder-open"></i> Load
+                        </button>
+                    </div>
+                    
+                    <label class="form-label small mb-1">Manage Saved Portfolios</label>
+                    <div class="input-group input-group-sm">
+                        <select class="form-select" id="portfolioManager" onchange="portfolioSelected()">
+                            <option value="">Select to manage...</option>
+                        </select>
+                        <button class="btn btn-outline-danger" onclick="deleteSelectedPortfolio()" id="deletePortfolioBtn" disabled>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Results -->
+        <div class="col-md-8" id="resultsPanel">
+            
+            <div id="resultsPlaceholder" class="text-center py-5 text-muted">
+                <i class="fas fa-chart-pie fa-4x mb-3 text-light"></i>
+                <h5>Ready to Optimize</h5>
+                <p>Configure your assets and click "Run Optimization"</p>
+            </div>
+
+            <div id="loadingSpinner" class="text-center py-5" style="display:none;">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+                <p class="text-muted mt-3">Optimizing...</p>
+            </div>
+
+            <div id="resultsContent" style="display:none;">
+                <h4 class="mb-3">Performance Comparison</h4>
+                
+                <!-- Comparison Table -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-hover small" id="comparisonTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Metric</th>
+                                <th id="colYour">Your Portfolio</th>
+                                <th id="colOpt">Optimized</th>
+                                <th id="colBench">Benchmark</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Allocation Tables -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white py-2">
+                                <h6 class="mb-0 small" id="optCardTitle">Optimized Portfolio</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th class="text-end">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="optTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-secondary text-white py-2">
+                                <h6 class="mb-0 small">Your Portfolio</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th class="text-end">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="yourTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white py-2">
+                                <h6 class="mb-0 small" id="benchCardTitle">Benchmark</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th class="text-end">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="benchTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group Allocations Display (NEW) -->
+                <div class="card mb-4 shadow-sm" id="groupAllocationsSection" style="display:none;">
+                    <div class="card-header bg-info text-white py-2">
+                        <h6 class="mb-0 small"><i class="fas fa-layer-group me-2"></i>Group Allocations</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-hover mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Group</th>
+                                    <th class="text-end">Your Portfolio</th>
+                                    <th class="text-end">Optimized</th>
+                                    <th class="text-center">Constraints</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groupAllocBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <ul class="nav nav-tabs card-header-tabs" id="resultTabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#frontier">Efficient Frontier</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#drawdown">Drawdown</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#monthly">Monthly Returns</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#correlation">Correlation</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#savedPortfolios">Saved Portfolios</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="frontier">
+                                <div id="frontierChart" style="height: 500px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="drawdown">
+                                <div id="drawdownChart" style="height: 400px;"></div>
+                                <h6 class="mt-3 text-muted small">Historical Stress Periods</h6>
+                                <table class="table table-sm" id="stressTable">
+                                    <thead><tr><th>Event</th><th>Start</th><th>End</th><th class="text-end">Return</th></tr></thead>
+                                    <tbody id="stressTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="monthly">
+                                <div id="monthlyHeatmap"></div>
+                            </div>
+                            <div class="tab-pane fade" id="correlation">
+                                <div id="corrHeatmap" style="height: 500px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="savedPortfolios">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <h6 class="text-muted small">Compare Saved Portfolios</h6>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <select class="form-select form-select-sm" id="portfolioCompareSelect" multiple style="height: 120px;">
+                                                <option value="SPY.US">S&P 500 (SPY)</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary w-100" onclick="compareSelectedPortfolios()">
+                                            <i class="fas fa-chart-bar me-1"></i>Compare Selected
+                                        </button>
+                                        <small class="text-muted d-block mt-1">Hold Ctrl to select multiple</small>
+                                    </div>
+                                </div>
+                                <div id="portfolioComparisonTable"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Portfolio Modal -->
+<div class="modal fade" id="loadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Load Portfolio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="portfolioList" class="list-group"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+{% endblock %}
