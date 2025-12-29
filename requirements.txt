@@ -1,0 +1,24 @@
+# Portfolio Optimizer V6 - Production Dependencies
+# Generated for Railway/Render deployment
+
+# Web Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Production WSGI Server
+gunicorn==21.2.0
+
+# Database
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Data Processing
+numpy==1.26.2
+pandas==2.1.4
+scipy==1.11.4
+
+# HTTP Requests (for EODHD API)
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.0
