@@ -2,15 +2,19 @@
 # PURPOSE: Handles data movement between Master DB (Postgres), Working DB (SQLite),
 #          and the Application (Pandas DataFrames).
 
+import os
 import pandas as pd
 import logging
 from datetime import datetime
 from sqlalchemy import text, select, and_, func
 from sqlalchemy.orm import Session
 
-# Import project config
-import config_v6
-from models_v6 import Asset, AssetPrice
+# Import project config - use production config in cloud environments
+if os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RAILWAY_ENVIRONMENT_NAME') or os.getenv('PRODUCTION'):
+    import config_production as config_v6
+else:
+    import config_v6
+from models_v6 import Asset, AssetPrice, Base
 
 # Setup Logging
 logger = logging.getLogger("DataManager")
@@ -37,6 +41,17 @@ class DataManager:
         self.pg_engine = config_v6.get_postgres_engine()
         # 2. READ-WRITE connection to Cache (SQLite)
         self.sqlite_engine = config_v6.get_sqlite_engine()
+        
+        # Initialize SQLite tables if they don't exist
+        self._init_sqlite_tables()
+
+    def _init_sqlite_tables(self):
+        """Create SQLite cache tables if they don't exist"""
+        try:
+            Base.metadata.create_all(self.sqlite_engine)
+            logger.info("SQLite cache tables initialized")
+        except Exception as e:
+            logger.warning(f"Could not initialize SQLite tables: {e}")
 
     def _get_postgres_session(self):
         return Session(self.pg_engine)
