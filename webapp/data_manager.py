@@ -1,5 +1,6 @@
 # webapp/data_manager.py
-# PURPOSE: Direct PostgreSQL queries - no SQLite cache layer in production
+# PURPOSE: Direct PostgreSQL queries for production deployment
+# All data (prices, assets, saved portfolios) stored in PostgreSQL
 
 import os
 import pandas as pd
@@ -35,17 +36,27 @@ class DataManager:
     }
     
     def __init__(self):
-        # Single PostgreSQL connection - no SQLite cache
+        # Single PostgreSQL connection
         self.engine = config_v6.get_postgres_engine()
+        # Alias for backward compatibility with app.py
+        self.pg_engine = self.engine
         logger.info("DataManager initialized with PostgreSQL")
 
     def _get_session(self):
+        """Get a PostgreSQL session"""
         return Session(self.engine)
+    
+    # Backward compatibility aliases
+    def _get_postgres_session(self):
+        return self._get_session()
+    
+    def _get_sqlite_session(self):
+        """Redirects to PostgreSQL - SQLite not used in production"""
+        return self._get_session()
 
     def get_ticker_coverage(self, tickers):
         """
         Returns the min/max date for each ticker.
-        Queries PostgreSQL directly.
         """
         coverage = {}
         
@@ -88,7 +99,6 @@ class DataManager:
         """
         Returns a Pandas DataFrame of Adjusted Close prices.
         Index: Date, Columns: Tickers
-        Queries PostgreSQL directly.
         """
         if not tickers:
             return pd.DataFrame()
@@ -153,54 +163,25 @@ class DataManager:
         return metadata
 
     # =========================================================================
-    # SAVED PORTFOLIOS - Query PostgreSQL directly
+    # CACHE COMPATIBILITY - These methods now just validate tickers exist
     # =========================================================================
     
-    def save_portfolio(self, name, tickers, weights, constraints=None):
-        """Save a portfolio to the database"""
+    def ensure_tickers_in_cache(self, tickers):
+        """
+        Validates that tickers exist in the database.
+        Returns list of valid tickers.
+        """
+        valid_tickers = []
         try:
             with self._get_session() as session:
-                import json
-                portfolio = SavedPortfolio(
-                    name=name,
-                    tickers=json.dumps(tickers),
-                    weights=json.dumps(weights),
-                    constraints=json.dumps(constraints) if constraints else None
-                )
-                session.add(portfolio)
-                session.commit()
-                return portfolio.id
-        except Exception as e:
-            logger.error(f"Error saving portfolio: {e}")
-            return None
-
-    def get_saved_portfolios(self):
-        """Get all saved portfolios"""
-        try:
-            with self._get_session() as session:
-                portfolios = session.query(SavedPortfolio).order_by(
-                    SavedPortfolio.updated_at.desc()
+                existing = session.query(Asset.symbol).filter(
+                    Asset.symbol.in_(tickers)
                 ).all()
-                return portfolios
+                valid_tickers = [r[0] for r in existing]
         except Exception as e:
-            logger.error(f"Error getting saved portfolios: {e}")
-            return []
-
-    def delete_portfolio(self, portfolio_id):
-        """Delete a saved portfolio"""
-        try:
-            with self._get_session() as session:
-                portfolio = session.query(SavedPortfolio).filter(
-                    SavedPortfolio.id == portfolio_id
-                ).first()
-                if portfolio:
-                    session.delete(portfolio)
-                    session.commit()
-                    return True
-                return False
-        except Exception as e:
-            logger.error(f"Error deleting portfolio: {e}")
-            return False
+            logger.error(f"Error validating tickers: {e}")
+        
+        return valid_tickers
 
 
 # Singleton Instance
