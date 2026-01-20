@@ -59,6 +59,10 @@
                                 <option value="max_omega_target_return">Max Omega Ratio subject to Target Return</option>
                                 <option value="max_sortino_target_return">Max Sortino Ratio subject to Target Return</option>
                             </optgroup>
+                            <optgroup label="Robust (Monte Carlo)">
+                                <option value="robust_max_sharpe">Robust Max Sharpe Ratio</option>
+                                <option value="robust_min_volatility">Robust Min Volatility</option>
+                            </optgroup>
                             <optgroup label="Baseline">
                                 <option value="equal_weight">Equal Weight</option>
                             </optgroup>
@@ -108,6 +112,59 @@
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="useConstraints" checked onchange="toggleConstraints()">
                         <label class="form-check-label small" for="useConstraints">Use Asset Constraints</label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="showDiversification" checked>
+                        <label class="form-check-label small" for="showDiversification">Show Diversification Analytics</label>
+                    </div>
+                    
+                    <div class="mb-2" id="robustResamplesField" style="display:none;">
+                        <label class="form-label small">Robust Resamples</label>
+                        <select class="form-select form-select-sm" id="robustResamples">
+                            <option value="25">25 (Fast)</option>
+                            <option value="50" selected>50 (Balanced)</option>
+                            <option value="100">100 (Thorough)</option>
+                        </select>
+                        <small class="text-muted">More resamples = more stable but slower</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Health Score Settings (Collapsible) -->
+            <div class="card mb-3 shadow-sm" id="healthScoreCard" style="display:none;">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">HEALTH SCORE WEIGHTS</h6>
+                    <button class="btn btn-xs btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#healthScoreBody">
+                        <i class="fas fa-cog small"></i>
+                    </button>
+                </div>
+                <div class="collapse" id="healthScoreBody">
+                    <div class="card-body p-2">
+                        <p class="small text-muted mb-2">Adjust how the Health Score is calculated (must sum to 100)</p>
+                        <div class="row g-2 small">
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Sharpe Ratio</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthSharpe" value="40" min="0" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Diversification Ratio</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthDivRatio" value="30" min="0" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">HHI (Concentration)</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthHHI" value="10" min="0" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Drawdown Duration</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthDrawdown" value="20" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-end">
+                            <span class="small text-muted">Total: </span>
+                            <span class="small fw-bold" id="healthWeightTotal">100</span>
+                            <span class="small text-muted">%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -345,6 +402,9 @@
                                 <a class="nav-link" data-bs-toggle="tab" href="#correlation">Correlation</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#diversification">Diversification</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" data-bs-toggle="tab" href="#savedPortfolios">Saved Portfolios</a>
                             </li>
                         </ul>
@@ -367,6 +427,63 @@
                             </div>
                             <div class="tab-pane fade" id="correlation">
                                 <div id="corrHeatmap" style="height: 500px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="diversification">
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-muted small mb-3"><i class="fas fa-chart-radar me-2"></i>Portfolio Health Comparison</h6>
+                                    </div>
+                                </div>
+                                
+                                <!-- Health Score Cards -->
+                                <div class="row g-3 mb-4" id="healthScoreCards">
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-primary">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-subtitle mb-2 text-muted small">Optimized</h6>
+                                                <h2 class="display-4 text-primary mb-0" id="optHealthScore">--</h2>
+                                                <p class="text-muted small mb-0">Health Score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-secondary">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-subtitle mb-2 text-muted small">Your Portfolio</h6>
+                                                <h2 class="display-4 text-secondary mb-0" id="userHealthScore">--</h2>
+                                                <p class="text-muted small mb-0">Health Score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-success">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-subtitle mb-2 text-muted small">Benchmark</h6>
+                                                <h2 class="display-4 text-success mb-0" id="benchHealthScore">--</h2>
+                                                <p class="text-muted small mb-0">Health Score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Diversification Metrics Table -->
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-sm table-hover small" id="diversificationTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Metric</th>
+                                                <th class="text-center">Your Portfolio</th>
+                                                <th class="text-center">Optimized</th>
+                                                <th class="text-center">Benchmark</th>
+                                                <th>Interpretation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="diversificationBody"></tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Radar Chart -->
+                                <div id="radarChart" style="height: 450px;"></div>
                             </div>
                             <div class="tab-pane fade" id="savedPortfolios">
                                 <div class="row mb-3">
