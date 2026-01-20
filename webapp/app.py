@@ -50,11 +50,11 @@ def index():
 def search_assets():
     """Smart Search: Prioritizes Exact Matches > Starts With > US Assets > Others."""
     query = request.args.get('q', '').strip().upper()
-    if not query or len(query) < 2:
+    if not query or len(query) < 1:
         return jsonify([])
 
     try:
-        with data_manager._get_postgres_session() as session:
+        with data_manager._get_session() as session:
             results = session.query(Asset)\
                 .filter(
                     (Asset.symbol.ilike(f"%{query}%")) | 
@@ -501,6 +501,131 @@ def delete_portfolio(portfolio_id):
             return jsonify({'message': 'Portfolio deleted successfully'})
     except Exception as e:
         logger.error(f"Delete portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/portfolios/export-csv', methods=['POST'])
+def export_portfolio_csv():
+    """Export current portfolio configuration as CSV."""
+    try:
+        data = request.json
+        tickers = data.get('tickers', [])
+        weights = data.get('weights', {})
+        constraints = data.get('constraints', {}).get('assets', {})
+        
+        if not tickers:
+            return jsonify({'error': 'No tickers provided'}), 400
+        
+        lines = ['ticker,weight_pct,min_pct,max_pct']
+        
+        for ticker in tickers:
+            weight = weights.get(ticker, 0) * 100
+            asset_constraints = constraints.get(ticker, {})
+            min_pct = asset_constraints.get('min', 0) * 100 if asset_constraints else ''
+            max_pct = asset_constraints.get('max', 1) * 100 if asset_constraints else ''
+            
+            min_str = '' if min_pct == 0 or min_pct == '' else f'{min_pct:.1f}'
+            max_str = '' if max_pct == 100 or max_pct == '' else f'{max_pct:.1f}'
+            
+            lines.append(f'{ticker},{weight:.1f},{min_str},{max_str}')
+        
+        csv_content = '\n'.join(lines)
+        
+        return jsonify({
+            'csv': csv_content,
+            'filename': f'portfolio_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        })
+        
+    except Exception as e:
+        logger.error(f"CSV export error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/portfolios/import-csv', methods=['POST'])
+def import_portfolio_csv():
+    """Import portfolio configuration from CSV."""
+    try:
+        data = request.json
+        csv_content = data.get('csv', '')
+        
+        if not csv_content:
+            return jsonify({'error': 'No CSV content provided'}), 400
+        
+        lines = csv_content.strip().split('\n')
+        
+        start_idx = 1 if lines[0].lower().startswith('ticker') else 0
+        
+        tickers = []
+        weights = {}
+        constraints = {'assets': {}}
+        errors = []
+        
+        for i, line in enumerate(lines[start_idx:], start=start_idx + 1):
+            if not line.strip():
+                continue
+                
+            parts = [p.strip() for p in line.split(',')]
+            
+            if len(parts) < 2:
+                errors.append(f'Line {i}: Need at least ticker and weight')
+                continue
+            
+            ticker = parts[0].upper()
+            if '.' not in ticker:
+                ticker = f'{ticker}.US'
+            
+            try:
+                weight_pct = float(parts[1]) if parts[1] else 0
+            except ValueError:
+                errors.append(f'Line {i}: Invalid weight "{parts[1]}"')
+                continue
+            
+            tickers.append(ticker)
+            weights[ticker] = weight_pct / 100.0
+            
+            min_pct = None
+            max_pct = None
+            
+            if len(parts) > 2 and parts[2]:
+                try:
+                    min_pct = float(parts[2]) / 100.0
+                except ValueError:
+                    pass
+                    
+            if len(parts) > 3 and parts[3]:
+                try:
+                    max_pct = float(parts[3]) / 100.0
+                except ValueError:
+                    pass
+            
+            if min_pct is not None or max_pct is not None:
+                constraints['assets'][ticker] = {
+                    'min': min_pct if min_pct is not None else 0,
+                    'max': max_pct if max_pct is not None else 1
+                }
+        
+        # Validate tickers exist in database
+        valid_tickers = []
+        invalid_tickers = []
+        
+        if tickers:
+            coverage = data_manager.get_ticker_coverage(tickers)
+            for t in tickers:
+                if t in coverage:
+                    valid_tickers.append(t)
+                else:
+                    invalid_tickers.append(t)
+        
+        return jsonify({
+            'tickers': valid_tickers,
+            'weights': {t: weights[t] for t in valid_tickers},
+            'constraints': {'assets': {t: constraints['assets'].get(t, {}) for t in valid_tickers if t in constraints['assets']}},
+            'invalid_tickers': invalid_tickers,
+            'errors': errors,
+            'message': f'Imported {len(valid_tickers)} valid tickers' + (f', {len(invalid_tickers)} not found' if invalid_tickers else '')
+        })
+        
+    except Exception as e:
+        logger.error(f"CSV import error: {e}")
         return jsonify({'error': str(e)}), 500
 
 
