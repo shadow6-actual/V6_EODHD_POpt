@@ -279,6 +279,12 @@ def run_optimization():
             optimized = optimizer.optimize_max_omega_target_return(target_return, constraints)
         elif opt_goal == 'max_sortino_target_return':
             optimized = optimizer.optimize_max_sortino_target_return(target_return, constraints)
+        elif opt_goal == 'robust_max_sharpe':
+            n_resamples = data.get('robust_resamples', 50)
+            optimized = optimizer.optimize_robust_sharpe(constraints, n_resamples=n_resamples)
+        elif opt_goal == 'robust_min_volatility':
+            n_resamples = data.get('robust_resamples', 50)
+            optimized = optimizer.optimize_robust_min_volatility(constraints, n_resamples=n_resamples)
         else:
             optimized = optimizer.optimize_sharpe_ratio(constraints)
         
@@ -349,6 +355,34 @@ def run_optimization():
             })
 
         # G. BUILD RESPONSE
+        # Calculate diversification metrics if requested
+        include_diversification = data.get('include_diversification', True)
+        health_score_weights = data.get('health_score_weights', None)
+        
+        opt_diversification = None
+        user_diversification = None
+        bench_diversification = None
+        
+        if include_diversification:
+            # For optimized portfolio
+            opt_weights_array = np.array([optimized['weights'].get(t, 0) / 100.0 for t in optimizer.tickers])
+            opt_diversification = optimizer.calculate_diversification_metrics(opt_weights_array)
+            
+            # For user portfolio
+            if user_portfolio:
+                user_weights_array = np.array([user_weights.get(t, 0) for t in optimizer.tickers])
+                if np.sum(user_weights_array) > 0:
+                    user_weights_array = user_weights_array / np.sum(user_weights_array)
+                    user_diversification = optimizer.calculate_diversification_metrics(user_weights_array)
+            
+            # For benchmark
+            if benchmark_portfolio and benchmark_ticker in df.columns:
+                bench_weights_array = np.zeros(len(optimizer.tickers))
+                if benchmark_ticker in optimizer.tickers:
+                    bench_idx = optimizer.tickers.index(benchmark_ticker)
+                    bench_weights_array[bench_idx] = 1.0
+                    bench_diversification = optimizer.calculate_diversification_metrics(bench_weights_array)
+
         response = {
             'status': 'success',
             'analysis_period': {
@@ -360,7 +394,12 @@ def run_optimization():
             'user_portfolio': user_portfolio,
             'benchmark_portfolio': benchmark_portfolio,
             'frontier_scatter': frontier_points,
-            'correlation_matrix': optimizer.returns.corr().round(2).to_dict()
+            'correlation_matrix': optimizer.returns.corr().round(2).to_dict(),
+            'diversification': {
+                'optimized': opt_diversification,
+                'user': user_diversification,
+                'benchmark': bench_diversification
+            }
         }
         
         # Add group allocation breakdown if group constraints were used
