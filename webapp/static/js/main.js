@@ -265,6 +265,12 @@ window.updateConditionalFields = function() {
     document.getElementById('targetVolField').style.display = 'none';
     document.getElementById('targetCVaRField').style.display = 'none';
     document.getElementById('targetTEField').style.display = 'none';
+    document.getElementById('robustResamplesField').style.display = 'none';
+    
+    // Show robust resamples for robust methods
+    if (goal.startsWith('robust_')) {
+        document.getElementById('robustResamplesField').style.display = 'block';
+    }
     
     // Show relevant field based on goal
     if (goal === 'min_vol_target_return' || 
@@ -661,7 +667,29 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshPortfolioLists();
     
     document.getElementById('runOptimizeBtn').addEventListener('click', runOptimization);
+    
+    // Health score weight validation
+    document.querySelectorAll('.health-weight').forEach(input => {
+        input.addEventListener('change', updateHealthWeightTotal);
+    });
+    
+    // Show/hide health score settings based on diversification toggle
+    document.getElementById('showDiversification').addEventListener('change', function() {
+        document.getElementById('healthScoreCard').style.display = this.checked ? 'block' : 'none';
+    });
 });
+
+function updateHealthWeightTotal() {
+    const sharpe = parseInt(document.getElementById('healthSharpe').value) || 0;
+    const divRatio = parseInt(document.getElementById('healthDivRatio').value) || 0;
+    const hhi = parseInt(document.getElementById('healthHHI').value) || 0;
+    const drawdown = parseInt(document.getElementById('healthDrawdown').value) || 0;
+    
+    const total = sharpe + divRatio + hhi + drawdown;
+    const totalEl = document.getElementById('healthWeightTotal');
+    totalEl.innerText = total;
+    totalEl.className = total === 100 ? 'small fw-bold text-success' : 'small fw-bold text-danger';
+}
 
 // ============================================================================
 // OPTIMIZATION REQUEST (MODIFIED TO INCLUDE GROUP CONSTRAINTS)
@@ -701,10 +729,25 @@ async function runOptimization() {
     const useConstraints = document.getElementById('useConstraints').checked;
     const useGroupConstraints = document.getElementById('useGroupConstraints')?.checked || false;
     const groupConstraints = useGroupConstraints ? collectGroupConstraints() : {};
+    const showDiversification = document.getElementById('showDiversification').checked;
+    
+    // Collect health score weights if customized
+    let healthScoreWeights = null;
+    if (showDiversification) {
+        const sharpe = parseInt(document.getElementById('healthSharpe').value) || 40;
+        const divRatio = parseInt(document.getElementById('healthDivRatio').value) || 30;
+        const hhi = parseInt(document.getElementById('healthHHI').value) || 10;
+        const drawdown = parseInt(document.getElementById('healthDrawdown').value) || 20;
+        
+        if (sharpe + divRatio + hhi + drawdown === 100) {
+            healthScoreWeights = { sharpe, div_ratio: divRatio, hhi, drawdown };
+        }
+    }
 
     try {
         const useUserBench = document.getElementById('useUserBenchmark').checked;
         const userBenchmarkId = useUserBench ? document.getElementById('userBenchmark').value : null;
+        const optGoal = document.getElementById('optGoal').value;
         
         const response = await fetch('/api/optimize', {
             method: 'POST',
@@ -715,7 +758,7 @@ async function runOptimization() {
                 constraints: useConstraints ? constraints : {},
                 use_group_constraints: useGroupConstraints,
                 group_constraints: groupConstraints,
-                optimization_goal: document.getElementById('optGoal').value,
+                optimization_goal: optGoal,
                 target_return: document.getElementById('targetReturn').value,
                 target_volatility: document.getElementById('targetVolatility').value,
                 target_cvar: document.getElementById('targetCVaR').value,
@@ -723,7 +766,10 @@ async function runOptimization() {
                 benchmark: document.getElementById('benchmark').value,
                 user_benchmark_id: userBenchmarkId,
                 start_date: document.getElementById('startDate').value,
-                end_date: document.getElementById('endDate').value
+                end_date: document.getElementById('endDate').value,
+                include_diversification: showDiversification,
+                health_score_weights: healthScoreWeights,
+                robust_resamples: optGoal.startsWith('robust_') ? parseInt(document.getElementById('robustResamples').value) : null
             })
         });
         
@@ -1065,6 +1111,163 @@ function renderResults(data) {
             yaxis: {autorange: 'reversed'},
             height: 500,
             annotations: annotations
+        });
+        
+        // ====================================================================
+        // DIVERSIFICATION METRICS
+        // ====================================================================
+        if (data.diversification) {
+            renderDiversificationMetrics(data.diversification);
+        }
+    }
+}
+
+function renderDiversificationMetrics(divData) {
+    const optDiv = divData.optimized;
+    const userDiv = divData.user;
+    const benchDiv = divData.benchmark;
+    
+    // Update health score cards
+    document.getElementById('optHealthScore').innerText = optDiv ? optDiv.health_score : '--';
+    document.getElementById('userHealthScore').innerText = userDiv ? userDiv.health_score : '--';
+    document.getElementById('benchHealthScore').innerText = benchDiv ? benchDiv.health_score : '--';
+    
+    // Color code based on score
+    const scoreColor = (score) => {
+        if (!score) return '';
+        if (score >= 70) return 'text-success';
+        if (score >= 40) return 'text-warning';
+        return 'text-danger';
+    };
+    
+    document.getElementById('optHealthScore').className = `display-4 mb-0 ${scoreColor(optDiv?.health_score)}`;
+    document.getElementById('userHealthScore').className = `display-4 mb-0 ${scoreColor(userDiv?.health_score)}`;
+    document.getElementById('benchHealthScore').className = `display-4 mb-0 ${scoreColor(benchDiv?.health_score)}`;
+    
+    // Build metrics table
+    const tbody = document.getElementById('diversificationBody');
+    tbody.innerHTML = '';
+    
+    const metrics = [
+        {
+            label: 'HHI (Concentration)',
+            key: 'hhi',
+            format: v => v?.toFixed(4) || '-',
+            interpret: optDiv?.hhi_interpretation || '-',
+            tooltip: 'Lower is better. 1/N is perfectly diversified, 1.0 is single asset.'
+        },
+        {
+            label: 'Diversification Ratio',
+            key: 'diversification_ratio',
+            format: v => v?.toFixed(2) || '-',
+            interpret: optDiv?.dr_interpretation || '-',
+            tooltip: 'Higher is better. Shows how much volatility is cancelled by diversification.'
+        },
+        {
+            label: 'Effective # of Bets',
+            key: 'effective_num_bets',
+            format: v => v?.toFixed(1) || '-',
+            interpret: optDiv?.enb_interpretation || '-',
+            tooltip: 'How many independent risk exposures you actually have.'
+        },
+        {
+            label: 'Health Score',
+            key: 'health_score',
+            format: v => v ? `${v}/100` : '-',
+            interpret: 'Composite quality metric',
+            tooltip: 'Weighted combination of Sharpe, DR, HHI, and Drawdown Duration.'
+        }
+    ];
+    
+    metrics.forEach(m => {
+        const row = document.createElement('tr');
+        const userVal = userDiv ? m.format(userDiv[m.key]) : '-';
+        const optVal = optDiv ? m.format(optDiv[m.key]) : '-';
+        const benchVal = benchDiv ? m.format(benchDiv[m.key]) : '-';
+        
+        row.innerHTML = `
+            <td title="${m.tooltip}">${m.label} <i class="fas fa-info-circle text-muted small"></i></td>
+            <td class="text-center">${userVal}</td>
+            <td class="text-center fw-bold text-primary">${optVal}</td>
+            <td class="text-center text-muted">${benchVal}</td>
+            <td class="small text-muted">${m.interpret}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // Radar chart for health components
+    if (optDiv && optDiv.health_components && typeof Plotly !== 'undefined') {
+        const categories = ['Sharpe', 'Diversification', 'Concentration', 'Drawdown'];
+        
+        const traces = [];
+        
+        // Optimized portfolio
+        traces.push({
+            type: 'scatterpolar',
+            r: [
+                optDiv.health_components.sharpe_score,
+                optDiv.health_components.div_ratio_score,
+                optDiv.health_components.hhi_score,
+                optDiv.health_components.drawdown_score,
+                optDiv.health_components.sharpe_score  // Close the loop
+            ],
+            theta: [...categories, categories[0]],
+            fill: 'toself',
+            name: 'Optimized',
+            line: {color: '#0d6efd'},
+            fillcolor: 'rgba(13, 110, 253, 0.2)'
+        });
+        
+        // User portfolio
+        if (userDiv && userDiv.health_components) {
+            traces.push({
+                type: 'scatterpolar',
+                r: [
+                    userDiv.health_components.sharpe_score,
+                    userDiv.health_components.div_ratio_score,
+                    userDiv.health_components.hhi_score,
+                    userDiv.health_components.drawdown_score,
+                    userDiv.health_components.sharpe_score
+                ],
+                theta: [...categories, categories[0]],
+                fill: 'toself',
+                name: 'Your Portfolio',
+                line: {color: '#6c757d'},
+                fillcolor: 'rgba(108, 117, 125, 0.2)'
+            });
+        }
+        
+        // Benchmark
+        if (benchDiv && benchDiv.health_components) {
+            traces.push({
+                type: 'scatterpolar',
+                r: [
+                    benchDiv.health_components.sharpe_score,
+                    benchDiv.health_components.div_ratio_score,
+                    benchDiv.health_components.hhi_score,
+                    benchDiv.health_components.drawdown_score,
+                    benchDiv.health_components.sharpe_score
+                ],
+                theta: [...categories, categories[0]],
+                fill: 'toself',
+                name: 'Benchmark',
+                line: {color: '#198754'},
+                fillcolor: 'rgba(25, 135, 84, 0.2)'
+            });
+        }
+        
+        Plotly.newPlot('radarChart', traces, {
+            polar: {
+                radialaxis: {
+                    visible: true,
+                    range: [0, 100],
+                    ticksuffix: '',
+                    showline: false
+                }
+            },
+            showlegend: true,
+            title: {text: 'Health Score Components (0-100)', font: {size: 16}},
+            height: 450
         });
     }
 }
