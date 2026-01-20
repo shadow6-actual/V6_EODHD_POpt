@@ -491,6 +491,156 @@ async function loadPortfolio(id) {
 }
 
 // ============================================================================
+// CSV IMPORT/EXPORT FUNCTIONS
+// ============================================================================
+
+window.exportPortfolioCSV = async function() {
+    const rows = document.querySelectorAll('#assetsTableBody tr');
+    const tickers = [];
+    const weights = {};
+    const constraints = { assets: {} };
+
+    rows.forEach(row => {
+        const ticker = row.querySelector('.asset-ticker').value.trim();
+        if (ticker) {
+            tickers.push(ticker);
+            weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
+            
+            const minVal = parseFloat(row.querySelector('.asset-min').value);
+            const maxVal = parseFloat(row.querySelector('.asset-max').value);
+            
+            if (!isNaN(minVal) || !isNaN(maxVal)) {
+                constraints.assets[ticker] = {
+                    min: isNaN(minVal) ? 0 : minVal / 100.0,
+                    max: isNaN(maxVal) ? 1 : maxVal / 100.0
+                };
+            }
+        }
+    });
+
+    if (tickers.length === 0) {
+        alert('No assets to export');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/portfolios/export-csv', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tickers, weights, constraints })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Export error: ' + data.error);
+            return;
+        }
+        
+        const blob = new Blob([data.csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+    } catch (e) {
+        alert('Export failed: ' + e.message);
+    }
+};
+
+window.importPortfolioCSV = async function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,.txt';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const csvContent = event.target.result;
+            
+            try {
+                const response = await fetch('/api/portfolios/import-csv', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ csv: csvContent })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Import error: ' + data.error);
+                    return;
+                }
+                
+                document.getElementById('assetsTableBody').innerHTML = '';
+                rowCount = 0;
+                
+                data.tickers.forEach(ticker => {
+                    const weight = (data.weights[ticker] || 0) * 100;
+                    const assetConstraints = data.constraints.assets[ticker] || {};
+                    const minW = assetConstraints.min !== undefined ? assetConstraints.min * 100 : '';
+                    const maxW = assetConstraints.max !== undefined ? assetConstraints.max * 100 : '';
+                    
+                    addAssetRow(ticker, weight.toFixed(1), minW, maxW);
+                });
+                
+                let msg = data.message;
+                if (data.invalid_tickers && data.invalid_tickers.length > 0) {
+                    msg += '\n\nNot found in database:\n' + data.invalid_tickers.join(', ');
+                }
+                alert(msg);
+                
+            } catch (e) {
+                alert('Import failed: ' + e.message);
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+};
+
+window.quickPasteTickers = function() {
+    const input = prompt(
+        'Enter tickers separated by commas:\n\n' +
+        'Example: AAPL, MSFT, GOOGL, TLT, GLD\n\n' +
+        '(Will auto-append .US if needed)'
+    );
+    
+    if (!input) return;
+    
+    const tickers = input.split(',')
+        .map(t => t.trim().toUpperCase())
+        .filter(t => t.length > 0)
+        .map(t => t.includes('.') ? t : t + '.US');
+    
+    if (tickers.length === 0) {
+        alert('No valid tickers entered');
+        return;
+    }
+    
+    document.getElementById('assetsTableBody').innerHTML = '';
+    rowCount = 0;
+    
+    const equalWeight = (100 / tickers.length).toFixed(1);
+    
+    tickers.forEach(ticker => {
+        addAssetRow(ticker, equalWeight, '', '');
+    });
+    
+    alert(`Added ${tickers.length} tickers with equal weights (${equalWeight}% each)`);
+};
+
+
+// ============================================================================
 // DOM READY
 // ============================================================================
 
