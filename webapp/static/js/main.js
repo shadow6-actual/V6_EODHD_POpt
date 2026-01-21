@@ -850,6 +850,43 @@ function renderResults(data) {
         tbody.appendChild(row);
     });
     
+    // Add diversification metrics if available
+    if (data.diversification) {
+        const divData = data.diversification;
+        const optDiv = divData.optimized;
+        const userDiv = divData.user;
+        const benchDiv = divData.benchmark;
+        
+        // Add separator row
+        const sepRow = document.createElement('tr');
+        sepRow.innerHTML = `<td colspan="4" class="bg-light small text-muted fw-bold pt-2">DIVERSIFICATION METRICS</td>`;
+        tbody.appendChild(sepRow);
+        
+        const divMetrics = [
+            {label: 'Portfolio Health Score', key: 'health_score', suffix: '/100', decimals: 1},
+            {label: 'HHI (Concentration)', key: 'hhi', suffix: '', decimals: 4},
+            {label: 'Diversification Ratio', key: 'diversification_ratio', suffix: '', decimals: 2},
+            {label: 'Effective # of Bets', key: 'effective_num_bets', suffix: '', decimals: 1}
+        ];
+        
+        divMetrics.forEach(m => {
+            const row = document.createElement('tr');
+            
+            const formatVal = (divObj) => {
+                if (!divObj || divObj[m.key] === undefined) return '-';
+                return divObj[m.key].toFixed(m.decimals) + m.suffix;
+            };
+            
+            row.innerHTML = `
+                <td>${m.label}</td>
+                <td>${formatVal(userDiv)}</td>
+                <td class="fw-bold text-primary">${formatVal(optDiv)}</td>
+                <td class="text-muted">${formatVal(benchDiv)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
     // ========================================================================
     // ALLOCATION TABLES
     // ========================================================================
