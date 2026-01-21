@@ -1,10 +1,181 @@
 // ============================================================================
-// PORTFOLIO OPTIMIZER V6 - MAIN JAVASCRIPT (PHASE 3)
-// Includes Group Constraints functionality
+// FOLIOFORECAST - MAIN JAVASCRIPT (PHASE 4)
+// Includes Group Constraints and Clerk Authentication
 // ============================================================================
 
 let rowCount = 0;
 let currentGroupData = null; // Stores current group metadata
+let clerkInstance = null;
+let currentUser = null;
+
+// ============================================================================
+// CLERK AUTHENTICATION
+// ============================================================================
+
+window.addEventListener('load', async () => {
+    // Wait for Clerk to load
+    await waitForClerk();
+    initializeClerk();
+});
+
+function waitForClerk() {
+    return new Promise((resolve) => {
+        if (window.Clerk) {
+            resolve();
+        } else {
+            const interval = setInterval(() => {
+                if (window.Clerk) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                clearInterval(interval);
+                console.warn('Clerk failed to load');
+                resolve();
+            }, 10000);
+        }
+    });
+}
+
+async function initializeClerk() {
+    try {
+        clerkInstance = window.Clerk;
+        
+        if (!clerkInstance) {
+            console.warn('Clerk not available');
+            document.getElementById('authLoading').style.display = 'none';
+            document.getElementById('signedOutButtons').style.display = 'block';
+            return;
+        }
+        
+        await clerkInstance.load();
+        
+        // Check if user is signed in
+        if (clerkInstance.user) {
+            handleSignedIn(clerkInstance.user);
+        } else {
+            handleSignedOut();
+        }
+        
+        // Listen for auth state changes
+        clerkInstance.addListener(({ user }) => {
+            if (user) {
+                handleSignedIn(user);
+            } else {
+                handleSignedOut();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Clerk initialization error:', error);
+        document.getElementById('authLoading').style.display = 'none';
+        document.getElementById('signedOutButtons').style.display = 'block';
+    }
+}
+
+function handleSignedIn(user) {
+    currentUser = user;
+    
+    // Update UI
+    document.getElementById('authLoading').style.display = 'none';
+    document.getElementById('signedOutButtons').style.display = 'none';
+    document.getElementById('signedInSection').style.display = 'flex';
+    document.getElementById('usernameDisplay').innerText = user.username || 'User';
+    
+    // Sync user to backend
+    syncUserToBackend();
+    
+    console.log('Signed in as:', user.username);
+}
+
+function handleSignedOut() {
+    currentUser = null;
+    
+    // Update UI
+    document.getElementById('authLoading').style.display = 'none';
+    document.getElementById('signedOutButtons').style.display = 'block';
+    document.getElementById('signedInSection').style.display = 'none';
+    
+    console.log('Signed out');
+}
+
+async function syncUserToBackend() {
+    try {
+        const token = await clerkInstance.session.getToken();
+        
+        const response = await fetch('/api/auth/sync', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        console.log('User synced:', data);
+        
+    } catch (error) {
+        console.error('Failed to sync user:', error);
+    }
+}
+
+async function getAuthToken() {
+    if (!clerkInstance || !clerkInstance.session) {
+        return null;
+    }
+    return await clerkInstance.session.getToken();
+}
+
+async function authenticatedFetch(url, options = {}) {
+    const token = await getAuthToken();
+    
+    const headers = {
+        ...options.headers,
+        'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return fetch(url, {
+        ...options,
+        headers
+    });
+}
+
+// Clerk UI Functions
+window.clerkSignIn = function() {
+    if (clerkInstance) {
+        clerkInstance.openSignIn();
+    }
+};
+
+window.clerkSignUp = function() {
+    if (clerkInstance) {
+        clerkInstance.openSignUp();
+    }
+};
+
+window.clerkSignOut = async function() {
+    if (clerkInstance) {
+        await clerkInstance.signOut();
+    }
+};
+
+window.openUserProfile = function() {
+    if (clerkInstance) {
+        clerkInstance.openUserProfile();
+    }
+};
+
+window.showMyPortfolios = async function() {
+    // TODO: Implement my portfolios modal/page
+    alert('My Portfolios feature coming soon!');
+};
 
 window.setText = function(id, val) {
     const el = document.getElementById(id);
@@ -422,17 +593,23 @@ window.savePortfolio = async function() {
         }
     });
 
+    // Check if making public
+    const isPublic = document.getElementById('makePortfolioPublic')?.checked || false;
+
     try {
-        const res = await fetch('/api/portfolios', {
+        const res = await authenticatedFetch('/api/portfolios', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name, tickers, weights, constraints })
+            body: JSON.stringify({ name, tickers, weights, constraints, is_public: isPublic })
         });
         const data = await res.json();
         if (data.error) {
             alert('Error: ' + data.error);
         } else {
-            alert('Portfolio saved successfully!');
+            if (data.is_authenticated) {
+                alert('Portfolio saved to your account!');
+            } else {
+                alert('Portfolio saved locally. Sign in to save to your account and share publicly.');
+            }
             document.getElementById('portfolioName').value = '';
             refreshPortfolioLists();
         }
