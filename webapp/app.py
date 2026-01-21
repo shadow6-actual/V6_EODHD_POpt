@@ -7,7 +7,10 @@ import json
 import numpy as np
 from pathlib import Path
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, g
+
+# Auth imports
+from webapp.auth import require_auth, optional_auth, get_clerk_config
 
 # 1. SETUP PATHS & LOGGING
 # ============================================================================
@@ -41,7 +44,54 @@ app.secret_key = "folio_visualizer_v6_secret"
 @app.route('/')
 def index():
     """Renders the main dashboard."""
-    return render_template('index.html')
+    clerk_config = get_clerk_config()
+    return render_template('index.html', clerk_config=clerk_config)
+
+
+# 3a. AUTH ROUTES
+# ============================================================================
+@app.route('/api/auth/config')
+def auth_config():
+    """Return Clerk configuration for frontend"""
+    return jsonify(get_clerk_config())
+
+
+@app.route('/api/auth/me')
+@require_auth
+def auth_me():
+    """Get current user info"""
+    from webapp.user_models import get_or_create_user, User
+    
+    try:
+        with data_manager._get_session() as session:
+            # Get or create local user record
+            user = get_or_create_user(session, g.user_id, g.username)
+            return jsonify({
+                'user_id': g.user_id,
+                'username': g.username,
+                'local_user': user.to_dict()
+            })
+    except Exception as e:
+        logger.error(f"Auth me error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/auth/sync', methods=['POST'])
+@require_auth
+def auth_sync():
+    """Sync user data from Clerk to local database"""
+    from webapp.user_models import get_or_create_user
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_or_create_user(session, g.user_id, g.username)
+            return jsonify({
+                'message': 'User synced successfully',
+                'user': user.to_dict()
+            })
+    except Exception as e:
+        logger.error(f"Auth sync error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # 4. ROUTES - API ENDPOINTS
 # ============================================================================
@@ -494,37 +544,65 @@ def get_portfolio(portfolio_id):
 
 
 @app.route('/api/portfolios', methods=['POST'])
+@optional_auth
 def save_portfolio():
-    """Save a new portfolio"""
+    """Save a new portfolio (authenticated users get ownership)"""
     data = request.json
     name = data.get('name')
     tickers = data.get('tickers', [])
     weights = data.get('weights', {})
     constraints = data.get('constraints', {})
+    is_public = data.get('is_public', False)
     
     if not name or not tickers:
         return jsonify({'error': 'Name and tickers required'}), 400
     
     try:
-        with data_manager._get_sqlite_session() as session:
-            portfolio = SavedPortfolio(
-                name=name,
-                tickers=json.dumps(tickers),
-                weights=json.dumps(weights),
-                constraints=json.dumps(constraints) if constraints else None
-            )
-            session.add(portfolio)
-            session.commit()
+        # If user is authenticated, save to user_portfolios
+        if g.user_id:
+            from webapp.user_models import get_or_create_user, UserPortfolio
             
-            return jsonify({
-                'id': portfolio.id,
-                'name': portfolio.name,
-                'message': 'Portfolio saved successfully'
-            })
+            with data_manager._get_session() as session:
+                user = get_or_create_user(session, g.user_id, g.username)
+                
+                portfolio = UserPortfolio(
+                    user_id=user.id,
+                    name=name,
+                    tickers=tickers,
+                    weights=weights,
+                    constraints=constraints if constraints else None,
+                    is_public=is_public
+                )
+                session.add(portfolio)
+                session.commit()
+                
+                return jsonify({
+                    'id': portfolio.id,
+                    'name': portfolio.name,
+                    'message': 'Portfolio saved to your account',
+                    'is_authenticated': True
+                })
+        else:
+            # Anonymous save to legacy table (for backwards compatibility)
+            with data_manager._get_sqlite_session() as session:
+                portfolio = SavedPortfolio(
+                    name=name,
+                    tickers=json.dumps(tickers),
+                    weights=json.dumps(weights),
+                    constraints=json.dumps(constraints) if constraints else None
+                )
+                session.add(portfolio)
+                session.commit()
+                
+                return jsonify({
+                    'id': portfolio.id,
+                    'name': portfolio.name,
+                    'message': 'Portfolio saved (sign in to save to your account)',
+                    'is_authenticated': False
+                })
     except Exception as e:
         logger.error(f"Save portfolio error: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/portfolios/<int:portfolio_id>', methods=['DELETE'])
 def delete_portfolio(portfolio_id):
@@ -667,6 +745,189 @@ def import_portfolio_csv():
         logger.error(f"CSV import error: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ============================================================================
+# RANKINGS API (Public Leaderboard)
+# ============================================================================
+
+@app.route('/api/rankings')
+def get_rankings():
+    """
+    Get public portfolio rankings.
+    
+    Query params:
+        sort_by: return, sharpe, sortino, health_score, volatility (default: sharpe)
+        order: desc, asc (default: desc)
+        limit: 1-100 (default: 50)
+    """
+    from webapp.user_models import UserPortfolio, User
+    
+    sort_by = request.args.get('sort_by', 'sharpe')
+    order = request.args.get('order', 'desc')
+    limit = min(int(request.args.get('limit', 50)), 100)
+    
+    # Map sort_by to column
+    sort_columns = {
+        'return': UserPortfolio.cached_return,
+        'volatility': UserPortfolio.cached_volatility,
+        'sharpe': UserPortfolio.cached_sharpe,
+        'sortino': UserPortfolio.cached_sortino,
+        'max_drawdown': UserPortfolio.cached_max_drawdown,
+        'health_score': UserPortfolio.cached_health_score,
+        'hhi': UserPortfolio.cached_hhi,
+        'diversification_ratio': UserPortfolio.cached_div_ratio
+    }
+    
+    sort_col = sort_columns.get(sort_by, UserPortfolio.cached_sharpe)
+    
+    try:
+        with data_manager._get_session() as session:
+            query = session.query(UserPortfolio).join(User).filter(
+                UserPortfolio.is_public == True,
+                UserPortfolio.cached_sharpe.isnot(None)  # Must have cached metrics
+            )
+            
+            if order == 'asc':
+                query = query.order_by(sort_col.asc())
+            else:
+                query = query.order_by(sort_col.desc())
+            
+            portfolios = query.limit(limit).all()
+            
+            # Check if requester is premium (for allocation visibility)
+            show_allocations = False
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                # TODO: Check if user is premium tier
+                pass
+            
+            results = []
+            for i, portfolio in enumerate(portfolios, 1):
+                results.append(portfolio.to_ranking_dict(
+                    rank=i, 
+                    show_allocations=show_allocations
+                ))
+            
+            return jsonify({
+                'rankings': results,
+                'sort_by': sort_by,
+                'order': order,
+                'count': len(results)
+            })
+            
+    except Exception as e:
+        logger.error(f"Rankings error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/portfolios')
+@require_auth
+def get_user_portfolios():
+    """Get all portfolios for the authenticated user"""
+    from webapp.user_models import get_user_by_clerk_id, UserPortfolio
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_user_by_clerk_id(session, g.user_id)
+            
+            if not user:
+                return jsonify({'portfolios': []})
+            
+            portfolios = session.query(UserPortfolio).filter_by(
+                user_id=user.id
+            ).order_by(UserPortfolio.updated_at.desc()).all()
+            
+            return jsonify({
+                'portfolios': [p.to_dict(include_allocations=True) for p in portfolios]
+            })
+            
+    except Exception as e:
+        logger.error(f"Get user portfolios error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/portfolios/<int:portfolio_id>', methods=['PUT'])
+@require_auth
+def update_user_portfolio(portfolio_id):
+    """Update a user's portfolio"""
+    from webapp.user_models import get_user_by_clerk_id, UserPortfolio
+    
+    data = request.json
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_user_by_clerk_id(session, g.user_id)
+            
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            portfolio = session.query(UserPortfolio).filter_by(
+                id=portfolio_id, 
+                user_id=user.id
+            ).first()
+            
+            if not portfolio:
+                return jsonify({'error': 'Portfolio not found'}), 404
+            
+            # Update allowed fields
+            if 'name' in data:
+                portfolio.name = data['name']
+            if 'description' in data:
+                portfolio.description = data['description']
+            if 'tickers' in data:
+                portfolio.tickers = data['tickers']
+            if 'weights' in data:
+                portfolio.weights = data['weights']
+            if 'constraints' in data:
+                portfolio.constraints = data['constraints']
+            if 'is_public' in data:
+                portfolio.is_public = data['is_public']
+            if 'show_allocations' in data:
+                portfolio.show_allocations = data['show_allocations']
+            
+            # Clear cached metrics (will be recalculated)
+            portfolio.metrics_updated_at = None
+            
+            session.commit()
+            
+            return jsonify({
+                'message': 'Portfolio updated',
+                'portfolio': portfolio.to_dict(include_allocations=True)
+            })
+            
+    except Exception as e:
+        logger.error(f"Update portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/portfolios/<int:portfolio_id>', methods=['DELETE'])
+@require_auth
+def delete_user_portfolio(portfolio_id):
+    """Delete a user's portfolio"""
+    from webapp.user_models import get_user_by_clerk_id, UserPortfolio
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_user_by_clerk_id(session, g.user_id)
+            
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            portfolio = session.query(UserPortfolio).filter_by(
+                id=portfolio_id, 
+                user_id=user.id
+            ).first()
+            
+            if not portfolio:
+                return jsonify({'error': 'Portfolio not found'}), 404
+            
+            session.delete(portfolio)
+            session.commit()
+            
+            return jsonify({'message': 'Portfolio deleted'})
+            
+    except Exception as e:
+        logger.error(f"Delete portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/compare-portfolios', methods=['POST'])
 def compare_portfolios():
