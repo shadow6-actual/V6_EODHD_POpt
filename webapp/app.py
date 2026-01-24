@@ -9,6 +9,16 @@ from pathlib import Path
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, g
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+if os.getenv('SENTRY_DSN'):
+    sentry_sdk.init(
+        dsn=os.getenv('SENTRY_DSN'),
+        integrations=[FlaskIntegration()],
+        traces_sample_rate=0.1
+    )
+    
 # Auth imports
 from webapp.auth import require_auth, optional_auth, get_clerk_config
 
