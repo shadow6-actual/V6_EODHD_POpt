@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FolioForecast | Institutional-Grade Portfolio Optimization</title>
+    <meta name="description" content="The same portfolio optimization mathematics used by Wall Street, now in your hands. No advisor fees. No complexity. Just math.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-bg: #0a0f1c;
+            --color-bg-elevated: #111827;
+            --color-bg-card: #1a2235;
+            --color-primary: #3b82f6;
+            --color-primary-glow: rgba(59, 130, 246, 0.4);
+            --color-accent: #10b981;
+            --color-accent-secondary: #f59e0b;
+            --color-text: #f1f5f9;
+            --color-text-muted: #94a3b8;
+            --color-text-dim: #64748b;
+            --color-border: #1e293b;
+            --font-display: 'DM Serif Display', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 15, 28, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--color-text);
+        }
+
+        .nav-logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .nav-logo-text {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--color-text);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 20px var(--color-primary-glow);
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 30px var(--color-primary-glow);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-elevated);
+            border-color: var(--color-text-dim);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 8rem 2rem 4rem;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .hero-badge-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--color-accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        .hero-title-gradient {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--color-text-muted);
+            margin-bottom: 2rem;
+            max-width: 500px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .hero-social-proof {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--color-border);
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        .hero-avatars {
+            display: flex;
+        }
+
+        .hero-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--color-bg);
+            margin-left: -10px;
+            background: var(--color-bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+        }
+
+        .hero-avatar:first-child {
+            margin-left: 0;
+        }
+
+        .hero-social-text {
+            font-size: 0.9rem;
+            color: var(--color-text-muted);
+        }
+
+        .hero-social-text strong {
+            color: var(--color-text);
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-chart {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.3),
+                0 0 40px -10px var(--color-primary-glow);
+        }
+
+        .hero-chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .hero-chart-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .hero-chart-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-accent);
+            border-radius: 100px;
+        }
+
+        .hero-chart-svg {
+            width: 100%;
+            height: 200px;
+        }
+
+        .hero-chart-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .hero-metric {
+            text-align: center;
+        }
+
+        .hero-metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-accent);
+        }
+
+        .hero-metric-label {
+            font-size: 0.75rem;
+            color: var(--color-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Floating elements */
+        .hero-float {
+            position: absolute;
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero-float-1 {
+            top: -20px;
+            right: -30px;
+            animation-delay: 0s;
+        }
+
+        .hero-float-2 {
+            bottom: 40px;
+            left: -40px;
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-float-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-float-icon.blue {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--color-primary);
+        }
+
+        .hero-float-icon.green {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-accent);
+        }
+
+        .hero-float-label {
+            font-size: 0.7rem;
+            color: var(--color-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .hero-float-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tagline Bar */
+        .tagline-bar {
+            background: var(--color-bg-elevated);
+            border-top: 1px solid var(--color-border);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--color-text-muted);
+            font-style: italic;
+        }
+
+        .tagline strong {
+            color: var(--color-text);
+            font-style: normal;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            color: var(--color-text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px -10px var(--color-primary-glow);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-icon.blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--color-primary);
+        }
+
+        .feature-icon.green {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-accent);
+        }
+
+        .feature-icon.amber {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--color-accent-secondary);
+        }
+
+        .feature-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-description {
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* Methods Section */
+        .methods {
+            background: var(--color-bg-elevated);
+            border-top: 1px solid var(--color-border);
+            border-bottom: 1px solid var(--color-border);
+            padding: 6rem 2rem;
+        }
+
+        .methods-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .methods-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .method-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .method-item i {
+            color: var(--color-accent);
+            font-size: 0.85rem;
+        }
+
+        /* Social Proof */
+        .social-proof {
+            padding: 6rem 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .quote {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            line-height: 1.4;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .quote::before {
+            content: '"';
+            position: absolute;
+            top: -20px;
+            left: -30px;
+            font-size: 6rem;
+            color: var(--color-primary);
+            opacity: 0.2;
+            font-family: var(--font-display);
+        }
+
+        .quote-author {
+            color: var(--color-text-muted);
+            font-size: 1rem;
+        }
+
+        .quote-author strong {
+            color: var(--color-text);
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 6rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--color-primary-glow) 0%, transparent 70%);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 1rem;
+        }
+
+        .cta-subtitle {
+            color: var(--color-text-muted);
+            font-size: 1.15rem;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--color-bg-elevated);
+            border-top: 1px solid var(--color-border);
+            padding: 3rem 2rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .footer-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .footer-logo-text {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-link {
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--color-text);
+        }
+
+        .footer-disclaimer {
+            max-width: 1200px;
+            margin: 2rem auto 0;
+            padding-top: 2rem;
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .footer-disclaimer p {
+            color: var(--color-text-dim);
+            font-size: 0.8rem;
+            line-height: 1.8;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-subtitle {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-cta {
+                justify-content: center;
+            }
+
+            .hero-social-proof {
+                justify-content: center;
+            }
+
+            .hero-visual {
+                max-width: 500px;
+                margin: 0 auto;
+            }
+
+            .hero-float {
+                display: none;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .methods-content {
+                grid-template-columns: 1fr;
+            }
+
+            .methods-list {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: 1.5rem;
+                text-align: center;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="/" class="nav-logo">
+            <div class="nav-logo-icon">FF</div>
+            <span class="nav-logo-text">FolioForecast</span>
+        </a>
+        <div class="nav-links">
+            <a href="#features" class="nav-link">Features</a>
+            <a href="#methods" class="nav-link">Methods</a>
+            <a href="/app" class="btn btn-primary">
+                Launch App <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    Now in Public Beta
+                </div>
+                <h1 class="hero-title">
+                    Wall Street Math.<br>
+                    <span class="hero-title-gradient">Your Portfolio.</span>
+                </h1>
+                <p class="hero-subtitle">
+                    The same optimization algorithms used by institutional investors and hedge funds—no advisor fees, no black boxes. Just math.
+                </p>
+                <div class="hero-cta">
+                    <a href="/app" class="btn btn-primary">
+                        Start Optimizing <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        <i class="fas fa-play-circle"></i> See How It Works
+                    </a>
+                </div>
+                <div class="hero-social-proof">
+                    <div class="hero-avatars">
+                        <div class="hero-avatar">JR</div>
+                        <div class="hero-avatar">MK</div>
+                        <div class="hero-avatar">AS</div>
+                        <div class="hero-avatar">+</div>
+                    </div>
+                    <p class="hero-social-text">
+                        Trusted by <strong>FIRE community</strong> members building wealth independently
+                    </p>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-float hero-float-1">
+                    <div class="hero-float-icon blue">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="hero-float-label">Sharpe Ratio</div>
+                    <div class="hero-float-value">1.42</div>
+                </div>
+                <div class="hero-float hero-float-2">
+                    <div class="hero-float-icon green">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="hero-float-label">Max Drawdown</div>
+                    <div class="hero-float-value">-12.4%</div>
+                </div>
+                <div class="hero-chart">
+                    <div class="hero-chart-header">
+                        <span class="hero-chart-title">Efficient Frontier Analysis</span>
+                        <span class="hero-chart-badge">Optimized</span>
+                    </div>
+                    <svg class="hero-chart-svg" viewBox="0 0 400 200" fill="none">
+                        <!-- Grid lines -->
+                        <line x1="40" y1="20" x2="40" y2="180" stroke="#1e293b" stroke-width="1"/>
+                        <line x1="40" y1="180" x2="380" y2="180" stroke="#1e293b" stroke-width="1"/>
+                        <line x1="40" y1="100" x2="380" y2="100" stroke="#1e293b" stroke-width="0.5" stroke-dasharray="4"/>
+                        <line x1="40" y1="60" x2="380" y2="60" stroke="#1e293b" stroke-width="0.5" stroke-dasharray="4"/>
+                        <line x1="40" y1="140" x2="380" y2="140" stroke="#1e293b" stroke-width="0.5" stroke-dasharray="4"/>
+                        
+                        <!-- Scatter points (random portfolios) -->
+                        <circle cx="80" cy="150" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="100" cy="140" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="120" cy="120" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="140" cy="130" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="160" cy="100" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="180" cy="110" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="200" cy="90" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="220" cy="95" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="240" cy="80" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="260" cy="85" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="280" cy="70" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="300" cy="75" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="320" cy="65" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="340" cy="60" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="150" cy="115" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="190" cy="95" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="230" cy="88" r="3" fill="#64748b" opacity="0.5"/>
+                        <circle cx="270" cy="78" r="3" fill="#64748b" opacity="0.5"/>
+                        
+                        <!-- Efficient frontier curve -->
+                        <path d="M60 160 Q120 100, 200 70 T360 45" stroke="url(#gradient)" stroke-width="3" fill="none"/>
+                        
+                        <!-- Optimized point (star) -->
+                        <circle cx="200" cy="70" r="8" fill="#10b981"/>
+                        <circle cx="200" cy="70" r="12" fill="#10b981" opacity="0.3"/>
+                        
+                        <!-- Your portfolio point -->
+                        <circle cx="160" cy="100" r="6" fill="#f59e0b"/>
+                        
+                        <!-- Gradient definition -->
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#3b82f6"/>
+                                <stop offset="100%" stop-color="#10b981"/>
+                            </linearGradient>
+                        </defs>
+                        
+                        <!-- Labels -->
+                        <text x="200" y="55" fill="#10b981" font-size="10" text-anchor="middle" font-weight="600">Optimized</text>
+                        <text x="160" y="118" fill="#f59e0b" font-size="9" text-anchor="middle">Your Portfolio</text>
+                        <text x="380" y="195" fill="#64748b" font-size="10" text-anchor="end">Risk →</text>
+                        <text x="25" y="20" fill="#64748b" font-size="10" text-anchor="start">Return ↑</text>
+                    </svg>
+                    <div class="hero-chart-metrics">
+                        <div class="hero-metric">
+                            <div class="hero-metric-value">+18.4%</div>
+                            <div class="hero-metric-label">Return</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="hero-metric-value">12.8%</div>
+                            <div class="hero-metric-label">Volatility</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="hero-metric-value">1.42</div>
+                            <div class="hero-metric-label">Sharpe</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tagline Bar -->
+    <div class="tagline-bar">
+        <p class="tagline">"It's not advice. <strong>It's just math.</strong>"</p>
+    </div>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <p class="section-label">Why FolioForecast</p>
+            <h2 class="section-title">Institutional-Grade Tools, Democratized</h2>
+            <p class="section-subtitle">
+                The same quantitative methods used by billion-dollar funds, now accessible to individual investors building their own path to financial independence.
+            </p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon blue">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <h3 class="feature-title">Real Optimization Math</h3>
+                <p class="feature-description">
+                    Mean-variance optimization, CVaR, Risk Parity, Monte Carlo resampling—the same algorithms running in institutional trading desks.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon green">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <h3 class="feature-title">Diversification Analytics</h3>
+                <p class="feature-description">
+                    Understand your true diversification with HHI concentration scores, effective number of bets, and our proprietary Health Score.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon amber">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="feature-title">Risk You Can See</h3>
+                <p class="feature-description">
+                    Drawdown analysis, stress testing against historical crises, VaR/CVaR metrics—know exactly what you're signing up for.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Methods Section -->
+    <section class="methods" id="methods">
+        <div class="methods-content">
+            <div>
+                <p class="section-label">16+ Optimization Methods</p>
+                <h2 class="section-title">Every Strategy. One Platform.</h2>
+                <p class="section-subtitle" style="text-align: left; margin: 1rem 0 2rem;">
+                    From classic Markowitz mean-variance to cutting-edge robust optimization. Choose the approach that matches your investment philosophy.
+                </p>
+                <a href="/app" class="btn btn-primary">
+                    Explore Methods <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="methods-list">
+                <div class="method-item"><i class="fas fa-check"></i> Max Sharpe Ratio</div>
+                <div class="method-item"><i class="fas fa-check"></i> Min Volatility</div>
+                <div class="method-item"><i class="fas fa-check"></i> Risk Parity</div>
+                <div class="method-item"><i class="fas fa-check"></i> CVaR Optimization</div>
+                <div class="method-item"><i class="fas fa-check"></i> Kelly Criterion</div>
+                <div class="method-item"><i class="fas fa-check"></i> Min Tracking Error</div>
+                <div class="method-item"><i class="fas fa-check"></i> Max Information Ratio</div>
+                <div class="method-item"><i class="fas fa-check"></i> Robust Monte Carlo</div>
+                <div class="method-item"><i class="fas fa-check"></i> Max Sortino Ratio</div>
+                <div class="method-item"><i class="fas fa-check"></i> Min Max Drawdown</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof -->
+    <section class="social-proof">
+        <blockquote class="quote">
+            FolioForecast gives me the same analytical tools I used at my old hedge fund job. The difference? No $10k/year Bloomberg terminal.
+        </blockquote>
+        <p class="quote-author">— <strong>Early Beta User</strong>, r/financialindependence</p>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="cta-content">
+            <h2 class="cta-title">Ready to Optimize?</h2>
+            <p class="cta-subtitle">
+                No signup required to start. Build your portfolio, run the math, see the results.
+            </p>
+            <div class="cta-buttons">
+                <a href="/app" class="btn btn-primary">
+                    Launch FolioForecast <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="footer-logo-icon">FF</div>
+                <span class="footer-logo-text">FolioForecast</span>
+            </div>
+            <div class="footer-links">
+                <a href="/app" class="footer-link">Launch App</a>
+                <a href="#features" class="footer-link">Features</a>
+                <a href="#methods" class="footer-link">Methods</a>
+            </div>
+        </div>
+        <div class="footer-disclaimer">
+            <p>
+                <strong>Important Disclaimer:</strong> FolioForecast is a mathematical tool for portfolio analysis and optimization. 
+                It does not provide investment advice, recommendations, or personalized financial guidance. 
+                All outputs are the result of mathematical calculations based on historical data and user inputs. 
+                Past performance does not guarantee future results. Investing involves risk, including possible loss of principal. 
+                Consult a qualified financial advisor before making investment decisions.
+            </p>
+            <p style="margin-top: 1rem;">
+                © 2026 FolioForecast. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add subtle parallax to floating elements
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const floats = document.querySelectorAll('.hero-float');
+            floats.forEach((el, i) => {
+                const speed = 0.05 * (i + 1);
+                el.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+    </script>
+</body>
+</html>
