@@ -52,8 +52,14 @@ app.secret_key = "folio_visualizer_v6_secret"
 # 3. ROUTES - PAGE VIEWS
 # ============================================================================
 @app.route('/')
+def landing():
+    """Renders the landing page."""
+    return render_template('landing.html')
+
+
+@app.route('/app')
 def index():
-    """Renders the main dashboard."""
+    """Renders the main dashboard/optimizer."""
     clerk_config = get_clerk_config()
     return render_template('index.html', clerk_config=clerk_config)
 
