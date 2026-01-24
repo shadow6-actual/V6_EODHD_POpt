@@ -15,7 +15,6 @@ import sentry_sdk
 if os.getenv('SENTRY_DSN'):
     sentry_sdk.init(
         dsn=os.getenv('SENTRY_DSN'),
-        integrations=[FlaskIntegration()],
         traces_sample_rate=0.1
     )
     
