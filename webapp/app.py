@@ -1,6 +1,7 @@
 # webapp/app.py
 # PURPOSE: Main entry point. Handles API requests, connects UI to DataManager and Optimizer.
 
+import os
 import sys
 import logging
 import json
@@ -10,7 +11,6 @@ from datetime import datetime
 from flask import Flask, render_template, jsonify, request, g
 
 import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 if os.getenv('SENTRY_DSN'):
     sentry_sdk.init(
