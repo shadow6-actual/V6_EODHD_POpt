@@ -654,7 +654,7 @@
         .footer {
             background: var(--color-bg-elevated);
             border-top: 1px solid var(--color-border);
-            padding: 3rem 2rem;
+            padding: 3rem 2rem 1rem;
         }
 
         .footer-content {
@@ -718,6 +718,31 @@
             line-height: 1.8;
         }
 
+        .footer-legal-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-legal-links a {
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+
+        .footer-legal-links a:hover {
+            color: var(--color-primary);
+        }
+
+        .footer-copyright {
+            color: var(--color-text-dim);
+            font-size: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
         /* Responsive */
         @media (max-width: 968px) {
             .hero-content {
@@ -773,6 +798,10 @@
                 flex-direction: column;
                 align-items: center;
             }
+
+            .footer-legal-links {
+                gap: 1rem;
+            }
         }
     </style>
 </head>
@@ -786,6 +815,7 @@
         <div class="nav-links">
             <a href="#features" class="nav-link">Features</a>
             <a href="#methods" class="nav-link">Methods</a>
+            <a href="/pricing" class="nav-link">Pricing</a>
             <a href="/app" class="btn btn-primary">
                 Launch App <i class="fas fa-arrow-right"></i>
             </a>
@@ -1014,7 +1044,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer with Legal Links -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-logo">
@@ -1025,6 +1055,7 @@
                 <a href="/app" class="footer-link">Launch App</a>
                 <a href="#features" class="footer-link">Features</a>
                 <a href="#methods" class="footer-link">Methods</a>
+                <a href="/pricing" class="footer-link">Pricing</a>
             </div>
         </div>
         <div class="footer-disclaimer">
@@ -1035,7 +1066,13 @@
                 Past performance does not guarantee future results. Investing involves risk, including possible loss of principal. 
                 Consult a qualified financial advisor before making investment decisions.
             </p>
-            <p style="margin-top: 1rem;">
+            <div class="footer-legal-links">
+                <a href="/terms">Terms of Service</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/disclaimer">Investment Disclaimer</a>
+                <a href="/pricing">Pricing</a>
+            </div>
+            <p class="footer-copyright">
                 © 2026 FolioForecast. All rights reserved.
             </p>
         </div>
