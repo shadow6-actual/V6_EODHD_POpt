@@ -7,7 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@anthropic-ai/claude-3@latest/dist/clerk.js"></script>
+    <!-- Clerk Authentication SDK -->
+    <script 
+        async 
+        crossorigin="anonymous" 
+        data-clerk-publishable-key="pk_test_ZGl2ZXJzZS1ld2UtMTUuY2xlcmsuYWNjb3VudHMuZGV2JA"
+        src="https://diverse-ewe-15.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+        type="text/javascript"
+    ></script>
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -666,37 +673,28 @@
             disclaimerAcceptBtn: document.getElementById('disclaimerAcceptBtn')
         };
 
-        // Initialize Clerk
+        // Initialize Clerk - using window load event since Clerk is loaded via script tag
         async function initClerk() {
             try {
-                // Load Clerk script dynamically
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
-                script.async = true;
+                // Wait for Clerk to be available (loaded via script tag in head)
+                await window.Clerk.load();
+                AppState.clerkLoaded = true;
                 
-                script.onload = async () => {
-                    const Clerk = window.Clerk;
-                    await Clerk.load({ publishableKey: CLERK_PUBLISHABLE_KEY });
-                    AppState.clerkLoaded = true;
-                    
-                    // Check authentication status
-                    if (Clerk.user) {
-                        await handleAuthenticated(Clerk.user);
+                // Check authentication status
+                if (window.Clerk.user) {
+                    await handleAuthenticated(window.Clerk.user);
+                } else {
+                    showAuthRequired();
+                }
+                
+                // Listen for auth changes
+                window.Clerk.addListener((event) => {
+                    if (event.user) {
+                        handleAuthenticated(event.user);
                     } else {
                         showAuthRequired();
                     }
-                    
-                    // Listen for auth changes
-                    Clerk.addListener((event) => {
-                        if (event.user) {
-                            handleAuthenticated(event.user);
-                        } else {
-                            showAuthRequired();
-                        }
-                    });
-                };
-                
-                document.head.appendChild(script);
+                });
             } catch (error) {
                 console.error('Error initializing Clerk:', error);
                 showError('Authentication service unavailable. Please try again later.');
@@ -902,10 +900,10 @@
             }
         }
 
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
+        // Event Listeners - use 'load' event to ensure Clerk script is loaded
+        window.addEventListener('load', async () => {
             // Initialize Clerk
-            initClerk();
+            await initClerk();
             
             // User menu toggle
             elements.userButton.addEventListener('click', (e) => {
