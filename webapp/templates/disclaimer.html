@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Disclaimer - FolioForecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a24;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --accent-blue: #3b82f6;
+            --border-color: #2a2a3a;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.7;
+        }
+        
+        .legal-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        
+        .legal-header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .legal-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .legal-header .effective-date {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .legal-section {
+            margin-bottom: 40px;
+        }
+        
+        .legal-section h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .legal-section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .legal-section p, .legal-section li {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        
+        .legal-section ul, .legal-section ol {
+            padding-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .legal-section li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--accent-blue);
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .highlight-box.warning {
+            border-left-color: var(--warning-color);
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        .highlight-box.danger {
+            border-left-color: var(--danger-color);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .highlight-box p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-blue);
+            text-decoration: none;
+            margin-bottom: 30px;
+            transition: opacity 0.2s;
+        }
+        
+        .back-link:hover {
+            opacity: 0.8;
+            color: var(--accent-blue);
+        }
+        
+        .warning-banner {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+            border: 1px solid var(--warning-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .warning-banner i {
+            font-size: 3rem;
+            color: var(--warning-color);
+            margin-bottom: 15px;
+        }
+        
+        .warning-banner h2 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+        
+        .warning-banner p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            font-size: 1.1rem;
+        }
+        
+        .key-points {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        
+        .key-points h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        
+        .key-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .key-point:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .key-point i {
+            color: var(--danger-color);
+            font-size: 1.2rem;
+            margin-top: 3px;
+        }
+        
+        .key-point-content h4 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        
+        .key-point-content p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 600px) {
+            .legal-header h1 {
+                font-size: 2rem;
+            }
+            
+            .warning-banner {
+                padding: 20px;
+            }
+            
+            .warning-banner i {
+                font-size: 2.5rem;
+            }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 60px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="legal-container">
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to FolioForecast
+        </a>
+        
+        <div class="legal-header">
+            <h1>Investment Disclaimer</h1>
+            <p class="effective-date">Please Read Carefully Before Using FolioForecast</p>
+        </div>
+        
+        <div class="warning-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h2>Not Investment Advice</h2>
+            <p>FolioForecast is an educational tool for portfolio analysis. Nothing on this website constitutes investment advice, financial advice, trading advice, or any recommendation to buy, sell, or hold any securities.</p>
+        </div>
+        
+        <div class="key-points">
+            <h3><i class="fas fa-list-check me-2"></i>Key Points to Understand</h3>
+            
+            <div class="key-point">
+                <i class="fas fa-times-circle"></i>
+                <div class="key-point-content">
+                    <h4>No Investment Advice</h4>
+                    <p>FolioForecast does not provide investment advice. Optimization results are mathematical calculations, not recommendations. You should consult a qualified financial advisor before making investment decisions.</p>
+                </div>
+            </div>
+            
+            <div class="key-point">
+                <i class="fas fa-times-circle"></i>
+                <div class="key-point-content">
+                    <h4>Past Performance ≠ Future Results</h4>
+                    <p>Historical performance and backtested results do not guarantee future returns. Markets change, and strategies that worked in the past may not work in the future.</p>
+                </div>
+            </div>
+            
+            <div class="key-point">
+                <i class="fas fa-times-circle"></i>
+                <div class="key-point-content">
+                    <h4>Hypothetical Results Have Limitations</h4>
+                    <p>Optimized portfolios are based on historical data and mathematical models. Actual trading involves costs, taxes, slippage, and market impact that are not fully reflected in our calculations.</p>
+                </div>
+            </div>
+            
+            <div class="key-point">
+                <i class="fas fa-times-circle"></i>
+                <div class="key-point-content">
+                    <h4>Risk of Loss</h4>
+                    <p>All investments involve risk, including the potential loss of principal. You could lose some or all of your investment regardless of the optimization method used.</p>
+                </div>
+            </div>
+            
+            <div class="key-point">
+                <i class="fas fa-times-circle"></i>
+                <div class="key-point-content">
+                    <h4>Not a Registered Investment Advisor</h4>
+                    <p>FolioForecast is not a registered investment advisor, broker-dealer, or financial planner. We do not manage money or execute trades on your behalf.</p>
+                </div>
+            </div>
+        </div>
+        
+        <section class="legal-section">
+            <h2>Educational Purpose Only</h2>
+            <p>FolioForecast is designed as an educational and analytical tool to help users understand portfolio optimization concepts, including:</p>
+            <ul>
+                <li>Modern Portfolio Theory and mean-variance optimization</li>
+                <li>Risk metrics such as volatility, Sharpe ratio, CVaR, and drawdown</li>
+                <li>Diversification principles and correlation analysis</li>
+                <li>The relationship between risk and expected return</li>
+            </ul>
+            <p>The Service is intended to supplement, not replace, professional financial advice and your own research and judgment.</p>
+        </section>
+        
+        <section class="legal-section">
+            <h2>Limitations of Optimization Models</h2>
+            
+            <h3>Model Assumptions</h3>
+            <p>Portfolio optimization relies on mathematical models that make simplifying assumptions, including:</p>
+            <ul>
+                <li><strong>Historical data is representative:</strong> Models assume past returns, volatilities, and correlations will persist. This is often not the case.</li>
+                <li><strong>Normal distributions:</strong> Many models assume returns follow a normal distribution. In reality, markets exhibit "fat tails" with more extreme events than models predict.</li>
+                <li><strong>Static parameters:</strong> Correlations and volatilities change over time, especially during market stress.</li>
+                <li><strong>No transaction costs:</strong> Models typically ignore trading costs, bid-ask spreads, and market impact.</li>
+                <li><strong>Perfect liquidity:</strong> Models assume you can trade any amount at quoted prices, which may not be true for all securities.</li>
+            </ul>
+            
+            <h3>Estimation Error</h3>
+            <p>Expected returns are notoriously difficult to estimate. Small errors in return estimates can lead to dramatically different "optimal" portfolios. This is known as the "error maximization" problem in portfolio optimization.</p>
+            
+            <h3>Overfitting Risk</h3>
+            <p>Optimization can find portfolios that performed well historically but may not perform well in the future. This is especially true when:</p>
+            <ul>
+                <li>Using short time periods for analysis</li>
+                <li>Optimizing with many assets and few constraints</li>
+                <li>Repeatedly adjusting parameters to improve backtested results</li>
+            </ul>
+        </section>
+        
+        <section class="legal-section">
+            <h2>Data Accuracy</h2>
+            <p>While we strive to provide accurate market data, we cannot guarantee:</p>
+            <ul>
+                <li>The accuracy, completeness, or timeliness of historical price data</li>
+                <li>That data is free from errors, omissions, or adjustments</li>
+                <li>That dividends, splits, and corporate actions are correctly reflected</li>
+                <li>Availability of data for all securities or time periods</li>
+            </ul>
+            <p>Market data is sourced from third-party providers and is provided "as is" without warranty. You should verify any data before making investment decisions.</p>
+        </section>
+        
+        <section class="legal-section">
+            <h2>Your Responsibilities</h2>
+            <p>By using FolioForecast, you acknowledge and agree that:</p>
+            <ul>
+                <li>You are solely responsible for your investment decisions</li>
+                <li>You will conduct your own research and due diligence</li>
+                <li>You understand the risks involved in investing</li>
+                <li>You will consult appropriate professionals (financial advisors, tax advisors, attorneys) as needed</li>
+                <li>You will not rely solely on FolioForecast output for investment decisions</li>
+                <li>You understand that optimization results are not predictions or guarantees</li>
+            </ul>
+        </section>
+        
+        <section class="legal-section">
+            <h2>Regulatory Disclosure</h2>
+            <p>FolioForecast is not:</p>
+            <ul>
+                <li>Registered with the U.S. Securities and Exchange Commission (SEC)</li>
+                <li>Registered with any state securities regulator</li>
+                <li>A registered investment advisor under the Investment Advisers Act of 1940</li>
+                <li>A broker-dealer registered under the Securities Exchange Act of 1934</li>
+                <li>A member of FINRA or SIPC</li>
+            </ul>
+            <p>Nothing on this website should be construed as an offer to sell or a solicitation of an offer to buy any security.</p>
+        </section>
+        
+        <section class="legal-section">
+            <h2>International Users</h2>
+            <p>This Service is operated from the United States. If you access the Service from other countries, you are responsible for compliance with local laws. The information provided may not be suitable for residents of all jurisdictions.</p>
+        </section>
+        
+        <div class="highlight-box danger">
+            <p><strong>IMPORTANT:</strong> Investing involves substantial risk of loss and is not suitable for everyone. Before investing, consider your investment objectives, risk tolerance, and financial situation. Never invest more than you can afford to lose.</p>
+        </div>
+        
+        <section class="legal-section">
+            <h2>Questions?</h2>
+            <p>If you have questions about this disclaimer or the Service, please contact us:</p>
+            <ul>
+                <li><strong>Email:</strong> support@folioforecast.com</li>
+                <li><strong>Website:</strong> www.folioforecast.com</li>
+            </ul>
+        </section>
+    </div>
+    
+    <footer>
+        <p>&copy; 2026 FolioForecast. All rights reserved.</p>
+        <p>
+            <a href="/terms">Terms of Service</a> &nbsp;|&nbsp;
+            <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp;
+            <a href="/disclaimer">Disclaimer</a> &nbsp;|&nbsp;
+            <a href="/pricing">Pricing</a>
+        </p>
+    </footer>
+</body>
+</html>
