@@ -543,11 +543,17 @@ def run_optimization():
         elif opt_goal == 'max_sortino_target_return':
             optimized = optimizer.optimize_max_sortino_target_return(target_return, constraints)
         elif opt_goal == 'robust_max_sharpe':
-            n_resamples = data.get('robust_resamples', 50)
+            n_resamples = data.get('robust_resamples', 100)
             optimized = optimizer.optimize_robust_sharpe(constraints, n_resamples=n_resamples)
         elif opt_goal == 'robust_min_volatility':
-            n_resamples = data.get('robust_resamples', 50)
+            n_resamples = data.get('robust_resamples', 100)
             optimized = optimizer.optimize_robust_min_volatility(constraints, n_resamples=n_resamples)
+        elif opt_goal == 'robust_min_vol_target_return':
+            n_resamples = data.get('robust_resamples', 100)
+            optimized = optimizer.optimize_robust_min_vol_target_return(target_return, constraints, n_resamples=n_resamples)
+        elif opt_goal == 'robust_max_return_target_vol':
+            n_resamples = data.get('robust_resamples', 100)
+            optimized = optimizer.optimize_robust_max_return_target_vol(target_volatility, constraints, n_resamples=n_resamples)
         else:
             optimized = optimizer.optimize_sharpe_ratio(constraints)
         
