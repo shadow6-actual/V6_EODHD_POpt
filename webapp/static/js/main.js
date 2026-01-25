@@ -422,11 +422,55 @@ function showUpgradePrompt(feature, featureName) {
 
 function handleTierError(response) {
     // Handle tier-related API errors
+    if (response.error === 'login_required') {
+        showLoginPrompt(response.message);
+        return true;
+    }
     if (response.upgrade_required) {
         showUpgradePrompt(response.feature || 'unknown', response.message);
         return true;
     }
     return false;
+}
+
+function showLoginPrompt(message) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'loginModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-user me-2"></i>Sign In Required</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <span class="display-1">👋</span>
+                    </div>
+                    <h5 class="mb-3">${message || 'Please sign in to continue'}</h5>
+                    <p class="text-muted">Creating an account is free and takes just seconds.</p>
+                </div>
+                <div class="modal-footer border-secondary justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe Later</button>
+                    <button type="button" class="btn btn-primary" onclick="clerkSignIn(); bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();">
+                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="clerkSignUp(); bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();">
+                        <i class="fas fa-user-plus me-2"></i>Sign Up Free
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => {
+        modal.remove();
+    });
 }
 
 // ============================================================================
