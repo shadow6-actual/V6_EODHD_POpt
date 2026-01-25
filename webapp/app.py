@@ -7,7 +7,7 @@ import logging
 import json
 import numpy as np
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request, g
 
 import sentry_sdk
@@ -26,7 +26,7 @@ from webapp.subscription import (
     get_user_tier, get_user_tier_info, get_tier_config,
     can_access_feature, can_use_optimization_method,
     get_max_assets, can_save_portfolio, get_pricing_data,
-    require_feature, require_tier
+    require_feature, require_tier, start_trial, TRIAL_PERIOD_DAYS
 )
 
 # 1. SETUP PATHS & LOGGING
@@ -134,6 +134,98 @@ def auth_sync():
             })
     except Exception as e:
         logger.error(f"Auth sync error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/subscription/start-trial', methods=['POST'])
+@require_auth
+def start_free_trial():
+    """Start a free Pro trial for the current user"""
+    from webapp.user_models import get_or_create_user
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_or_create_user(session, g.user_id, g.username)
+            
+            # Check if user already used trial or has a paid subscription
+            if user.subscription_tier in ['premium', 'pro']:
+                return jsonify({
+                    'error': 'already_subscribed',
+                    'message': 'You already have an active subscription!'
+                }), 400
+            
+            if user.subscription_tier == 'trial':
+                return jsonify({
+                    'error': 'trial_active',
+                    'message': 'You already have an active trial!'
+                }), 400
+            
+            # Start the trial
+            success = start_trial(session, user)
+            
+            if success:
+                tier_info = get_user_tier_info(user)
+                return jsonify({
+                    'message': f'🎉 Your {TRIAL_PERIOD_DAYS}-day Pro trial has started!',
+                    'subscription': tier_info
+                })
+            else:
+                return jsonify({
+                    'error': 'trial_failed',
+                    'message': 'Unable to start trial. Please contact support.'
+                }), 400
+                
+    except Exception as e:
+        logger.error(f"Start trial error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/set-tier', methods=['POST'])
+@require_auth
+def admin_set_tier():
+    """
+    ADMIN ONLY: Set subscription tier for testing.
+    In production, remove this or add proper admin authentication.
+    
+    POST body: { "tier": "free|premium|pro|trial", "days": 30 }
+    """
+    from webapp.user_models import get_or_create_user
+    
+    # TODO: Add proper admin check (e.g., check if user is in admin list)
+    ADMIN_USERNAMES = ['shadow6']  # Add your admin username(s) here
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_or_create_user(session, g.user_id, g.username)
+            
+            # Check if user is admin
+            if user.username not in ADMIN_USERNAMES:
+                return jsonify({'error': 'Unauthorized'}), 403
+            
+            data = request.json
+            new_tier = data.get('tier', 'free')
+            days = data.get('days', 30)
+            
+            if new_tier not in ['free', 'premium', 'pro', 'trial']:
+                return jsonify({'error': 'Invalid tier'}), 400
+            
+            user.subscription_tier = new_tier
+            
+            if new_tier != 'free':
+                user.subscription_expires_at = datetime.utcnow() + timedelta(days=days)
+            else:
+                user.subscription_expires_at = None
+            
+            session.commit()
+            
+            tier_info = get_user_tier_info(user)
+            return jsonify({
+                'message': f'Tier set to {new_tier} for {days} days',
+                'subscription': tier_info
+            })
+            
+    except Exception as e:
+        logger.error(f"Admin set tier error: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -670,7 +762,7 @@ def get_portfolio(portfolio_id):
 @app.route('/api/portfolios', methods=['POST'])
 @optional_auth
 def save_portfolio():
-    """Save a new portfolio (authenticated users get ownership)"""
+    """Save a new portfolio (requires login, tier limits apply)"""
     from webapp.user_models import get_or_create_user, UserPortfolio, get_user_by_clerk_id
     
     data = request.json
@@ -683,60 +775,49 @@ def save_portfolio():
     if not name or not tickers:
         return jsonify({'error': 'Name and tickers required'}), 400
     
+    # Require login for saving portfolios
+    if not g.user_id:
+        return jsonify({
+            'error': 'login_required',
+            'message': 'Please sign in to save portfolios. It\'s free!',
+            'upgrade_required': False
+        }), 401
+    
     try:
-        # If user is authenticated, save to user_portfolios
-        if g.user_id:
-            with data_manager._get_session() as session:
-                user = get_or_create_user(session, g.user_id, g.username)
-                
-                # Check portfolio limit
-                allowed, reason, current, max_count = can_save_portfolio(session, user)
-                if not allowed:
-                    return jsonify({
-                        'error': 'portfolio_limit_exceeded',
-                        'message': reason,
-                        'current_count': current,
-                        'max_count': max_count,
-                        'upgrade_required': True
-                    }), 403
-                
-                portfolio = UserPortfolio(
-                    user_id=user.id,
-                    name=name,
-                    tickers=tickers,
-                    weights=weights,
-                    constraints=constraints if constraints else None,
-                    is_public=is_public
-                )
-                session.add(portfolio)
-                session.commit()
-                
+        with data_manager._get_session() as session:
+            user = get_or_create_user(session, g.user_id, g.username)
+            
+            # Check portfolio limit
+            allowed, reason, current, max_count = can_save_portfolio(session, user)
+            if not allowed:
                 return jsonify({
-                    'id': portfolio.id,
-                    'name': portfolio.name,
-                    'message': 'Portfolio saved to your account',
-                    'is_authenticated': True,
-                    'portfolios_used': current + 1,
-                    'portfolios_max': max_count
-                })
-        else:
-            # Anonymous save to legacy table (for backwards compatibility)
-            with data_manager._get_sqlite_session() as session:
-                portfolio = SavedPortfolio(
-                    name=name,
-                    tickers=json.dumps(tickers),
-                    weights=json.dumps(weights),
-                    constraints=json.dumps(constraints) if constraints else None
-                )
-                session.add(portfolio)
-                session.commit()
-                
-                return jsonify({
-                    'id': portfolio.id,
-                    'name': portfolio.name,
-                    'message': 'Portfolio saved (sign in to save to your account)',
-                    'is_authenticated': False
-                })
+                    'error': 'portfolio_limit_exceeded',
+                    'message': reason,
+                    'current_count': current,
+                    'max_count': max_count,
+                    'upgrade_required': True
+                }), 403
+            
+            portfolio = UserPortfolio(
+                user_id=user.id,
+                name=name,
+                tickers=tickers,
+                weights=weights,
+                constraints=constraints if constraints else None,
+                is_public=is_public
+            )
+            session.add(portfolio)
+            session.commit()
+            
+            tier = get_user_tier(user)
+            return jsonify({
+                'id': portfolio.id,
+                'name': portfolio.name,
+                'message': 'Portfolio saved successfully!',
+                'is_authenticated': True,
+                'portfolios_used': current + 1,
+                'portfolios_max': max_count if max_count < 999 else 'unlimited'
+            })
     except Exception as e:
         logger.error(f"Save portfolio error: {e}")
         return jsonify({'error': str(e)}), 500
