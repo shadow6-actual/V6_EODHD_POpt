@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing | FolioForecast</title>
+    <meta name="description" content="Choose your FolioForecast plan. From free portfolio optimization to professional-grade analytics.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Clerk.js -->
+    <script 
+        async 
+        crossorigin="anonymous" 
+        data-clerk-publishable-key="{{ clerk_config.publishable_key }}"
+        src="{{ clerk_config.frontend_api }}/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+        type="text/javascript">
+    </script>
+    
+    <style>
+        :root {
+            --color-bg: #0a0f1c;
+            --color-bg-elevated: #111827;
+            --color-bg-card: #1a2235;
+            --color-primary: #3b82f6;
+            --color-primary-glow: rgba(59, 130, 246, 0.4);
+            --color-accent: #10b981;
+            --color-accent-secondary: #f59e0b;
+            --color-text: #f1f5f9;
+            --color-text-muted: #94a3b8;
+            --color-text-dim: #64748b;
+            --color-border: #1e293b;
+            --font-display: 'DM Serif Display', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 15, 28, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--color-text);
+        }
+
+        .nav-logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .nav-logo-text {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--color-text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--color-text);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 20px var(--color-primary-glow);
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-elevated);
+        }
+
+        .btn-accent {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .pricing-page {
+            padding: 8rem 2rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .pricing-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 1rem;
+        }
+
+        .pricing-header p {
+            color: var(--color-text-muted);
+            font-size: 1.15rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Pricing Cards */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .pricing-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .pricing-card.highlighted {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 40px -10px var(--color-primary-glow);
+        }
+
+        .pricing-card.highlighted::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--color-primary);
+            color: white;
+            padding: 0.25rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .pricing-card-header {
+            text-align: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-card-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-card-price {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .pricing-card-period {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .pricing-card-description {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .pricing-features li i {
+            color: var(--color-accent);
+            margin-top: 0.25rem;
+            flex-shrink: 0;
+        }
+
+        .pricing-features li.limitation {
+            color: var(--color-text-dim);
+        }
+
+        .pricing-features li.limitation i {
+            color: var(--color-text-dim);
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-top: 4rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .faq-section h2 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .faq-item {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .faq-question:hover {
+            background: var(--color-bg-elevated);
+        }
+
+        .faq-question i {
+            color: var(--color-text-muted);
+            transition: transform 0.2s;
+        }
+
+        .faq-item.open .faq-question i {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .faq-item.open .faq-answer {
+            padding: 0 1.5rem 1.5rem;
+            max-height: 500px;
+        }
+
+        .faq-answer p {
+            color: var(--color-text-muted);
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 4rem;
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .footer p {
+            color: var(--color-text-dim);
+            font-size: 0.85rem;
+        }
+
+        /* Current Plan Badge */
+        .current-plan-badge {
+            display: inline-block;
+            background: var(--color-accent);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+                margin: 0 auto 4rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="/" class="nav-logo">
+            <div class="nav-logo-icon">FF</div>
+            <span class="nav-logo-text">FolioForecast</span>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/app" class="nav-link">App</a>
+            <a href="/pricing" class="nav-link" style="color: var(--color-text);">Pricing</a>
+            <div id="authButtons">
+                <a href="/app" class="btn btn-primary">
+                    Get Started <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pricing-page">
+        <header class="pricing-header">
+            <h1>Choose Your Plan</h1>
+            <p>From free portfolio optimization to professional-grade analytics. No hidden fees, cancel anytime.</p>
+        </header>
+
+        <div class="pricing-grid">
+            {% for tier in pricing.tiers %}
+            <div class="pricing-card {% if tier.highlighted %}highlighted{% endif %}" data-tier="{{ tier.id }}">
+                <div class="pricing-card-header">
+                    <div id="badge-{{ tier.id }}" class="current-plan-badge" style="display: none;">Current Plan</div>
+                    <h3 class="pricing-card-name">{{ tier.name }}</h3>
+                    <div class="pricing-card-price">{{ tier.price_display }}</div>
+                    <div class="pricing-card-period">{{ tier.period }}</div>
+                    <p class="pricing-card-description">{{ tier.description }}</p>
+                </div>
+                
+                <ul class="pricing-features">
+                    {% for feature in tier.features %}
+                    <li>
+                        <i class="fas fa-check"></i>
+                        <span>{{ feature }}</span>
+                    </li>
+                    {% endfor %}
+                    {% for limitation in tier.limitations %}
+                    <li class="limitation">
+                        <i class="fas fa-times"></i>
+                        <span>{{ limitation }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                {% if tier.id == 'free' %}
+                <a href="/app" class="btn btn-secondary" id="cta-{{ tier.id }}">{{ tier.cta }}</a>
+                {% elif tier.id == 'premium' %}
+                <button class="btn btn-primary" id="cta-{{ tier.id }}" onclick="handleUpgrade('premium')">{{ tier.cta }}</button>
+                {% else %}
+                <button class="btn btn-accent" id="cta-{{ tier.id }}" onclick="handleUpgrade('pro')">{{ tier.cta }}</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <section class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Can I change plans later?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    <p>Yes! You can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to new features. When downgrading, you'll keep your current features until the end of your billing period.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>What payment methods do you accept?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    <p>We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment processor, Stripe. We also support Apple Pay and Google Pay.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Is there a free trial for paid plans?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    <p>We offer a 7-day free trial for both Premium and Pro plans. No credit card required to start your trial. You'll be prompted to add payment details only if you decide to continue after the trial.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>What happens to my portfolios if I downgrade?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    <p>Your saved portfolios are never deleted. If you exceed the portfolio limit for your new tier, you'll still be able to view all portfolios, but you won't be able to create new ones until you're within the limit (by deleting some or upgrading).</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Do you offer refunds?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    <p>Yes, we offer a 30-day money-back guarantee. If you're not satisfied with your subscription, contact us within 30 days of your purchase for a full refund.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Is FolioForecast financial advice?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    <p>No. FolioForecast is a mathematical tool for portfolio analysis and optimization. It does not provide investment advice, recommendations, or personalized financial guidance. All outputs are the result of mathematical calculations based on historical data. Always consult a qualified financial advisor before making investment decisions.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>© 2026 FolioForecast. All rights reserved. Questions? Contact support@folioforecast.com</p>
+        </footer>
+    </main>
+
+    <script>
+        let clerkInstance = null;
+        let currentUser = null;
+        let userTier = 'free';
+
+        // Initialize Clerk
+        window.addEventListener('load', async () => {
+            await waitForClerk();
+            initializeClerk();
+        });
+
+        function waitForClerk() {
+            return new Promise((resolve) => {
+                if (window.Clerk) {
+                    resolve();
+                } else {
+                    const interval = setInterval(() => {
+                        if (window.Clerk) {
+                            clearInterval(interval);
+                            resolve();
+                        }
+                    }, 100);
+                    setTimeout(() => {
+                        clearInterval(interval);
+                        resolve();
+                    }, 10000);
+                }
+            });
+        }
+
+        async function initializeClerk() {
+            try {
+                clerkInstance = window.Clerk;
+                if (!clerkInstance) return;
+                
+                await clerkInstance.load();
+                
+                if (clerkInstance.user) {
+                    currentUser = clerkInstance.user;
+                    await fetchUserTier();
+                }
+            } catch (error) {
+                console.error('Clerk initialization error:', error);
+            }
+        }
+
+        async function fetchUserTier() {
+            try {
+                const token = await clerkInstance.session.getToken();
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    userTier = data.subscription?.tier || 'free';
+                    updateUIForTier();
+                }
+            } catch (error) {
+                console.error('Failed to fetch user tier:', error);
+            }
+        }
+
+        function updateUIForTier() {
+            // Show "Current Plan" badge for user's tier
+            document.querySelectorAll('.current-plan-badge').forEach(badge => {
+                badge.style.display = 'none';
+            });
+            
+            const currentBadge = document.getElementById(`badge-${userTier}`);
+            if (currentBadge) {
+                currentBadge.style.display = 'inline-block';
+            }
+            
+            // Update CTA buttons
+            const freeCta = document.getElementById('cta-free');
+            const premiumCta = document.getElementById('cta-premium');
+            const proCta = document.getElementById('cta-pro');
+            
+            if (userTier === 'free') {
+                if (freeCta) {
+                    freeCta.textContent = 'Current Plan';
+                    freeCta.classList.remove('btn-secondary');
+                    freeCta.classList.add('btn-secondary');
+                    freeCta.style.opacity = '0.6';
+                    freeCta.style.pointerEvents = 'none';
+                }
+            } else if (userTier === 'premium') {
+                if (premiumCta) {
+                    premiumCta.textContent = 'Current Plan';
+                    premiumCta.style.opacity = '0.6';
+                    premiumCta.style.pointerEvents = 'none';
+                }
+                if (freeCta) {
+                    freeCta.textContent = 'Downgrade';
+                }
+            } else if (userTier === 'pro') {
+                if (proCta) {
+                    proCta.textContent = 'Current Plan';
+                    proCta.style.opacity = '0.6';
+                    proCta.style.pointerEvents = 'none';
+                }
+                if (freeCta) {
+                    freeCta.textContent = 'Downgrade';
+                }
+                if (premiumCta) {
+                    premiumCta.textContent = 'Downgrade';
+                }
+            }
+        }
+
+        function handleUpgrade(tier) {
+            if (!currentUser) {
+                // Not logged in - redirect to sign up
+                if (clerkInstance) {
+                    clerkInstance.openSignUp({
+                        afterSignUpUrl: `/pricing?upgrade=${tier}`,
+                        afterSignInUrl: `/pricing?upgrade=${tier}`
+                    });
+                } else {
+                    window.location.href = '/app';
+                }
+                return;
+            }
+            
+            // User is logged in - show Stripe checkout (placeholder for now)
+            alert(`Stripe checkout for ${tier.toUpperCase()} plan coming soon!\n\nFor now, contact support@folioforecast.com to upgrade your account.`);
+            
+            // TODO: Implement Stripe checkout
+            // window.location.href = `/api/stripe/checkout?tier=${tier}`;
+        }
+
+        function toggleFaq(element) {
+            const faqItem = element.parentElement;
+            faqItem.classList.toggle('open');
+        }
+
+        // Check URL params for post-signup upgrade
+        const urlParams = new URLSearchParams(window.location.search);
+        const upgradeTier = urlParams.get('upgrade');
+        if (upgradeTier && currentUser) {
+            // User just signed up and wants to upgrade
+            setTimeout(() => handleUpgrade(upgradeTier), 1000);
+        }
+    </script>
+</body>
+</html>
