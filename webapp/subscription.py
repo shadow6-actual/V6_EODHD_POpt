@@ -94,11 +94,11 @@ BASIC_OPTIMIZATION_METHODS = [
     'min_volatility', 
     'equal_weight',
     'risk_parity',
-    'min_vol_target_return',    # Fundamental MVO - moved to basic
-    'max_return_target_vol',    # Fundamental MVO - moved to basic
 ]
 
 ADVANCED_OPTIMIZATION_METHODS = [
+    'min_vol_target_return',    # Premium - target-based MVO
+    'max_return_target_vol',    # Premium - target-based MVO
     'min_cvar',
     'min_cvar_target_return',
     'max_return_target_cvar',
