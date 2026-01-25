@@ -12,7 +12,7 @@
             --bg-card: #12121a;
             --bg-elevated: #1a1a24;
             --text-primary: #ffffff;
-            --text-secondary: #a0a0b0;
+            --text-secondary: #d1d5db; /* Improved from #a0a0b0 for better readability */
             --accent-blue: #3b82f6;
             --border-color: #2a2a3a;
         }
@@ -66,6 +66,7 @@
             font-weight: 600;
             margin-top: 25px;
             margin-bottom: 15px;
+            color: var(--text-primary);
         }
         
         .legal-section p, .legal-section li {
@@ -92,10 +93,17 @@
         
         .highlight-box.warning {
             border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
         }
         
         .highlight-box.success {
             border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .highlight-box p {
+            color: var(--text-primary);
+            margin-bottom: 10px;
         }
         
         .highlight-box p:last-child {
@@ -277,6 +285,11 @@
                         <td>Processing subscription payments</td>
                     </tr>
                     <tr>
+                        <td>Agreement Records</td>
+                        <td>Acceptance of Terms/Disclaimer, timestamps, IP addresses</td>
+                        <td>Legal compliance, audit trail</td>
+                    </tr>
+                    <tr>
                         <td>Communications</td>
                         <td>Support emails, feedback</td>
                         <td>Customer support, service improvement</td>
@@ -330,7 +343,7 @@
                 <li><strong>Communication:</strong> Send service updates, respond to inquiries, provide support</li>
                 <li><strong>Improvement:</strong> Analyze usage patterns to improve features and user experience</li>
                 <li><strong>Security:</strong> Detect and prevent fraud, abuse, and security threats</li>
-                <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations</li>
+                <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations, maintain agreement records</li>
             </ul>
             
             <div class="highlight-box">
@@ -409,6 +422,7 @@
             <ul>
                 <li><strong>Account Data:</strong> Retained while your account is active, deleted within 30 days of account deletion request</li>
                 <li><strong>Portfolio Data:</strong> Retained while your account is active</li>
+                <li><strong>Agreement Records:</strong> Retained indefinitely for legal compliance</li>
                 <li><strong>Usage Logs:</strong> Retained for up to 12 months</li>
                 <li><strong>Payment Records:</strong> Retained as required by tax and accounting regulations</li>
             </ul>
@@ -429,7 +443,7 @@
             <p>You can update your account information through your account settings or by contacting us.</p>
             
             <h3>6.3 Deletion</h3>
-            <p>You can request deletion of your account and associated data. To delete your account, contact us at support@folioforecast.com. We will process deletion requests within 30 days.</p>
+            <p>You can request deletion of your account and associated data. To delete your account, contact us at support@folioforecast.com. We will process deletion requests within 30 days. Note: Agreement records may be retained for legal compliance.</p>
             
             <h3>6.4 Opt-Out</h3>
             <p>You can opt out of marketing communications by clicking "unsubscribe" in any email or adjusting your account preferences.</p>
@@ -470,7 +484,7 @@
                 <tbody>
                     <tr>
                         <td>Essential</td>
-                        <td>Authentication, security, preferences</td>
+                        <td>Authentication, security, preferences, agreement tracking</td>
                         <td>Session / 30 days</td>
                     </tr>
                     <tr>
@@ -558,6 +572,7 @@
         <p>
             <a href="/terms">Terms of Service</a> &nbsp;|&nbsp;
             <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp;
+            <a href="/disclaimer">Investment Disclaimer</a> &nbsp;|&nbsp;
             <a href="/pricing">Pricing</a>
         </p>
     </footer>
