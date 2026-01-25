@@ -1,0 +1,131 @@
+<!-- 
+    DISCLAIMER BANNER COMPONENT
+    Include this in index.html (app) and pricing.html pages
+    
+    ADD THIS CSS to your stylesheet or in a <style> block:
+-->
+
+<style>
+.disclaimer-banner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+}
+
+.disclaimer-banner i {
+    color: #f59e0b;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.disclaimer-banner p {
+    margin: 0;
+    color: #a0a0b0;
+    line-height: 1.5;
+}
+
+.disclaimer-banner a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.disclaimer-banner a:hover {
+    text-decoration: underline;
+}
+
+/* Compact version for footer area */
+.disclaimer-banner.compact {
+    padding: 10px 15px;
+    font-size: 0.8rem;
+    background: rgba(245, 158, 11, 0.05);
+}
+</style>
+
+<!-- 
+    FULL BANNER VERSION - Use at top of app or in sidebar
+    Place this HTML where you want the banner to appear:
+-->
+
+<div class="disclaimer-banner">
+    <i class="fas fa-exclamation-triangle"></i>
+    <p>
+        <strong>Not Investment Advice:</strong> FolioForecast is for educational purposes only. 
+        Past performance does not guarantee future results. 
+        <a href="/disclaimer">Read full disclaimer</a>
+    </p>
+</div>
+
+
+<!-- 
+    COMPACT VERSION - Use in footer or below results
+-->
+
+<div class="disclaimer-banner compact">
+    <i class="fas fa-info-circle"></i>
+    <p>
+        This is not investment advice. <a href="/disclaimer">Learn more</a> | 
+        <a href="/terms">Terms</a> | <a href="/privacy">Privacy</a>
+    </p>
+</div>
+
+
+<!--
+    MODAL VERSION - Show on first visit or before optimization
+    Requires Bootstrap 5
+-->
+
+<div class="modal fade" id="disclaimerModal" tabindex="-1" aria-labelledby="disclaimerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="disclaimerModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Important Disclaimer
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p><strong>FolioForecast is an educational tool only.</strong></p>
+                <ul class="small text-secondary">
+                    <li>We do not provide investment advice</li>
+                    <li>Past performance does not guarantee future results</li>
+                    <li>Optimization results are not recommendations</li>
+                    <li>You are responsible for your own investment decisions</li>
+                    <li>Consult a qualified financial advisor before investing</li>
+                </ul>
+                <p class="small text-secondary mb-0">
+                    By using this service, you agree to our 
+                    <a href="/terms" target="_blank">Terms of Service</a> and 
+                    <a href="/disclaimer" target="_blank">Investment Disclaimer</a>.
+                </p>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="acknowledgeDisclaimer()">
+                    I Understand
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show disclaimer modal on first visit
+function checkDisclaimerAcknowledged() {
+    if (!localStorage.getItem('disclaimerAcknowledged')) {
+        const modal = new bootstrap.Modal(document.getElementById('disclaimerModal'));
+        modal.show();
+    }
+}
+
+function acknowledgeDisclaimer() {
+    localStorage.setItem('disclaimerAcknowledged', 'true');
+}
+
+// Call on page load (uncomment to enable)
+// document.addEventListener('DOMContentLoaded', checkDisclaimerAcknowledged);
+</script>
