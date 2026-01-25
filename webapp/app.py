@@ -21,6 +21,14 @@ if os.getenv('SENTRY_DSN'):
 # Auth imports
 from webapp.auth import require_auth, optional_auth, get_clerk_config
 
+# Subscription imports
+from webapp.subscription import (
+    get_user_tier, get_user_tier_info, get_tier_config,
+    can_access_feature, can_use_optimization_method,
+    get_max_assets, can_save_portfolio, get_pricing_data,
+    require_feature, require_tier
+)
+
 # 1. SETUP PATHS & LOGGING
 # ============================================================================
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -63,6 +71,14 @@ def index():
     return render_template('index.html', clerk_config=clerk_config)
 
 
+@app.route('/pricing')
+def pricing():
+    """Renders the pricing page."""
+    pricing_data = get_pricing_data()
+    clerk_config = get_clerk_config()
+    return render_template('pricing.html', pricing=pricing_data, clerk_config=clerk_config)
+
+
 # 3a. AUTH ROUTES
 # ============================================================================
 @app.route('/api/auth/config')
@@ -74,17 +90,25 @@ def auth_config():
 @app.route('/api/auth/me')
 @require_auth
 def auth_me():
-    """Get current user info"""
+    """Get current user info including subscription tier"""
     from webapp.user_models import get_or_create_user, User
     
     try:
         with data_manager._get_session() as session:
             # Get or create local user record
             user = get_or_create_user(session, g.user_id, g.username)
+            
+            # Store user object in g for downstream use
+            g.user_obj = user
+            
+            # Get tier info
+            tier_info = get_user_tier_info(user)
+            
             return jsonify({
                 'user_id': g.user_id,
                 'username': g.username,
-                'local_user': user.to_dict()
+                'local_user': user.to_dict(),
+                'subscription': tier_info
             })
     except Exception as e:
         logger.error(f"Auth me error: {e}")
@@ -100,13 +124,36 @@ def auth_sync():
     try:
         with data_manager._get_session() as session:
             user = get_or_create_user(session, g.user_id, g.username)
+            g.user_obj = user
+            tier_info = get_user_tier_info(user)
+            
             return jsonify({
                 'message': 'User synced successfully',
-                'user': user.to_dict()
+                'user': user.to_dict(),
+                'subscription': tier_info
             })
     except Exception as e:
         logger.error(f"Auth sync error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/subscription/info')
+@optional_auth
+def subscription_info():
+    """Get current user's subscription info (works for anonymous too)"""
+    from webapp.user_models import get_user_by_clerk_id
+    
+    user = None
+    if g.user_id:
+        try:
+            with data_manager._get_session() as session:
+                user = get_user_by_clerk_id(session, g.user_id)
+        except:
+            pass
+    
+    tier_info = get_user_tier_info(user)
+    return jsonify(tier_info)
+
 
 # 4. ROUTES - API ENDPOINTS
 # ============================================================================
@@ -220,7 +267,20 @@ def get_available_groups():
 
 
 @app.route('/api/optimize', methods=['POST'])
+@optional_auth
 def run_optimization():
+    """Run portfolio optimization with tier-based restrictions"""
+    from webapp.user_models import get_user_by_clerk_id
+    
+    # Get user for tier checking
+    user = None
+    if g.user_id:
+        try:
+            with data_manager._get_session() as session:
+                user = get_user_by_clerk_id(session, g.user_id)
+        except:
+            pass
+    
     data = request.json
     tickers = data.get('tickers', [])
     user_weights = data.get('user_weights', {})
@@ -232,6 +292,7 @@ def run_optimization():
     user_benchmark_id = data.get('user_benchmark_id')
     use_group_constraints = data.get('use_group_constraints', False)
     group_constraints_input = data.get('group_constraints', {})
+    include_diversification = data.get('include_diversification', True)
     
     req_start_str = data.get('start_date', '2015-01-01')
     try:
@@ -243,6 +304,51 @@ def run_optimization():
 
     if not tickers:
         return jsonify({'error': 'No tickers provided'}), 400
+
+    # =========================================================================
+    # TIER-BASED RESTRICTIONS
+    # =========================================================================
+    
+    # Check asset limit
+    max_assets = get_max_assets(user)
+    if len(tickers) > max_assets:
+        tier = get_user_tier(user)
+        return jsonify({
+            'error': 'asset_limit_exceeded',
+            'message': f'Your {tier.title()} plan allows up to {max_assets} assets. You have {len(tickers)}.',
+            'current_tier': tier,
+            'max_assets': max_assets,
+            'upgrade_required': True
+        }), 403
+    
+    # Check optimization method access
+    allowed, reason = can_use_optimization_method(user, opt_goal)
+    if not allowed:
+        tier = get_user_tier(user)
+        return jsonify({
+            'error': 'method_not_allowed',
+            'message': reason,
+            'current_tier': tier,
+            'upgrade_required': True
+        }), 403
+    
+    # Check group constraints access (Pro only)
+    if use_group_constraints and group_constraints_input:
+        if not can_access_feature(user, 'group_constraints'):
+            tier = get_user_tier(user)
+            return jsonify({
+                'error': 'feature_not_allowed',
+                'message': 'Group constraints require Pro subscription',
+                'feature': 'group_constraints',
+                'current_tier': tier,
+                'upgrade_required': True
+            }), 403
+    
+    # Check diversification analytics access (Pro only)
+    if include_diversification:
+        if not can_access_feature(user, 'diversification_analytics'):
+            # Don't error - just disable the feature silently
+            include_diversification = False
 
     logger.info(f"Optimization: {opt_goal} for {tickers}")
 
@@ -420,8 +526,7 @@ def run_optimization():
             })
 
         # G. BUILD RESPONSE
-        # Calculate diversification metrics if requested
-        include_diversification = data.get('include_diversification', True)
+        # Calculate diversification metrics if requested AND allowed
         health_score_weights = data.get('health_score_weights', None)
         
         opt_diversification = None
@@ -464,6 +569,10 @@ def run_optimization():
                 'optimized': opt_diversification,
                 'user': user_diversification,
                 'benchmark': bench_diversification
+            } if include_diversification else None,
+            'tier_info': {
+                'current_tier': get_user_tier(user),
+                'diversification_enabled': include_diversification
             }
         }
         
@@ -562,6 +671,8 @@ def get_portfolio(portfolio_id):
 @optional_auth
 def save_portfolio():
     """Save a new portfolio (authenticated users get ownership)"""
+    from webapp.user_models import get_or_create_user, UserPortfolio, get_user_by_clerk_id
+    
     data = request.json
     name = data.get('name')
     tickers = data.get('tickers', [])
@@ -575,10 +686,19 @@ def save_portfolio():
     try:
         # If user is authenticated, save to user_portfolios
         if g.user_id:
-            from webapp.user_models import get_or_create_user, UserPortfolio
-            
             with data_manager._get_session() as session:
                 user = get_or_create_user(session, g.user_id, g.username)
+                
+                # Check portfolio limit
+                allowed, reason, current, max_count = can_save_portfolio(session, user)
+                if not allowed:
+                    return jsonify({
+                        'error': 'portfolio_limit_exceeded',
+                        'message': reason,
+                        'current_count': current,
+                        'max_count': max_count,
+                        'upgrade_required': True
+                    }), 403
                 
                 portfolio = UserPortfolio(
                     user_id=user.id,
@@ -595,7 +715,9 @@ def save_portfolio():
                     'id': portfolio.id,
                     'name': portfolio.name,
                     'message': 'Portfolio saved to your account',
-                    'is_authenticated': True
+                    'is_authenticated': True,
+                    'portfolios_used': current + 1,
+                    'portfolios_max': max_count
                 })
         else:
             # Anonymous save to legacy table (for backwards compatibility)
@@ -635,9 +757,32 @@ def delete_portfolio(portfolio_id):
         logger.error(f"Delete portfolio error: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/portfolios/export-csv', methods=['POST'])
+@optional_auth
 def export_portfolio_csv():
-    """Export current portfolio configuration as CSV."""
+    """Export current portfolio configuration as CSV (Premium+ feature)."""
+    from webapp.user_models import get_user_by_clerk_id
+    
+    # Check feature access
+    user = None
+    if g.user_id:
+        try:
+            with data_manager._get_session() as session:
+                user = get_user_by_clerk_id(session, g.user_id)
+        except:
+            pass
+    
+    if not can_access_feature(user, 'csv_import_export'):
+        tier = get_user_tier(user)
+        return jsonify({
+            'error': 'feature_not_allowed',
+            'message': 'CSV export requires Premium or Pro subscription',
+            'feature': 'csv_import_export',
+            'current_tier': tier,
+            'upgrade_required': True
+        }), 403
+    
     try:
         data = request.json
         tickers = data.get('tickers', [])
@@ -673,8 +818,30 @@ def export_portfolio_csv():
 
 
 @app.route('/api/portfolios/import-csv', methods=['POST'])
+@optional_auth
 def import_portfolio_csv():
-    """Import portfolio configuration from CSV."""
+    """Import portfolio configuration from CSV (Premium+ feature)."""
+    from webapp.user_models import get_user_by_clerk_id
+    
+    # Check feature access
+    user = None
+    if g.user_id:
+        try:
+            with data_manager._get_session() as session:
+                user = get_user_by_clerk_id(session, g.user_id)
+        except:
+            pass
+    
+    if not can_access_feature(user, 'csv_import_export'):
+        tier = get_user_tier(user)
+        return jsonify({
+            'error': 'feature_not_allowed',
+            'message': 'CSV import requires Premium or Pro subscription',
+            'feature': 'csv_import_export',
+            'current_tier': tier,
+            'upgrade_required': True
+        }), 403
+    
     try:
         data = request.json
         csv_content = data.get('csv', '')
@@ -765,6 +932,7 @@ def import_portfolio_csv():
 # ============================================================================
 
 @app.route('/api/rankings')
+@optional_auth
 def get_rankings():
     """
     Get public portfolio rankings.
@@ -774,7 +942,7 @@ def get_rankings():
         order: desc, asc (default: desc)
         limit: 1-100 (default: 50)
     """
-    from webapp.user_models import UserPortfolio, User
+    from webapp.user_models import UserPortfolio, User, get_user_by_clerk_id
     
     sort_by = request.args.get('sort_by', 'sharpe')
     order = request.args.get('order', 'desc')
@@ -794,6 +962,17 @@ def get_rankings():
     
     sort_col = sort_columns.get(sort_by, UserPortfolio.cached_sharpe)
     
+    # Check if requester can view allocations (Pro only)
+    show_allocations = False
+    if g.user_id:
+        try:
+            with data_manager._get_session() as session:
+                user = get_user_by_clerk_id(session, g.user_id)
+                if user and can_access_feature(user, 'view_others_allocations'):
+                    show_allocations = True
+        except:
+            pass
+    
     try:
         with data_manager._get_session() as session:
             query = session.query(UserPortfolio).join(User).filter(
@@ -808,13 +987,6 @@ def get_rankings():
             
             portfolios = query.limit(limit).all()
             
-            # Check if requester is premium (for allocation visibility)
-            show_allocations = False
-            auth_header = request.headers.get('Authorization', '')
-            if auth_header.startswith('Bearer '):
-                # TODO: Check if user is premium tier
-                pass
-            
             results = []
             for i, portfolio in enumerate(portfolios, 1):
                 results.append(portfolio.to_ranking_dict(
@@ -826,7 +998,8 @@ def get_rankings():
                 'rankings': results,
                 'sort_by': sort_by,
                 'order': order,
-                'count': len(results)
+                'count': len(results),
+                'can_view_allocations': show_allocations
             })
             
     except Exception as e:
@@ -851,8 +1024,13 @@ def get_user_portfolios():
                 user_id=user.id
             ).order_by(UserPortfolio.updated_at.desc()).all()
             
+            # Get tier info for limits
+            tier_config = get_tier_config(get_user_tier(user))
+            
             return jsonify({
-                'portfolios': [p.to_dict(include_allocations=True) for p in portfolios]
+                'portfolios': [p.to_dict(include_allocations=True) for p in portfolios],
+                'count': len(portfolios),
+                'max_portfolios': tier_config['max_portfolios']
             })
             
     except Exception as e:
