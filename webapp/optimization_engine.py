@@ -539,92 +539,44 @@ class PortfolioOptimizer:
     # ========================================================================
 
     def calculate_hhi(self, weights):
-        """
-        Herfindahl-Hirschman Index - measures concentration risk.
-        HHI = sum(w_i^2)
-        Range: 1/N (perfectly diversified) to 1.0 (single asset)
-        """
         weights = np.array(weights)
-        weights = weights[weights > 0.0001]  # Filter near-zero weights
+        weights = weights[weights > 0.0001]
         return float(np.sum(weights ** 2))
 
     def calculate_diversification_ratio(self, weights):
-        """
-        Diversification Ratio = (weighted avg volatility) / (portfolio volatility)
-        DR > 1.0 means you're getting diversification benefit
-        DR = 1.0 means no diversification (perfectly correlated assets)
-        Higher is better (1.4+ is good)
-        """
         weights = np.array(weights)
-        
-        # Individual asset volatilities (annualized)
         asset_vols = np.sqrt(np.diag(self.cov_matrix))
-        
-        # Weighted average volatility (if assets were perfectly correlated)
         weighted_avg_vol = np.sum(weights * asset_vols)
-        
-        # Actual portfolio volatility
         port_vol = np.sqrt(np.dot(weights.T, np.dot(self.cov_matrix, weights)))
-        
         if port_vol < 0.0001:
             return 1.0
-        
         return float(weighted_avg_vol / port_vol)
 
     def calculate_enb(self, weights):
-        """
-        Effective Number of Bets (simple version from HHI).
-        ENB = 1 / HHI
-        Tells you how many "independent" bets you're actually making.
-        """
         hhi = self.calculate_hhi(weights)
         if hhi < 0.0001:
             return float(len(weights))
         return float(1.0 / hhi)
 
     def calculate_max_drawdown_duration(self, weights):
-        """
-        Calculate the longest drawdown duration in trading days.
-        """
         port_daily_rets = self.returns.dot(weights)
         cumulative = (1 + port_daily_rets).cumprod()
         peak = cumulative.expanding(min_periods=1).max()
         drawdown = (cumulative / peak) - 1
-        
-        # Find drawdown periods
         in_drawdown = drawdown < 0
-        
         if not in_drawdown.any():
             return 0
-        
-        # Calculate consecutive drawdown periods
         max_duration = 0
         current_duration = 0
-        
         for is_dd in in_drawdown:
             if is_dd:
                 current_duration += 1
                 max_duration = max(max_duration, current_duration)
             else:
                 current_duration = 0
-        
         return int(max_duration)
 
     def calculate_health_score(self, weights, score_weights=None):
-        """
-        Composite Portfolio Health Score (0-100).
-        
-        Default weights:
-        - Sharpe Ratio: 40%
-        - Diversification Ratio: 30%
-        - HHI Score (inverted): 10%
-        - Drawdown Duration Score: 20%
-        
-        Args:
-            weights: Portfolio weights
-            score_weights: Optional dict to override default scoring weights
-                          e.g., {'sharpe': 40, 'div_ratio': 30, 'hhi': 10, 'drawdown': 20}
-        """
         if score_weights is None:
             score_weights = {
                 'sharpe': 40,
@@ -632,39 +584,22 @@ class PortfolioOptimizer:
                 'hhi': 10,
                 'drawdown': 20
             }
-        
-        # Normalize score weights to sum to 100
         total_weight = sum(score_weights.values())
         score_weights = {k: v / total_weight * 100 for k, v in score_weights.items()}
-        
-        # Calculate raw metrics
         ret, vol, sharpe = self.performance_stats(weights)
         div_ratio = self.calculate_diversification_ratio(weights)
         hhi = self.calculate_hhi(weights)
         max_dd_duration = self.calculate_max_drawdown_duration(weights)
-        
-        # Score each component (0-100 scale)
-        
-        # Sharpe: 0 -> 0, 1.0 -> 50, 2.0+ -> 100
         sharpe_score = min(100, max(0, sharpe * 50))
-        
-        # Diversification Ratio: 1.0 -> 0, 1.4 -> 50, 2.0+ -> 100
         div_score = min(100, max(0, (div_ratio - 1.0) * 100))
-        
-        # HHI: 1.0 -> 0 (bad), 0.1 -> 90, 0.05 -> 100 (lower is better)
         hhi_score = min(100, max(0, (1.0 - hhi) * 100))
-        
-        # Drawdown Duration: 0 days -> 100, 252 days (1 year) -> 0
         dd_score = min(100, max(0, 100 - (max_dd_duration / 252 * 100)))
-        
-        # Weighted composite
         health_score = (
             sharpe_score * score_weights['sharpe'] / 100 +
             div_score * score_weights['div_ratio'] / 100 +
             hhi_score * score_weights['hhi'] / 100 +
             dd_score * score_weights['drawdown'] / 100
         )
-        
         return {
             'health_score': round(health_score, 1),
             'components': {
@@ -684,17 +619,11 @@ class PortfolioOptimizer:
         }
 
     def calculate_diversification_metrics(self, weights):
-        """
-        Calculate all diversification metrics for a portfolio.
-        Returns a dict suitable for API response.
-        """
         weights = np.array(weights)
-        
         hhi = self.calculate_hhi(weights)
         div_ratio = self.calculate_diversification_ratio(weights)
         enb = self.calculate_enb(weights)
         health = self.calculate_health_score(weights)
-        
         return {
             'hhi': round(hhi, 4),
             'hhi_interpretation': 'High Concentration' if hhi > 0.25 else ('Moderate' if hhi > 0.1 else 'Well Diversified'),
@@ -708,10 +637,10 @@ class PortfolioOptimizer:
         }
 
     # ========================================================================
-    # ROBUST OPTIMIZATION (Phase 4)
+    # ROBUST OPTIMIZATION (Phase 4) - Pro Only
     # ========================================================================
 
-    def optimize_robust_sharpe(self, constraints=None, n_resamples=50, perturbation_scale=0.1):
+    def optimize_robust_sharpe(self, constraints=None, n_resamples=100, perturbation_scale=0.1):
         """
         Robust Maximum Sharpe Ratio using Monte Carlo resampling.
         
@@ -722,77 +651,53 @@ class PortfolioOptimizer:
         
         Args:
             constraints: Asset weight constraints
-            n_resamples: Number of Monte Carlo iterations (25, 50, or 100)
+            n_resamples: Number of Monte Carlo iterations (default 100 for Pro)
             perturbation_scale: How much to perturb (0.1 = 10% noise)
         """
         all_weights = []
         
         for i in range(n_resamples):
-            # Perturb mean returns
             noise_returns = np.random.normal(0, perturbation_scale, len(self.mean_returns))
             perturbed_returns = self.mean_returns * (1 + noise_returns)
-            
-            # Perturb covariance matrix (must remain positive semi-definite)
             noise_cov = np.random.normal(0, perturbation_scale, self.cov_matrix.shape)
-            noise_cov = (noise_cov + noise_cov.T) / 2  # Make symmetric
-            perturbed_cov = self.cov_matrix * (1 + noise_cov * 0.5)  # Smaller perturbation for stability
-            
-            # Ensure positive semi-definite
+            noise_cov = (noise_cov + noise_cov.T) / 2
+            perturbed_cov = self.cov_matrix * (1 + noise_cov * 0.5)
             eigenvalues, eigenvectors = np.linalg.eigh(perturbed_cov)
             eigenvalues = np.maximum(eigenvalues, 1e-8)
             perturbed_cov = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
-            
-            # Store original values
             orig_mean = self.mean_returns.copy()
             orig_cov = self.cov_matrix.copy()
-            
             try:
-                # Temporarily replace with perturbed values
                 self.mean_returns = perturbed_returns
                 self.cov_matrix = perturbed_cov
-                
-                # Run optimization
                 result = self._run_optimization(lambda w: -self.performance_stats(w)[2], constraints)
-                
-                # Extract weights
                 weights = np.array([result['weights'].get(t, 0) / 100.0 for t in self.tickers])
                 all_weights.append(weights)
-                
             except Exception as e:
                 logger.warning(f"Resample {i} failed: {e}")
             finally:
-                # Restore original values
                 self.mean_returns = orig_mean
                 self.cov_matrix = orig_cov
         
         if not all_weights:
-            # Fallback to standard optimization
             return self.optimize_sharpe_ratio(constraints)
         
-        # Average weights across all successful resamples
         avg_weights = np.mean(all_weights, axis=0)
-        avg_weights = avg_weights / np.sum(avg_weights)  # Normalize
-        
-        # Calculate stats for averaged weights
+        avg_weights = avg_weights / np.sum(avg_weights)
         return self._format_result(self._dummy_result(avg_weights))
 
-    def optimize_robust_min_volatility(self, constraints=None, n_resamples=50, perturbation_scale=0.1):
-        """
-        Robust Minimum Volatility using Monte Carlo resampling.
-        """
+    def optimize_robust_min_volatility(self, constraints=None, n_resamples=100, perturbation_scale=0.1):
+        """Robust Minimum Volatility using Monte Carlo resampling."""
         all_weights = []
         
         for i in range(n_resamples):
             noise_cov = np.random.normal(0, perturbation_scale, self.cov_matrix.shape)
             noise_cov = (noise_cov + noise_cov.T) / 2
             perturbed_cov = self.cov_matrix * (1 + noise_cov * 0.5)
-            
             eigenvalues, eigenvectors = np.linalg.eigh(perturbed_cov)
             eigenvalues = np.maximum(eigenvalues, 1e-8)
             perturbed_cov = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
-            
             orig_cov = self.cov_matrix.copy()
-            
             try:
                 self.cov_matrix = perturbed_cov
                 result = self._run_optimization(lambda w: self.performance_stats(w)[1], constraints)
@@ -808,5 +713,90 @@ class PortfolioOptimizer:
         
         avg_weights = np.mean(all_weights, axis=0)
         avg_weights = avg_weights / np.sum(avg_weights)
+        return self._format_result(self._dummy_result(avg_weights))
+
+    def optimize_robust_min_vol_target_return(self, target_return, constraints=None, n_resamples=100, perturbation_scale=0.1):
+        """Robust Minimum Volatility subject to Target Return using Monte Carlo resampling."""
+        target_return_decimal = float(target_return) / 100.0 if target_return else 0.10
+        all_weights = []
         
+        for i in range(n_resamples):
+            noise_returns = np.random.normal(0, perturbation_scale, len(self.mean_returns))
+            perturbed_returns = self.mean_returns * (1 + noise_returns)
+            noise_cov = np.random.normal(0, perturbation_scale, self.cov_matrix.shape)
+            noise_cov = (noise_cov + noise_cov.T) / 2
+            perturbed_cov = self.cov_matrix * (1 + noise_cov * 0.5)
+            eigenvalues, eigenvectors = np.linalg.eigh(perturbed_cov)
+            eigenvalues = np.maximum(eigenvalues, 1e-8)
+            perturbed_cov = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
+            orig_mean = self.mean_returns.copy()
+            orig_cov = self.cov_matrix.copy()
+            try:
+                self.mean_returns = perturbed_returns
+                self.cov_matrix = perturbed_cov
+                def objective(w):
+                    return self.performance_stats(w)[1]
+                bounds = self._build_bounds(constraints)
+                cons = [
+                    {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
+                    {'type': 'ineq', 'fun': lambda x: self.performance_stats(x)[0] - target_return_decimal}
+                ]
+                cons = self._add_group_constraints_to_list(cons)
+                result = minimize(objective, self._initial_guess(), method='SLSQP', bounds=bounds, constraints=cons)
+                if result.success:
+                    all_weights.append(result.x)
+            except Exception as e:
+                logger.warning(f"Robust min vol target return resample {i} failed: {e}")
+            finally:
+                self.mean_returns = orig_mean
+                self.cov_matrix = orig_cov
+        
+        if not all_weights:
+            return self.optimize_min_vol_target_return(target_return, constraints)
+        
+        avg_weights = np.mean(all_weights, axis=0)
+        avg_weights = avg_weights / np.sum(avg_weights)
+        return self._format_result(self._dummy_result(avg_weights))
+
+    def optimize_robust_max_return_target_vol(self, target_volatility, constraints=None, n_resamples=100, perturbation_scale=0.1):
+        """Robust Maximum Return subject to Target Volatility using Monte Carlo resampling."""
+        target_vol_decimal = float(target_volatility) / 100.0 if target_volatility else 0.15
+        all_weights = []
+        
+        for i in range(n_resamples):
+            noise_returns = np.random.normal(0, perturbation_scale, len(self.mean_returns))
+            perturbed_returns = self.mean_returns * (1 + noise_returns)
+            noise_cov = np.random.normal(0, perturbation_scale, self.cov_matrix.shape)
+            noise_cov = (noise_cov + noise_cov.T) / 2
+            perturbed_cov = self.cov_matrix * (1 + noise_cov * 0.5)
+            eigenvalues, eigenvectors = np.linalg.eigh(perturbed_cov)
+            eigenvalues = np.maximum(eigenvalues, 1e-8)
+            perturbed_cov = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
+            orig_mean = self.mean_returns.copy()
+            orig_cov = self.cov_matrix.copy()
+            try:
+                self.mean_returns = perturbed_returns
+                self.cov_matrix = perturbed_cov
+                def objective(w):
+                    return -self.performance_stats(w)[0]
+                bounds = self._build_bounds(constraints)
+                cons = [
+                    {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
+                    {'type': 'ineq', 'fun': lambda x: target_vol_decimal - self.performance_stats(x)[1]}
+                ]
+                cons = self._add_group_constraints_to_list(cons)
+                result = minimize(objective, self._initial_guess(), method='SLSQP', bounds=bounds, constraints=cons)
+                if result.success:
+                    all_weights.append(result.x)
+            except Exception as e:
+                logger.warning(f"Robust max return target vol resample {i} failed: {e}")
+            finally:
+                self.mean_returns = orig_mean
+                self.cov_matrix = orig_cov
+        
+        if not all_weights:
+            return self.optimize_max_return_target_vol(target_volatility, constraints)
+        
+        avg_weights = np.mean(all_weights, axis=0)
+        avg_weights = avg_weights / np.sum(avg_weights)
         return self._format_result(self._dummy_result(avg_weights))
