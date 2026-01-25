@@ -17,8 +17,8 @@ TIERS = {
     'free': {
         'name': 'Free',
         'price_monthly': 0,
-        'max_assets': 10,
-        'max_portfolios': 1,  # Requires login
+        'max_assets': 5,
+        'max_portfolios': 3,  # Requires login
         'features': {
             'basic_optimization': True,      # Max Sharpe, Min Vol, Equal Weight, Risk Parity
             'advanced_optimization': False,  # CVaR, Kelly, Omega, Sortino, Tracking Error, Min Drawdown
@@ -33,9 +33,9 @@ TIERS = {
     },
     'premium': {
         'name': 'Premium',
-        'price_monthly': 9,
-        'max_assets': 25,
-        'max_portfolios': 3,
+        'price_monthly': 14,  # Updated from $9 to $14
+        'max_assets': 15,
+        'max_portfolios': 20,
         'features': {
             'basic_optimization': True,
             'advanced_optimization': True,
@@ -415,7 +415,7 @@ def get_pricing_data():
                 'description': 'Get started with portfolio optimization',
                 'features': [
                     f'Up to {TIERS["free"]["max_assets"]} assets per optimization',
-                    f'Save {TIERS["free"]["max_portfolios"]} portfolio (requires login)',
+                    f'Save up to {TIERS["free"]["max_portfolios"]} portfolios (requires login)',
                     'Basic optimization (Max Sharpe, Min Vol, Risk Parity)',
                     'Efficient frontier visualization',
                     'Correlation matrix',
