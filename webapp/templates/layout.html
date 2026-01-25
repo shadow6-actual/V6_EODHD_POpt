@@ -24,14 +24,30 @@
         .card { border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .chart-container { height: 400px; }
         .ticker-badge { font-size: 0.9em; margin: 2px; cursor: pointer; }
+        
+        /* Footer link styles */
+        footer a {
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        footer a:hover {
+            color: #3b82f6 !important;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-dark bg-dark">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">
+            <a href="/" class="navbar-brand mb-0 h1">
                 <i class="fas fa-chart-line me-2"></i>FolioForecast <span class="badge bg-primary">Beta</span>
-            </span>
+            </a>
+            
+            <!-- Nav Links -->
+            <div class="d-none d-md-flex align-items-center me-auto ms-4">
+                <a href="/" class="text-light text-decoration-none me-3 small">Home</a>
+                <a href="/app" class="text-light text-decoration-none me-3 small">App</a>
+                <a href="/pricing" class="text-light text-decoration-none small">Pricing</a>
+            </div>
             
             <!-- Auth Section -->
             <div class="d-flex align-items-center" id="authSection">
