@@ -93,12 +93,12 @@ BASIC_OPTIMIZATION_METHODS = [
     'max_sharpe',
     'min_volatility', 
     'equal_weight',
-    'risk_parity'
+    'risk_parity',
+    'min_vol_target_return',    # Fundamental MVO - moved to basic
+    'max_return_target_vol',    # Fundamental MVO - moved to basic
 ]
 
 ADVANCED_OPTIMIZATION_METHODS = [
-    'min_vol_target_return',
-    'max_return_target_vol',
     'min_cvar',
     'min_cvar_target_return',
     'max_return_target_cvar',
@@ -113,7 +113,9 @@ ADVANCED_OPTIMIZATION_METHODS = [
 
 ROBUST_OPTIMIZATION_METHODS = [
     'robust_max_sharpe',
-    'robust_min_volatility'
+    'robust_min_volatility',
+    'robust_min_vol_target_return',
+    'robust_max_return_target_vol'
 ]
 
 # Grace period for expired subscriptions (days)
