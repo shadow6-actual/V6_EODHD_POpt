@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - FolioForecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a24;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --accent-blue: #3b82f6;
+            --border-color: #2a2a3a;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.7;
+        }
+        
+        .legal-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        
+        .legal-header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .legal-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .legal-header .effective-date {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .legal-section {
+            margin-bottom: 40px;
+        }
+        
+        .legal-section h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .legal-section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .legal-section p, .legal-section li {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        
+        .legal-section ul, .legal-section ol {
+            padding-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .legal-section li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--accent-blue);
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .highlight-box.warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .highlight-box.important {
+            border-left-color: #ef4444;
+        }
+        
+        .highlight-box p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-blue);
+            text-decoration: none;
+            margin-bottom: 30px;
+            transition: opacity 0.2s;
+        }
+        
+        .back-link:hover {
+            opacity: 0.8;
+            color: var(--accent-blue);
+        }
+        
+        .toc {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 40px;
+        }
+        
+        .toc h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            columns: 2;
+        }
+        
+        .toc li {
+            margin-bottom: 8px;
+        }
+        
+        .toc a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        
+        .toc a:hover {
+            color: var(--accent-blue);
+        }
+        
+        @media (max-width: 600px) {
+            .toc ul {
+                columns: 1;
+            }
+            
+            .legal-header h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 60px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="legal-container">
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to FolioForecast
+        </a>
+        
+        <div class="legal-header">
+            <h1>Terms of Service</h1>
+            <p class="effective-date">Effective Date: January 25, 2026</p>
+        </div>
+        
+        <nav class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#acceptance">1. Acceptance of Terms</a></li>
+                <li><a href="#description">2. Service Description</a></li>
+                <li><a href="#accounts">3. User Accounts</a></li>
+                <li><a href="#subscriptions">4. Subscriptions & Billing</a></li>
+                <li><a href="#acceptable-use">5. Acceptable Use</a></li>
+                <li><a href="#intellectual-property">6. Intellectual Property</a></li>
+                <li><a href="#disclaimers">7. Disclaimers</a></li>
+                <li><a href="#limitation">8. Limitation of Liability</a></li>
+                <li><a href="#indemnification">9. Indemnification</a></li>
+                <li><a href="#termination">10. Termination</a></li>
+                <li><a href="#changes">11. Changes to Terms</a></li>
+                <li><a href="#governing-law">12. Governing Law</a></li>
+                <li><a href="#contact">13. Contact Information</a></li>
+            </ul>
+        </nav>
+        
+        <section id="acceptance" class="legal-section">
+            <h2>1. Acceptance of Terms</h2>
+            <p>Welcome to FolioForecast. By accessing or using our website at www.folioforecast.com (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not access or use the Service.</p>
+            <p>These Terms constitute a legally binding agreement between you ("User," "you," or "your") and FolioForecast ("Company," "we," "us," or "our").</p>
+            <p>You must be at least 18 years old to use this Service. By using the Service, you represent and warrant that you are at least 18 years of age and have the legal capacity to enter into these Terms.</p>
+        </section>
+        
+        <section id="description" class="legal-section">
+            <h2>2. Service Description</h2>
+            <p>FolioForecast is a portfolio optimization and analysis tool that provides:</p>
+            <ul>
+                <li>Portfolio optimization using various mathematical methods (Mean-Variance, CVaR, Risk Parity, etc.)</li>
+                <li>Historical performance analysis and backtesting</li>
+                <li>Risk metrics and diversification analytics</li>
+                <li>Visualization tools including efficient frontier charts, correlation matrices, and heatmaps</li>
+                <li>Portfolio saving and management features</li>
+            </ul>
+            
+            <div class="highlight-box important">
+                <p><strong>Important:</strong> FolioForecast is an educational and analytical tool only. We do not provide investment advice, financial planning, tax advice, or recommendations to buy, sell, or hold any securities. The Service does not execute trades or manage actual investments on your behalf.</p>
+            </div>
+        </section>
+        
+        <section id="accounts" class="legal-section">
+            <h2>3. User Accounts</h2>
+            
+            <h3>3.1 Account Creation</h3>
+            <p>To access certain features of the Service, you must create an account. Account authentication is provided through Clerk, a third-party authentication service. By creating an account, you agree to:</p>
+            <ul>
+                <li>Provide accurate and complete information</li>
+                <li>Maintain the security of your account credentials</li>
+                <li>Promptly update any changes to your information</li>
+                <li>Accept responsibility for all activities under your account</li>
+            </ul>
+            
+            <h3>3.2 Account Security</h3>
+            <p>You are responsible for maintaining the confidentiality of your account. You agree to notify us immediately of any unauthorized access or use of your account. We are not liable for any loss or damage arising from your failure to protect your account credentials.</p>
+        </section>
+        
+        <section id="subscriptions" class="legal-section">
+            <h2>4. Subscriptions & Billing</h2>
+            
+            <h3>4.1 Subscription Tiers</h3>
+            <p>FolioForecast offers the following subscription tiers:</p>
+            <ul>
+                <li><strong>Free:</strong> Limited features including basic optimization methods, up to 10 assets, and 1 saved portfolio</li>
+                <li><strong>Premium ($9/month):</strong> Advanced optimization methods, up to 25 assets, 3 saved portfolios, and CSV import/export</li>
+                <li><strong>Pro ($29/month):</strong> All features including unlimited assets, unlimited portfolios, robust Monte Carlo optimization, diversification analytics, and group constraints</li>
+            </ul>
+            
+            <h3>4.2 Free Trial</h3>
+            <p>We offer a 1-day free trial of Pro features for new users. No credit card is required to start a trial. After the trial period, you will automatically revert to the Free tier unless you subscribe to a paid plan.</p>
+            
+            <h3>4.3 Billing</h3>
+            <p>Paid subscriptions are billed monthly in advance. Payment processing is handled by Stripe, a third-party payment processor. By subscribing, you authorize us to charge your payment method on a recurring basis.</p>
+            
+            <h3>4.4 Cancellation</h3>
+            <p>You may cancel your subscription at any time. Upon cancellation:</p>
+            <ul>
+                <li>You will retain access to paid features until the end of your current billing period</li>
+                <li>Your account will revert to the Free tier after the billing period ends</li>
+                <li>Saved portfolios exceeding Free tier limits will be preserved but inaccessible until you resubscribe</li>
+            </ul>
+            
+            <h3>4.5 Refunds</h3>
+            <p>Subscription fees are generally non-refundable. However, if you are dissatisfied with the Service, please contact us within 7 days of your initial subscription for a potential refund at our discretion.</p>
+            
+            <h3>4.6 Price Changes</h3>
+            <p>We reserve the right to modify subscription prices. Existing subscribers will receive at least 30 days' notice before any price increase takes effect.</p>
+        </section>
+        
+        <section id="acceptable-use" class="legal-section">
+            <h2>5. Acceptable Use</h2>
+            <p>You agree not to:</p>
+            <ul>
+                <li>Use the Service for any unlawful purpose or in violation of any applicable laws</li>
+                <li>Attempt to gain unauthorized access to the Service, other accounts, or computer systems</li>
+                <li>Interfere with or disrupt the Service or servers/networks connected to the Service</li>
+                <li>Use automated systems (bots, scrapers) to access the Service without permission</li>
+                <li>Reverse engineer, decompile, or disassemble any part of the Service</li>
+                <li>Resell, redistribute, or commercially exploit the Service without authorization</li>
+                <li>Use the Service to develop competing products</li>
+                <li>Circumvent any access restrictions or usage limits</li>
+                <li>Upload malicious code, viruses, or harmful data</li>
+            </ul>
+        </section>
+        
+        <section id="intellectual-property" class="legal-section">
+            <h2>6. Intellectual Property</h2>
+            
+            <h3>6.1 Our Intellectual Property</h3>
+            <p>The Service, including its original content, features, functionality, design, and branding, is owned by FolioForecast and is protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, distribute, or create derivative works without our express written permission.</p>
+            
+            <h3>6.2 Market Data</h3>
+            <p>Historical market data provided through the Service is sourced from third-party providers including EODHD. This data is provided for informational and educational purposes only. Redistribution of market data is prohibited.</p>
+            
+            <h3>6.3 Your Content</h3>
+            <p>You retain ownership of portfolio configurations and data you create using the Service. By using the Service, you grant us a limited license to store and process your data solely to provide the Service to you.</p>
+        </section>
+        
+        <section id="disclaimers" class="legal-section">
+            <h2>7. Disclaimers</h2>
+            
+            <div class="highlight-box important">
+                <p><strong>NOT INVESTMENT ADVICE:</strong> The information provided by FolioForecast is for educational and informational purposes only and should not be construed as investment advice, financial advice, trading advice, or any other type of advice. You should not make any investment decision based solely on information provided by this Service.</p>
+            </div>
+            
+            <h3>7.1 No Warranties</h3>
+            <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.</p>
+            
+            <h3>7.2 Accuracy of Information</h3>
+            <p>We do not warrant that:</p>
+            <ul>
+                <li>The Service will be uninterrupted, secure, or error-free</li>
+                <li>Results obtained from using the Service will be accurate or reliable</li>
+                <li>Historical data or calculations are free from errors</li>
+                <li>Any optimization results will lead to positive investment outcomes</li>
+            </ul>
+            
+            <h3>7.3 Past Performance</h3>
+            <p>Past performance is not indicative of future results. Hypothetical or simulated performance results have inherent limitations and do not represent actual trading. Actual results may differ materially from backtested or optimized results.</p>
+            
+            <h3>7.4 Third-Party Services</h3>
+            <p>The Service integrates with third-party services (Clerk for authentication, Stripe for payments, EODHD for market data). We are not responsible for the availability, accuracy, or security of these third-party services.</p>
+        </section>
+        
+        <section id="limitation" class="legal-section">
+            <h2>8. Limitation of Liability</h2>
+            <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL FOLIOFORECAST, ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION:</p>
+            <ul>
+                <li>Loss of profits, data, use, goodwill, or other intangible losses</li>
+                <li>Investment losses or damages resulting from reliance on information provided by the Service</li>
+                <li>Damages resulting from unauthorized access to your account or data</li>
+                <li>Any damages exceeding the amount you paid to us in the 12 months preceding the claim</li>
+            </ul>
+            <p>SOME JURISDICTIONS DO NOT ALLOW LIMITATIONS ON IMPLIED WARRANTIES OR EXCLUSION OF LIABILITY FOR CERTAIN DAMAGES. IN SUCH JURISDICTIONS, OUR LIABILITY SHALL BE LIMITED TO THE GREATEST EXTENT PERMITTED BY LAW.</p>
+        </section>
+        
+        <section id="indemnification" class="legal-section">
+            <h2>9. Indemnification</h2>
+            <p>You agree to defend, indemnify, and hold harmless FolioForecast and its officers, directors, employees, and agents from any claims, damages, losses, liabilities, costs, or expenses (including reasonable attorneys' fees) arising from:</p>
+            <ul>
+                <li>Your use of the Service</li>
+                <li>Your violation of these Terms</li>
+                <li>Your violation of any rights of another party</li>
+                <li>Any investment decisions you make based on information from the Service</li>
+            </ul>
+        </section>
+        
+        <section id="termination" class="legal-section">
+            <h2>10. Termination</h2>
+            <p>We may terminate or suspend your account and access to the Service immediately, without prior notice or liability, for any reason, including:</p>
+            <ul>
+                <li>Breach of these Terms</li>
+                <li>Fraudulent, abusive, or illegal activity</li>
+                <li>Non-payment of subscription fees</li>
+                <li>At our sole discretion for any reason</li>
+            </ul>
+            <p>Upon termination, your right to use the Service will cease immediately. Provisions of these Terms that by their nature should survive termination shall survive, including ownership provisions, warranty disclaimers, indemnification, and limitations of liability.</p>
+        </section>
+        
+        <section id="changes" class="legal-section">
+            <h2>11. Changes to Terms</h2>
+            <p>We reserve the right to modify these Terms at any time. We will notify users of material changes by:</p>
+            <ul>
+                <li>Posting the updated Terms on the Service</li>
+                <li>Updating the "Effective Date" at the top of these Terms</li>
+                <li>Sending an email notification for significant changes (if you have an account)</li>
+            </ul>
+            <p>Your continued use of the Service after changes become effective constitutes acceptance of the revised Terms. If you do not agree to the new Terms, you must stop using the Service.</p>
+        </section>
+        
+        <section id="governing-law" class="legal-section">
+            <h2>12. Governing Law</h2>
+            <p>These Terms shall be governed by and construed in accordance with the laws of the State of Texas, United States, without regard to its conflict of law provisions.</p>
+            <p>Any disputes arising from these Terms or the Service shall be resolved exclusively in the state or federal courts located in Dallas County, Texas. You consent to the personal jurisdiction of such courts.</p>
+        </section>
+        
+        <section id="contact" class="legal-section">
+            <h2>13. Contact Information</h2>
+            <p>If you have questions about these Terms, please contact us:</p>
+            <ul>
+                <li><strong>Email:</strong> support@folioforecast.com</li>
+                <li><strong>Website:</strong> www.folioforecast.com</li>
+            </ul>
+        </section>
+    </div>
+    
+    <footer>
+        <p>&copy; 2026 FolioForecast. All rights reserved.</p>
+        <p>
+            <a href="/terms">Terms of Service</a> &nbsp;|&nbsp;
+            <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp;
+            <a href="/pricing">Pricing</a>
+        </p>
+    </footer>
+</body>
+</html>
