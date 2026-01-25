@@ -17,11 +17,11 @@ const BASIC_METHODS = [
     'max_sharpe', 
     'min_volatility', 
     'equal_weight', 
-    'risk_parity',
-    'min_vol_target_return',
-    'max_return_target_vol'
+    'risk_parity'
 ];
 const ADVANCED_METHODS = [
+    'min_vol_target_return',
+    'max_return_target_vol',
     'min_cvar', 
     'min_cvar_target_return', 
     'max_return_target_cvar', 
