@@ -496,7 +496,7 @@
                     <i class="fas fa-chevron-down"></i>
                 </div>
                 <div class="faq-answer">
-                    <p>We offer a 7-day free trial for both Premium and Pro plans. No credit card required to start your trial. You'll be prompted to add payment details only if you decide to continue after the trial.</p>
+                    <p>We offer a 1-day free trial for the Pro plan so you can experience all features. No credit card required to start your trial. After the trial, you can choose to subscribe or continue with the free tier.</p>
                 </div>
             </div>
             
@@ -607,9 +607,15 @@
                 badge.style.display = 'none';
             });
             
-            const currentBadge = document.getElementById(`badge-${userTier}`);
+            // Trial users show badge on Pro
+            const displayTier = userTier === 'trial' ? 'pro' : userTier;
+            const currentBadge = document.getElementById(`badge-${displayTier}`);
             if (currentBadge) {
                 currentBadge.style.display = 'inline-block';
+                if (userTier === 'trial') {
+                    currentBadge.textContent = 'Trial Active';
+                    currentBadge.style.background = '#f59e0b';
+                }
             }
             
             // Update CTA buttons
@@ -634,9 +640,9 @@
                 if (freeCta) {
                     freeCta.textContent = 'Downgrade';
                 }
-            } else if (userTier === 'pro') {
+            } else if (userTier === 'pro' || userTier === 'trial') {
                 if (proCta) {
-                    proCta.textContent = 'Current Plan';
+                    proCta.textContent = userTier === 'trial' ? 'Trial Active' : 'Current Plan';
                     proCta.style.opacity = '0.6';
                     proCta.style.pointerEvents = 'none';
                 }
@@ -644,7 +650,11 @@
                     freeCta.textContent = 'Downgrade';
                 }
                 if (premiumCta) {
-                    premiumCta.textContent = 'Downgrade';
+                    premiumCta.textContent = userTier === 'trial' ? 'Subscribe' : 'Downgrade';
+                    if (userTier === 'trial') {
+                        premiumCta.style.opacity = '1';
+                        premiumCta.style.pointerEvents = 'auto';
+                    }
                 }
             }
         }
@@ -663,11 +673,45 @@
                 return;
             }
             
-            // User is logged in - show Stripe checkout (placeholder for now)
-            alert(`Stripe checkout for ${tier.toUpperCase()} plan coming soon!\n\nFor now, contact support@folioforecast.com to upgrade your account.`);
-            
-            // TODO: Implement Stripe checkout
-            // window.location.href = `/api/stripe/checkout?tier=${tier}`;
+            // User is logged in
+            if (tier === 'pro' && userTier === 'free') {
+                // Start free trial
+                startFreeTrial();
+            } else {
+                // Show Stripe checkout (placeholder for now)
+                alert(`Stripe checkout for ${tier.toUpperCase()} plan coming soon!\n\nFor now, contact support@folioforecast.com to upgrade your account.`);
+            }
+        }
+        
+        async function startFreeTrial() {
+            try {
+                const token = await clerkInstance.session.getToken();
+                const response = await fetch('/api/subscription/start-trial', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(data.message);
+                    userTier = data.subscription?.tier || 'trial';
+                    updateUIForTier();
+                    
+                    // Redirect to app after short delay
+                    setTimeout(() => {
+                        window.location.href = '/app';
+                    }, 1500);
+                } else {
+                    alert(data.message || 'Unable to start trial');
+                }
+            } catch (error) {
+                console.error('Trial start error:', error);
+                alert('Error starting trial. Please try again.');
+            }
         }
 
         function toggleFaq(element) {
