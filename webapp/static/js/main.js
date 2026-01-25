@@ -13,14 +13,32 @@ let userSubscription = null;
 // SUBSCRIPTION TIER CONSTANTS (mirror backend)
 // ============================================================================
 
-const BASIC_METHODS = ['max_sharpe', 'min_volatility', 'equal_weight', 'risk_parity'];
-const ADVANCED_METHODS = [
-    'min_vol_target_return', 'max_return_target_vol', 'min_cvar', 
-    'min_cvar_target_return', 'max_return_target_cvar', 'min_tracking_error',
-    'max_information_ratio', 'max_excess_return_target_te', 'max_kelly',
-    'min_drawdown_target_return', 'max_omega_target_return', 'max_sortino_target_return'
+const BASIC_METHODS = [
+    'max_sharpe', 
+    'min_volatility', 
+    'equal_weight', 
+    'risk_parity',
+    'min_vol_target_return',
+    'max_return_target_vol'
 ];
-const ROBUST_METHODS = ['robust_max_sharpe', 'robust_min_volatility'];
+const ADVANCED_METHODS = [
+    'min_cvar', 
+    'min_cvar_target_return', 
+    'max_return_target_cvar', 
+    'min_tracking_error',
+    'max_information_ratio', 
+    'max_excess_return_target_te', 
+    'max_kelly',
+    'min_drawdown_target_return', 
+    'max_omega_target_return', 
+    'max_sortino_target_return'
+];
+const ROBUST_METHODS = [
+    'robust_max_sharpe',
+    'robust_min_volatility',
+    'robust_min_vol_target_return',
+    'robust_max_return_target_vol'
+];
 
 // ============================================================================
 // CLERK AUTHENTICATION
@@ -717,16 +735,19 @@ window.updateConditionalFields = function() {
     document.getElementById('targetTEField').style.display = 'none';
     document.getElementById('robustResamplesField').style.display = 'none';
     
+    // Show robust resamples for all robust methods
     if (goal.startsWith('robust_')) {
         document.getElementById('robustResamplesField').style.display = 'block';
     }
     
+    // Target Return field
     if (['min_vol_target_return', 'min_cvar_target_return', 'min_drawdown_target_return', 
-         'max_omega_target_return', 'max_sortino_target_return'].includes(goal)) {
+         'max_omega_target_return', 'max_sortino_target_return', 'robust_min_vol_target_return'].includes(goal)) {
         document.getElementById('targetReturnField').style.display = 'block';
     }
     
-    if (goal === 'max_return_target_vol') {
+    // Target Volatility field
+    if (['max_return_target_vol', 'robust_max_return_target_vol'].includes(goal)) {
         document.getElementById('targetVolField').style.display = 'block';
     }
     
