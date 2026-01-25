@@ -286,6 +286,13 @@
         <!-- RIGHT PANEL: Results -->
         <div class="col-md-8" id="resultsPanel">
             
+            <!-- Disclaimer Banner Above Results -->
+            <div class="alert alert-warning py-2 mb-3" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Not investment advice.</strong> Results are hypothetical and based on historical data. Past performance ≠ future results.
+                <a href="/disclaimer" target="_blank" class="ms-1">Full disclaimer</a>
+            </div>
+            
             <div id="resultsPlaceholder" class="text-center py-5 text-muted">
                 <i class="fas fa-chart-pie fa-4x mb-3 text-light"></i>
                 <h5>Ready to Optimize</h5>
@@ -520,6 +527,31 @@
     </div>
 </div>
 
+<!-- Footer with Legal Links -->
+<footer class="bg-dark text-light py-3 mt-4 border-top">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <small class="text-muted">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    FolioForecast is for educational purposes only. Not investment advice.
+                </small>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="/terms" class="text-muted small me-3">Terms</a>
+                <a href="/privacy" class="text-muted small me-3">Privacy</a>
+                <a href="/disclaimer" class="text-muted small me-3">Disclaimer</a>
+                <a href="/pricing" class="text-muted small">Pricing</a>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-12 text-center">
+                <small class="text-muted">© 2026 FolioForecast. All rights reserved.</small>
+            </div>
+        </div>
+    </div>
+</footer>
+
 <!-- Load Portfolio Modal -->
 <div class="modal fade" id="loadModal" tabindex="-1">
     <div class="modal-dialog">
@@ -534,8 +566,123 @@
         </div>
     </div>
 </div>
+
+<!-- First-Visit Disclaimer Modal -->
+<div class="modal fade" id="disclaimerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Important Disclaimer
+                </h5>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-chart-line fa-4x text-primary"></i>
+                </div>
+                <h4 class="mb-3">Welcome to FolioForecast</h4>
+                <p class="text-secondary">Before you begin, please understand:</p>
+                <div class="row justify-content-center">
+                    <div class="col-md-10">
+                        <ul class="text-start list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                <strong>Not Investment Advice:</strong> 
+                                <span class="text-secondary">This tool provides educational analysis only, not personalized recommendations.</span>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                <strong>No Guarantees:</strong> 
+                                <span class="text-secondary">Past performance does not predict future results. All backtests are hypothetical.</span>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                <strong>Risk of Loss:</strong> 
+                                <span class="text-secondary">All investments can lose value. You could lose some or all of your money.</span>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                <strong>Do Your Research:</strong> 
+                                <span class="text-secondary">Consult a qualified financial advisor before making investment decisions.</span>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                <strong>Your Responsibility:</strong> 
+                                <span class="text-secondary">You are solely responsible for your investment choices.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3">
+                    By clicking "I Understand", you agree to our 
+                    <a href="/terms" target="_blank">Terms of Service</a> and acknowledge our 
+                    <a href="/disclaimer" target="_blank">Investment Disclaimer</a>.
+                </p>
+            </div>
+            <div class="modal-footer border-secondary justify-content-center">
+                <button type="button" class="btn btn-warning btn-lg px-5" id="acceptDisclaimerBtn">
+                    <i class="fas fa-check me-2"></i>I Understand & Accept
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="/static/js/main.js"></script>
+<script>
+// ============================================
+// DISCLAIMER MODAL - FIRST VISIT
+// ============================================
+
+function initDisclaimerModal() {
+    const disclaimerAcknowledged = localStorage.getItem('folioforecast_disclaimer_acknowledged');
+    
+    if (!disclaimerAcknowledged) {
+        // Show modal after a brief delay to let page load
+        setTimeout(() => {
+            const modalEl = document.getElementById('disclaimerModal');
+            if (modalEl) {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }, 500);
+    }
+}
+
+// Handle disclaimer acceptance
+document.addEventListener('DOMContentLoaded', function() {
+    const acceptBtn = document.getElementById('acceptDisclaimerBtn');
+    if (acceptBtn) {
+        acceptBtn.addEventListener('click', function() {
+            localStorage.setItem('folioforecast_disclaimer_acknowledged', 'true');
+            localStorage.setItem('folioforecast_disclaimer_date', new Date().toISOString());
+            
+            const modalEl = document.getElementById('disclaimerModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+        });
+    }
+    
+    // Initialize disclaimer check
+    initDisclaimerModal();
+});
+
+// Re-show disclaimer after 30 days (uncomment to enable)
+// function checkDisclaimerExpiry() {
+//     const acknowledgedDate = localStorage.getItem('folioforecast_disclaimer_date');
+//     if (acknowledgedDate) {
+//         const daysSinceAck = (new Date() - new Date(acknowledgedDate)) / (1000 * 60 * 60 * 24);
+//         if (daysSinceAck > 30) {
+//             localStorage.removeItem('folioforecast_disclaimer_acknowledged');
+//             localStorage.removeItem('folioforecast_disclaimer_date');
+//         }
+//     }
+// }
+// checkDisclaimerExpiry();
+</script>
 {% endblock %}
