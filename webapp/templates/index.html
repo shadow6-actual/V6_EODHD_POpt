@@ -567,62 +567,166 @@
     </div>
 </div>
 
-<!-- First-Visit Disclaimer Modal -->
-<div class="modal fade" id="disclaimerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<!-- ================================================== -->
+<!-- STEP 1: Terms of Service Modal -->
+<!-- ================================================== -->
+<div class="modal fade" id="termsModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content bg-dark text-light">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title text-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Important Disclaimer
+                    <i class="fas fa-file-contract me-2"></i>
+                    Terms of Service
                 </h5>
+                <span class="badge bg-secondary ms-auto">Step 1 of 2</span>
             </div>
-            <div class="modal-body text-center py-4">
-                <div class="mb-3">
-                    <i class="fas fa-chart-line fa-4x text-primary"></i>
+            <div class="modal-body py-4" style="max-height: 60vh; overflow-y: auto;">
+                <div class="mb-4 text-center">
+                    <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                    <h4>Welcome to FolioForecast</h4>
+                    <p class="text-light">Please read and accept our Terms of Service to continue.</p>
                 </div>
-                <h4 class="mb-3">Welcome to FolioForecast</h4>
-                <p class="text-secondary">Before you begin, please understand:</p>
-                <div class="row justify-content-center">
-                    <div class="col-md-10">
-                        <ul class="text-start list-unstyled">
-                            <li class="mb-3">
-                                <i class="fas fa-times-circle text-danger me-2"></i>
-                                <strong>Not Investment Advice:</strong> 
-                                <span class="text-secondary">This tool provides educational analysis only, not personalized recommendations.</span>
-                            </li>
-                            <li class="mb-3">
-                                <i class="fas fa-times-circle text-danger me-2"></i>
-                                <strong>No Guarantees:</strong> 
-                                <span class="text-secondary">Past performance does not predict future results. All backtests are hypothetical.</span>
-                            </li>
-                            <li class="mb-3">
-                                <i class="fas fa-times-circle text-danger me-2"></i>
-                                <strong>Risk of Loss:</strong> 
-                                <span class="text-secondary">All investments can lose value. You could lose some or all of your money.</span>
-                            </li>
-                            <li class="mb-3">
-                                <i class="fas fa-times-circle text-danger me-2"></i>
-                                <strong>Do Your Research:</strong> 
-                                <span class="text-secondary">Consult a qualified financial advisor before making investment decisions.</span>
-                            </li>
-                            <li class="mb-3">
-                                <i class="fas fa-times-circle text-danger me-2"></i>
-                                <strong>Your Responsibility:</strong> 
-                                <span class="text-secondary">You are solely responsible for your investment choices.</span>
-                            </li>
-                        </ul>
+                
+                <div class="px-3">
+                    <h6 class="text-warning mb-3"><i class="fas fa-gavel me-2"></i>Key Terms</h6>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-light"><i class="fas fa-check-circle text-success me-2"></i>Service Description</h6>
+                        <p class="text-light ps-4 mb-2">FolioForecast provides mathematical portfolio analysis and optimization tools for educational purposes. We do not provide investment advice, recommendations, or personalized financial guidance.</p>
                     </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-light"><i class="fas fa-check-circle text-success me-2"></i>User Responsibilities</h6>
+                        <p class="text-light ps-4 mb-2">You are solely responsible for your investment decisions. You must be at least 18 years old to use this service. You agree to provide accurate information and maintain the security of your account.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-light"><i class="fas fa-ban text-danger me-2"></i>No Refund Policy</h6>
+                        <p class="text-light ps-4 mb-2"><strong class="text-warning">All subscription payments are final and non-refundable.</strong> By subscribing, you acknowledge that you will not receive a refund for any unused portion of your subscription period. Please use the free tier to evaluate the service before subscribing.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-light"><i class="fas fa-check-circle text-success me-2"></i>Intellectual Property</h6>
+                        <p class="text-light ps-4 mb-2">All content, features, and functionality are owned by FolioForecast and are protected by copyright and trademark laws.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-light"><i class="fas fa-check-circle text-success me-2"></i>Limitation of Liability</h6>
+                        <p class="text-light ps-4 mb-2">FolioForecast shall not be liable for any direct, indirect, incidental, special, or consequential damages resulting from the use or inability to use this service, including any losses from investment decisions.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-light"><i class="fas fa-check-circle text-success me-2"></i>Changes to Terms</h6>
+                        <p class="text-light ps-4 mb-2">We reserve the right to modify these terms at any time. Continued use of the service constitutes acceptance of modified terms.</p>
+                    </div>
+                    
+                    <p class="small text-info mt-4">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <a href="/terms" target="_blank" class="text-info">View full Terms of Service</a>
+                    </p>
                 </div>
-                <p class="small text-muted mt-3">
-                    By clicking "I Understand", you agree to our 
-                    <a href="/terms" target="_blank">Terms of Service</a> and acknowledge our 
-                    <a href="/disclaimer" target="_blank">Investment Disclaimer</a>.
-                </p>
+            </div>
+            <div class="modal-footer border-secondary justify-content-center">
+                <button type="button" class="btn btn-warning btn-lg px-5" id="acceptTermsBtn">
+                    <i class="fas fa-check me-2"></i>I Understand & Accept Terms
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================== -->
+<!-- STEP 2: Investment Disclaimer Modal -->
+<!-- ================================================== -->
+<div class="modal fade" id="disclaimerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Investment Disclaimer
+                </h5>
+                <span class="badge bg-secondary ms-auto">Step 2 of 2</span>
+            </div>
+            <div class="modal-body py-4" style="max-height: 60vh; overflow-y: auto;">
+                <div class="mb-4 text-center">
+                    <i class="fas fa-chart-pie fa-3x text-danger mb-3"></i>
+                    <h4 class="text-light">Important Investment Warnings</h4>
+                    <p class="text-light">Please carefully read these critical disclaimers before using FolioForecast.</p>
+                </div>
+                
+                <div class="px-3">
+                    <div class="alert alert-danger mb-4">
+                        <h6 class="alert-heading"><i class="fas fa-ban me-2"></i>This Is NOT Investment Advice</h6>
+                        <p class="mb-0">FolioForecast is a mathematical tool only. We do not provide investment recommendations, financial advice, or personalized guidance of any kind.</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger me-3 mt-1 fa-lg"></i>
+                                <div>
+                                    <h6 class="text-light mb-1">No Guarantees</h6>
+                                    <p class="text-light small mb-0">Past performance does not predict future results. All backtests are hypothetical and may not reflect actual trading results.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger me-3 mt-1 fa-lg"></i>
+                                <div>
+                                    <h6 class="text-light mb-1">Risk of Loss</h6>
+                                    <p class="text-light small mb-0">All investments carry risk. You could lose some or all of your invested capital. Never invest more than you can afford to lose.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger me-3 mt-1 fa-lg"></i>
+                                <div>
+                                    <h6 class="text-light mb-1">Do Your Own Research</h6>
+                                    <p class="text-light small mb-0">Consult a qualified financial advisor before making any investment decisions. This tool is for educational purposes only.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger me-3 mt-1 fa-lg"></i>
+                                <div>
+                                    <h6 class="text-light mb-1">Your Responsibility</h6>
+                                    <p class="text-light small mb-0">You are solely responsible for your investment choices. FolioForecast accepts no liability for any financial losses.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger me-3 mt-1 fa-lg"></i>
+                                <div>
+                                    <h6 class="text-light mb-1">Data Limitations</h6>
+                                    <p class="text-light small mb-0">Historical data may contain errors or omissions. Results depend on data quality and may differ from reality.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger me-3 mt-1 fa-lg"></i>
+                                <div>
+                                    <h6 class="text-light mb-1">Model Limitations</h6>
+                                    <p class="text-light small mb-0">All optimization models have limitations and assumptions that may not hold in real market conditions.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="small text-info mt-4">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <a href="/disclaimer" target="_blank" class="text-info">View full Investment Disclaimer</a>
+                    </p>
+                </div>
             </div>
             <div class="modal-footer border-secondary justify-content-center">
                 <button type="button" class="btn btn-warning btn-lg px-5" id="acceptDisclaimerBtn">
-                    <i class="fas fa-check me-2"></i>I Understand & Accept
+                    <i class="fas fa-check me-2"></i>I Understand & Accept Disclaimer
                 </button>
             </div>
         </div>
@@ -634,55 +738,137 @@
 <script src="/static/js/main.js"></script>
 <script>
 // ============================================
-// DISCLAIMER MODAL - FIRST VISIT
+// AGREEMENT MODALS - TWO-STEP FLOW
+// Version: 1.0.0 (2026-01-25)
 // ============================================
 
-function initDisclaimerModal() {
-    const disclaimerAcknowledged = localStorage.getItem('folioforecast_disclaimer_acknowledged');
+const AGREEMENT_VERSIONS = {
+    terms: '1.0.0',
+    disclaimer: '1.0.0'
+};
+
+// Check if user has agreed to both Terms and Disclaimer
+async function checkAgreementStatus() {
+    // First check localStorage (for non-logged-in users)
+    const localTerms = localStorage.getItem('folioforecast_terms_agreed');
+    const localDisclaimer = localStorage.getItem('folioforecast_disclaimer_agreed');
     
-    if (!disclaimerAcknowledged) {
-        // Show modal after a brief delay to let page load
-        setTimeout(() => {
-            const modalEl = document.getElementById('disclaimerModal');
-            if (modalEl) {
-                const modal = new bootstrap.Modal(modalEl);
-                modal.show();
+    // If user is logged in, check server-side
+    if (window.Clerk && window.Clerk.user) {
+        try {
+            const response = await fetch('/api/agreement-status', {
+                headers: {
+                    'Authorization': `Bearer ${await window.Clerk.session.getToken()}`
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.terms_agreed_at && data.disclaimer_agreed_at) {
+                    // User has agreed on server, update localStorage and skip modals
+                    localStorage.setItem('folioforecast_terms_agreed', data.terms_agreed_at);
+                    localStorage.setItem('folioforecast_disclaimer_agreed', data.disclaimer_agreed_at);
+                    return true;
+                }
             }
+        } catch (e) {
+            console.log('Could not check server agreement status:', e);
+        }
+    }
+    
+    // Check local storage
+    return localTerms && localDisclaimer;
+}
+
+// Save agreement to server (for logged-in users)
+async function saveAgreementToServer(agreementType, version) {
+    if (window.Clerk && window.Clerk.user) {
+        try {
+            const response = await fetch('/api/record-agreement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await window.Clerk.session.getToken()}`
+                },
+                body: JSON.stringify({
+                    agreement_type: agreementType,
+                    version: version,
+                    agreed_at: new Date().toISOString()
+                })
+            });
+            return response.ok;
+        } catch (e) {
+            console.log('Could not save agreement to server:', e);
+            return false;
+        }
+    }
+    return true; // Return true for non-logged-in users (just use localStorage)
+}
+
+// Initialize agreement flow
+async function initAgreementFlow() {
+    const hasAgreed = await checkAgreementStatus();
+    
+    if (!hasAgreed) {
+        // Show Terms modal first (Step 1)
+        setTimeout(() => {
+            const termsModal = new bootstrap.Modal(document.getElementById('termsModal'));
+            termsModal.show();
         }, 500);
     }
 }
 
-// Handle disclaimer acceptance
-document.addEventListener('DOMContentLoaded', function() {
-    const acceptBtn = document.getElementById('acceptDisclaimerBtn');
-    if (acceptBtn) {
-        acceptBtn.addEventListener('click', function() {
-            localStorage.setItem('folioforecast_disclaimer_acknowledged', 'true');
-            localStorage.setItem('folioforecast_disclaimer_date', new Date().toISOString());
-            
-            const modalEl = document.getElementById('disclaimerModal');
-            if (modalEl) {
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                if (modal) modal.hide();
-            }
-        });
-    }
+// Handle Terms acceptance (Step 1)
+document.getElementById('acceptTermsBtn').addEventListener('click', async function() {
+    const now = new Date().toISOString();
     
-    // Initialize disclaimer check
-    initDisclaimerModal();
+    // Save to localStorage
+    localStorage.setItem('folioforecast_terms_agreed', now);
+    localStorage.setItem('folioforecast_terms_version', AGREEMENT_VERSIONS.terms);
+    
+    // Save to server
+    await saveAgreementToServer('terms', AGREEMENT_VERSIONS.terms);
+    
+    // Hide Terms modal
+    const termsModal = bootstrap.Modal.getInstance(document.getElementById('termsModal'));
+    termsModal.hide();
+    
+    // Show Disclaimer modal (Step 2)
+    setTimeout(() => {
+        const disclaimerModal = new bootstrap.Modal(document.getElementById('disclaimerModal'));
+        disclaimerModal.show();
+    }, 300);
 });
 
-// Re-show disclaimer after 30 days (uncomment to enable)
-// function checkDisclaimerExpiry() {
-//     const acknowledgedDate = localStorage.getItem('folioforecast_disclaimer_date');
-//     if (acknowledgedDate) {
-//         const daysSinceAck = (new Date() - new Date(acknowledgedDate)) / (1000 * 60 * 60 * 24);
-//         if (daysSinceAck > 30) {
-//             localStorage.removeItem('folioforecast_disclaimer_acknowledged');
-//             localStorage.removeItem('folioforecast_disclaimer_date');
-//         }
-//     }
-// }
-// checkDisclaimerExpiry();
+// Handle Disclaimer acceptance (Step 2)
+document.getElementById('acceptDisclaimerBtn').addEventListener('click', async function() {
+    const now = new Date().toISOString();
+    
+    // Save to localStorage
+    localStorage.setItem('folioforecast_disclaimer_agreed', now);
+    localStorage.setItem('folioforecast_disclaimer_version', AGREEMENT_VERSIONS.disclaimer);
+    
+    // Save to server
+    await saveAgreementToServer('disclaimer', AGREEMENT_VERSIONS.disclaimer);
+    
+    // Hide Disclaimer modal
+    const disclaimerModal = bootstrap.Modal.getInstance(document.getElementById('disclaimerModal'));
+    disclaimerModal.hide();
+    
+    // User is now good to go!
+    console.log('User has accepted all agreements');
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for Clerk to initialize (if present)
+    if (window.Clerk) {
+        window.Clerk.load().then(() => {
+            initAgreementFlow();
+        });
+    } else {
+        // No Clerk, just check localStorage
+        initAgreementFlow();
+    }
+});
 </script>
 {% endblock %}
