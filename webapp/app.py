@@ -79,6 +79,24 @@ def pricing():
     return render_template('pricing.html', pricing=pricing_data, clerk_config=clerk_config)
 
 
+@app.route('/terms')
+def terms_page():
+    """Render the Terms of Service page"""
+    return render_template('terms.html')
+
+
+@app.route('/privacy')
+def privacy_page():
+    """Render the Privacy Policy page"""
+    return render_template('privacy.html')
+
+
+@app.route('/disclaimer')
+def disclaimer_page():
+    """Render the Investment Disclaimer page"""
+    return render_template('disclaimer.html')
+
+
 # 3a. AUTH ROUTES
 # ============================================================================
 @app.route('/api/auth/config')
