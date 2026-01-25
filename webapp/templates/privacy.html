@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - FolioForecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a24;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --accent-blue: #3b82f6;
+            --border-color: #2a2a3a;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.7;
+        }
+        
+        .legal-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        
+        .legal-header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .legal-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .legal-header .effective-date {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .legal-section {
+            margin-bottom: 40px;
+        }
+        
+        .legal-section h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .legal-section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .legal-section p, .legal-section li {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        
+        .legal-section ul, .legal-section ol {
+            padding-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .legal-section li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight-box {
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--accent-blue);
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .highlight-box.warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .highlight-box.success {
+            border-left-color: #10b981;
+        }
+        
+        .highlight-box p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-blue);
+            text-decoration: none;
+            margin-bottom: 30px;
+            transition: opacity 0.2s;
+        }
+        
+        .back-link:hover {
+            opacity: 0.8;
+            color: var(--accent-blue);
+        }
+        
+        .toc {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 40px;
+        }
+        
+        .toc h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            columns: 2;
+        }
+        
+        .toc li {
+            margin-bottom: 8px;
+        }
+        
+        .toc a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        
+        .toc a:hover {
+            color: var(--accent-blue);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        
+        .data-table th {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background: var(--bg-card);
+        }
+        
+        @media (max-width: 600px) {
+            .toc ul {
+                columns: 1;
+            }
+            
+            .legal-header h1 {
+                font-size: 2rem;
+            }
+            
+            .data-table {
+                font-size: 0.85rem;
+            }
+            
+            .data-table th, .data-table td {
+                padding: 8px 10px;
+            }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 60px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="legal-container">
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to FolioForecast
+        </a>
+        
+        <div class="legal-header">
+            <h1>Privacy Policy</h1>
+            <p class="effective-date">Effective Date: January 25, 2026</p>
+        </div>
+        
+        <nav class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#information-collected">2. Information We Collect</a></li>
+                <li><a href="#how-we-use">3. How We Use Information</a></li>
+                <li><a href="#sharing">4. Information Sharing</a></li>
+                <li><a href="#data-storage">5. Data Storage & Security</a></li>
+                <li><a href="#your-rights">6. Your Rights</a></li>
+                <li><a href="#cookies">7. Cookies & Tracking</a></li>
+                <li><a href="#third-party">8. Third-Party Services</a></li>
+                <li><a href="#children">9. Children's Privacy</a></li>
+                <li><a href="#international">10. International Users</a></li>
+                <li><a href="#changes">11. Changes to Policy</a></li>
+                <li><a href="#contact">12. Contact Us</a></li>
+            </ul>
+        </nav>
+        
+        <section id="overview" class="legal-section">
+            <h2>1. Overview</h2>
+            <p>FolioForecast ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our portfolio optimization service at www.folioforecast.com (the "Service").</p>
+            <p>By using the Service, you consent to the data practices described in this Privacy Policy. If you do not agree with our policies, please do not use the Service.</p>
+            
+            <div class="highlight-box success">
+                <p><strong>Our Commitment:</strong> We collect only the minimum data necessary to provide the Service. We do not sell your personal information to third parties. Your portfolio data belongs to you.</p>
+            </div>
+        </section>
+        
+        <section id="information-collected" class="legal-section">
+            <h2>2. Information We Collect</h2>
+            
+            <h3>2.1 Information You Provide</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data Type</th>
+                        <th>Examples</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Account Information</td>
+                        <td>Email address, username</td>
+                        <td>Account creation, authentication, communication</td>
+                    </tr>
+                    <tr>
+                        <td>Portfolio Data</td>
+                        <td>Ticker symbols, weights, constraints, saved portfolios</td>
+                        <td>Providing optimization services, saving your work</td>
+                    </tr>
+                    <tr>
+                        <td>Payment Information</td>
+                        <td>Processed by Stripe (we do not store card numbers)</td>
+                        <td>Processing subscription payments</td>
+                    </tr>
+                    <tr>
+                        <td>Communications</td>
+                        <td>Support emails, feedback</td>
+                        <td>Customer support, service improvement</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>2.2 Information Collected Automatically</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data Type</th>
+                        <th>Examples</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Usage Data</td>
+                        <td>Features used, optimization methods selected, pages visited</td>
+                        <td>Service improvement, analytics</td>
+                    </tr>
+                    <tr>
+                        <td>Device Information</td>
+                        <td>Browser type, operating system, device type</td>
+                        <td>Compatibility, debugging</td>
+                    </tr>
+                    <tr>
+                        <td>Log Data</td>
+                        <td>IP address, access times, referring URLs</td>
+                        <td>Security, fraud prevention</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>2.3 Information We Do NOT Collect</h3>
+            <ul>
+                <li>Brokerage account credentials or access</li>
+                <li>Actual investment holdings or account balances</li>
+                <li>Social Security numbers or government IDs</li>
+                <li>Credit card numbers (handled by Stripe)</li>
+            </ul>
+        </section>
+        
+        <section id="how-we-use" class="legal-section">
+            <h2>3. How We Use Your Information</h2>
+            <p>We use collected information for the following purposes:</p>
+            <ul>
+                <li><strong>Provide the Service:</strong> Run optimizations, save portfolios, display analytics</li>
+                <li><strong>Account Management:</strong> Create and manage your account, process subscriptions</li>
+                <li><strong>Communication:</strong> Send service updates, respond to inquiries, provide support</li>
+                <li><strong>Improvement:</strong> Analyze usage patterns to improve features and user experience</li>
+                <li><strong>Security:</strong> Detect and prevent fraud, abuse, and security threats</li>
+                <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations</li>
+            </ul>
+            
+            <div class="highlight-box">
+                <p><strong>Note:</strong> We do not use your portfolio data to make investment decisions, share investment strategies, or provide personalized investment recommendations to other users.</p>
+            </div>
+        </section>
+        
+        <section id="sharing" class="legal-section">
+            <h2>4. Information Sharing</h2>
+            <p>We do not sell your personal information. We may share information in the following limited circumstances:</p>
+            
+            <h3>4.1 Service Providers</h3>
+            <p>We share data with trusted third-party providers who assist in operating our Service:</p>
+            <ul>
+                <li><strong>Clerk:</strong> Authentication and user management</li>
+                <li><strong>Stripe:</strong> Payment processing</li>
+                <li><strong>Railway:</strong> Cloud hosting infrastructure</li>
+                <li><strong>EODHD:</strong> Market data provider (we send ticker requests, not your personal data)</li>
+            </ul>
+            
+            <h3>4.2 Legal Requirements</h3>
+            <p>We may disclose information if required by law, subpoena, court order, or government request, or to protect our rights, safety, or property.</p>
+            
+            <h3>4.3 Business Transfers</h3>
+            <p>In the event of a merger, acquisition, or sale of assets, your information may be transferred to the acquiring entity.</p>
+            
+            <h3>4.4 Public Rankings (Optional)</h3>
+            <p>If you submit a portfolio to our public rankings feature, the following may be visible to other users:</p>
+            <ul>
+                <li>Your username</li>
+                <li>Portfolio performance metrics</li>
+                <li>Portfolio allocations (Pro users only can view others' allocations)</li>
+            </ul>
+            <p>Participation in rankings is optional and clearly indicated.</p>
+        </section>
+        
+        <section id="data-storage" class="legal-section">
+            <h2>5. Data Storage & Security</h2>
+            
+            <h3>5.1 Storage Location</h3>
+            <p>Your data is stored on secure servers provided by Railway, located in the United States. Market data is sourced from EODHD and cached in our database.</p>
+            
+            <h3>5.2 Security Measures</h3>
+            <p>We implement industry-standard security measures including:</p>
+            <ul>
+                <li>HTTPS encryption for all data transmission</li>
+                <li>Secure authentication via Clerk</li>
+                <li>Database encryption at rest</li>
+                <li>Regular security updates and monitoring</li>
+                <li>Access controls and audit logging</li>
+            </ul>
+            
+            <h3>5.3 Data Retention</h3>
+            <ul>
+                <li><strong>Account Data:</strong> Retained while your account is active, deleted within 30 days of account deletion request</li>
+                <li><strong>Portfolio Data:</strong> Retained while your account is active</li>
+                <li><strong>Usage Logs:</strong> Retained for up to 12 months</li>
+                <li><strong>Payment Records:</strong> Retained as required by tax and accounting regulations</li>
+            </ul>
+            
+            <div class="highlight-box warning">
+                <p><strong>Important:</strong> While we implement robust security measures, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security of your data.</p>
+            </div>
+        </section>
+        
+        <section id="your-rights" class="legal-section">
+            <h2>6. Your Rights</h2>
+            <p>Depending on your location, you may have the following rights regarding your personal data:</p>
+            
+            <h3>6.1 Access & Portability</h3>
+            <p>You can request a copy of your personal data in a portable format by contacting us.</p>
+            
+            <h3>6.2 Correction</h3>
+            <p>You can update your account information through your account settings or by contacting us.</p>
+            
+            <h3>6.3 Deletion</h3>
+            <p>You can request deletion of your account and associated data. To delete your account, contact us at support@folioforecast.com. We will process deletion requests within 30 days.</p>
+            
+            <h3>6.4 Opt-Out</h3>
+            <p>You can opt out of marketing communications by clicking "unsubscribe" in any email or adjusting your account preferences.</p>
+            
+            <h3>6.5 California Residents (CCPA)</h3>
+            <p>California residents have additional rights under the California Consumer Privacy Act:</p>
+            <ul>
+                <li>Right to know what personal information is collected</li>
+                <li>Right to delete personal information</li>
+                <li>Right to opt-out of sale of personal information (we do not sell personal information)</li>
+                <li>Right to non-discrimination for exercising your rights</li>
+            </ul>
+            
+            <h3>6.6 European Users (GDPR)</h3>
+            <p>If you are in the European Economic Area, you have additional rights under GDPR:</p>
+            <ul>
+                <li>Right to access, rectify, or erase your data</li>
+                <li>Right to restrict or object to processing</li>
+                <li>Right to data portability</li>
+                <li>Right to withdraw consent</li>
+                <li>Right to lodge a complaint with a supervisory authority</li>
+            </ul>
+            <p>Our legal basis for processing is: contract performance (to provide the Service), legitimate interests (analytics, security), and consent (marketing communications).</p>
+        </section>
+        
+        <section id="cookies" class="legal-section">
+            <h2>7. Cookies & Tracking</h2>
+            
+            <h3>7.1 Cookies We Use</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Cookie Type</th>
+                        <th>Purpose</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Essential</td>
+                        <td>Authentication, security, preferences</td>
+                        <td>Session / 30 days</td>
+                    </tr>
+                    <tr>
+                        <td>Analytics</td>
+                        <td>Usage statistics (if enabled)</td>
+                        <td>Up to 2 years</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>7.2 Managing Cookies</h3>
+            <p>You can control cookies through your browser settings. Disabling essential cookies may affect Service functionality.</p>
+            
+            <h3>7.3 Do Not Track</h3>
+            <p>We currently do not respond to Do Not Track browser signals, as there is no industry standard for compliance.</p>
+        </section>
+        
+        <section id="third-party" class="legal-section">
+            <h2>8. Third-Party Services</h2>
+            <p>Our Service integrates with third-party services that have their own privacy policies:</p>
+            <ul>
+                <li><strong>Clerk (Authentication):</strong> <a href="https://clerk.com/privacy" target="_blank" style="color: var(--accent-blue);">Privacy Policy</a></li>
+                <li><strong>Stripe (Payments):</strong> <a href="https://stripe.com/privacy" target="_blank" style="color: var(--accent-blue);">Privacy Policy</a></li>
+                <li><strong>EODHD (Market Data):</strong> <a href="https://eodhistoricaldata.com/privacy-policy" target="_blank" style="color: var(--accent-blue);">Privacy Policy</a></li>
+            </ul>
+            <p>We encourage you to review their privacy policies. We are not responsible for the privacy practices of third-party services.</p>
+        </section>
+        
+        <section id="children" class="legal-section">
+            <h2>9. Children's Privacy</h2>
+            <p>The Service is not intended for individuals under 18 years of age. We do not knowingly collect personal information from children. If we learn we have collected data from a child under 18, we will delete it promptly. If you believe a child has provided us with personal information, please contact us.</p>
+        </section>
+        
+        <section id="international" class="legal-section">
+            <h2>10. International Users</h2>
+            <p>The Service is operated in the United States. If you access the Service from outside the United States, your information will be transferred to and processed in the United States, where data protection laws may differ from those in your jurisdiction.</p>
+            <p>By using the Service, you consent to the transfer of your information to the United States and the processing of your information in accordance with this Privacy Policy.</p>
+        </section>
+        
+        <section id="changes" class="legal-section">
+            <h2>11. Changes to This Privacy Policy</h2>
+            <p>We may update this Privacy Policy from time to time. We will notify you of material changes by:</p>
+            <ul>
+                <li>Posting the updated policy on the Service</li>
+                <li>Updating the "Effective Date" at the top</li>
+                <li>Sending email notification for significant changes (if you have an account)</li>
+            </ul>
+            <p>We encourage you to review this Privacy Policy periodically. Continued use of the Service after changes constitutes acceptance of the updated policy.</p>
+        </section>
+        
+        <section id="contact" class="legal-section">
+            <h2>12. Contact Us</h2>
+            <p>If you have questions about this Privacy Policy or wish to exercise your rights, please contact us:</p>
+            <ul>
+                <li><strong>Email:</strong> privacy@folioforecast.com</li>
+                <li><strong>Support:</strong> support@folioforecast.com</li>
+                <li><strong>Website:</strong> www.folioforecast.com</li>
+            </ul>
+            <p>We will respond to your inquiry within 30 days.</p>
+        </section>
+    </div>
+    
+    <footer>
+        <p>&copy; 2026 FolioForecast. All rights reserved.</p>
+        <p>
+            <a href="/terms">Terms of Service</a> &nbsp;|&nbsp;
+            <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp;
+            <a href="/pricing">Pricing</a>
+        </p>
+    </footer>
+</body>
+</html>
