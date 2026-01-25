@@ -17,8 +17,8 @@ TIERS = {
     'free': {
         'name': 'Free',
         'price_monthly': 0,
-        'max_assets': 5,
-        'max_portfolios': 3,
+        'max_assets': 10,
+        'max_portfolios': 1,  # Requires login
         'features': {
             'basic_optimization': True,      # Max Sharpe, Min Vol, Equal Weight, Risk Parity
             'advanced_optimization': False,  # CVaR, Kelly, Omega, Sortino, Tracking Error, Min Drawdown
@@ -28,13 +28,14 @@ TIERS = {
             'group_constraints': False,
             'csv_import_export': False,
             'view_others_allocations': False,
+            'save_portfolios': True,  # But requires login
         }
     },
     'premium': {
         'name': 'Premium',
         'price_monthly': 9,
-        'max_assets': 15,
-        'max_portfolios': 20,
+        'max_assets': 25,
+        'max_portfolios': 3,
         'features': {
             'basic_optimization': True,
             'advanced_optimization': True,
@@ -44,13 +45,14 @@ TIERS = {
             'group_constraints': False,          # Pro only
             'csv_import_export': True,
             'view_others_allocations': False,    # Pro only
+            'save_portfolios': True,
         }
     },
     'pro': {
         'name': 'Pro',
         'price_monthly': 29,
         'max_assets': 999,  # Effectively unlimited
-        'max_portfolios': 999,
+        'max_portfolios': 999,  # Effectively unlimited
         'features': {
             'basic_optimization': True,
             'advanced_optimization': True,
@@ -60,9 +62,31 @@ TIERS = {
             'group_constraints': True,
             'csv_import_export': True,
             'view_others_allocations': True,
+            'save_portfolios': True,
+        }
+    },
+    'trial': {
+        'name': 'Pro Trial',
+        'price_monthly': 0,
+        'max_assets': 999,
+        'max_portfolios': 999,
+        'trial_days': 1,
+        'features': {
+            'basic_optimization': True,
+            'advanced_optimization': True,
+            'robust_optimization': True,
+            'diversification_analytics': True,
+            'health_score': True,
+            'group_constraints': True,
+            'csv_import_export': True,
+            'view_others_allocations': True,
+            'save_portfolios': True,
         }
     }
 }
+
+# Trial period duration
+TRIAL_PERIOD_DAYS = 1
 
 # Map optimization methods to tiers
 BASIC_OPTIMIZATION_METHODS = [
@@ -108,7 +132,7 @@ def get_user_tier(user):
         user: User object or None (for anonymous users)
     
     Returns:
-        str: 'free', 'premium', or 'pro'
+        str: 'free', 'premium', 'pro', or 'trial'
     """
     if not user:
         return 'free'
@@ -134,6 +158,29 @@ def get_user_tier(user):
             logger.info(f"User {user.username} in grace period, expires {grace_end}")
     
     return tier
+
+
+def start_trial(session, user):
+    """
+    Start a 1-day Pro trial for a user.
+    
+    Args:
+        session: SQLAlchemy session
+        user: User object
+    
+    Returns:
+        bool: True if trial started, False if user already had a trial
+    """
+    # Check if user already had a trial (could add a 'had_trial' flag to user model)
+    if user.subscription_tier in ['premium', 'pro', 'trial']:
+        return False
+    
+    user.subscription_tier = 'trial'
+    user.subscription_expires_at = datetime.utcnow() + timedelta(days=TRIAL_PERIOD_DAYS)
+    session.commit()
+    
+    logger.info(f"Started {TRIAL_PERIOD_DAYS}-day trial for user {user.username}")
+    return True
 
 
 def get_tier_config(tier_name):
@@ -355,6 +402,7 @@ def get_pricing_data():
     Get pricing information for the pricing page.
     """
     return {
+        'trial_days': TRIAL_PERIOD_DAYS,
         'tiers': [
             {
                 'id': 'free',
@@ -365,7 +413,7 @@ def get_pricing_data():
                 'description': 'Get started with portfolio optimization',
                 'features': [
                     f'Up to {TIERS["free"]["max_assets"]} assets per optimization',
-                    f'Save up to {TIERS["free"]["max_portfolios"]} portfolios',
+                    f'Save {TIERS["free"]["max_portfolios"]} portfolio (requires login)',
                     'Basic optimization (Max Sharpe, Min Vol, Risk Parity)',
                     'Efficient frontier visualization',
                     'Correlation matrix',
@@ -417,10 +465,11 @@ def get_pricing_data():
                     'Diversification analytics & Health Score',
                     'Group constraints (by asset class)',
                     'View other users\' portfolio allocations',
-                    'Priority support'
+                    'Priority support',
+                    f'{TRIAL_PERIOD_DAYS}-day free trial'
                 ],
                 'limitations': [],
-                'cta': 'Go Pro',
+                'cta': 'Start Free Trial',
                 'highlighted': False
             }
         ]
