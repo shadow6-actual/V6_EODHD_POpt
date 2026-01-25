@@ -1,19 +1,32 @@
 // ============================================================================
-// FOLIOFORECAST - MAIN JAVASCRIPT (PHASE 4)
-// Includes Group Constraints and Clerk Authentication
+// FOLIOFORECAST - MAIN JAVASCRIPT (PHASE 5 - SUBSCRIPTION TIERS)
+// Includes Group Constraints, Clerk Authentication, and Tier-based Feature Gating
 // ============================================================================
 
 let rowCount = 0;
-let currentGroupData = null; // Stores current group metadata
+let currentGroupData = null;
 let clerkInstance = null;
 let currentUser = null;
+let userSubscription = null;
+
+// ============================================================================
+// SUBSCRIPTION TIER CONSTANTS (mirror backend)
+// ============================================================================
+
+const BASIC_METHODS = ['max_sharpe', 'min_volatility', 'equal_weight', 'risk_parity'];
+const ADVANCED_METHODS = [
+    'min_vol_target_return', 'max_return_target_vol', 'min_cvar', 
+    'min_cvar_target_return', 'max_return_target_cvar', 'min_tracking_error',
+    'max_information_ratio', 'max_excess_return_target_te', 'max_kelly',
+    'min_drawdown_target_return', 'max_omega_target_return', 'max_sortino_target_return'
+];
+const ROBUST_METHODS = ['robust_max_sharpe', 'robust_min_volatility'];
 
 // ============================================================================
 // CLERK AUTHENTICATION
 // ============================================================================
 
 window.addEventListener('load', async () => {
-    // Wait for Clerk to load
     await waitForClerk();
     initializeClerk();
 });
@@ -29,8 +42,6 @@ function waitForClerk() {
                     resolve();
                 }
             }, 100);
-            
-            // Timeout after 10 seconds
             setTimeout(() => {
                 clearInterval(interval);
                 console.warn('Clerk failed to load');
@@ -48,19 +59,18 @@ async function initializeClerk() {
             console.warn('Clerk not available');
             document.getElementById('authLoading').style.display = 'none';
             document.getElementById('signedOutButtons').style.display = 'block';
+            applyTierRestrictions(); // Apply free tier restrictions
             return;
         }
         
         await clerkInstance.load();
         
-        // Check if user is signed in
         if (clerkInstance.user) {
             handleSignedIn(clerkInstance.user);
         } else {
             handleSignedOut();
         }
         
-        // Listen for auth state changes
         clerkInstance.addListener(({ user }) => {
             if (user) {
                 handleSignedIn(user);
@@ -73,32 +83,39 @@ async function initializeClerk() {
         console.error('Clerk initialization error:', error);
         document.getElementById('authLoading').style.display = 'none';
         document.getElementById('signedOutButtons').style.display = 'block';
+        applyTierRestrictions();
     }
 }
 
-function handleSignedIn(user) {
+async function handleSignedIn(user) {
     currentUser = user;
     
-    // Update UI
     document.getElementById('authLoading').style.display = 'none';
     document.getElementById('signedOutButtons').style.display = 'none';
     document.getElementById('signedInSection').style.display = 'flex';
     document.getElementById('usernameDisplay').innerText = user.username || 'User';
     
-    // Sync user to backend
-    syncUserToBackend();
+    // Show public portfolio option for signed-in users
+    const publicOption = document.getElementById('publicPortfolioOption');
+    if (publicOption) publicOption.style.display = 'block';
     
+    await syncUserToBackend();
     console.log('Signed in as:', user.username);
 }
 
 function handleSignedOut() {
     currentUser = null;
+    userSubscription = null;
     
-    // Update UI
     document.getElementById('authLoading').style.display = 'none';
     document.getElementById('signedOutButtons').style.display = 'block';
     document.getElementById('signedInSection').style.display = 'none';
     
+    // Hide public portfolio option
+    const publicOption = document.getElementById('publicPortfolioOption');
+    if (publicOption) publicOption.style.display = 'none';
+    
+    applyTierRestrictions();
     console.log('Signed out');
 }
 
@@ -106,8 +123,7 @@ async function syncUserToBackend() {
     try {
         const token = await clerkInstance.session.getToken();
         
-        const response = await fetch('/api/auth/sync', {
-            method: 'POST',
+        const response = await fetch('/api/auth/me', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -115,10 +131,14 @@ async function syncUserToBackend() {
         });
         
         const data = await response.json();
-        console.log('User synced:', data);
+        userSubscription = data.subscription;
+        console.log('User subscription:', userSubscription);
+        
+        applyTierRestrictions();
         
     } catch (error) {
         console.error('Failed to sync user:', error);
+        applyTierRestrictions();
     }
 }
 
@@ -173,9 +193,245 @@ window.openUserProfile = function() {
 };
 
 window.showMyPortfolios = async function() {
-    // TODO: Implement my portfolios modal/page
     alert('My Portfolios feature coming soon!');
 };
+
+// ============================================================================
+// TIER-BASED FEATURE GATING
+// ============================================================================
+
+function getUserTier() {
+    return userSubscription?.tier || 'free';
+}
+
+function canAccessFeature(featureName) {
+    if (!userSubscription) return false;
+    return userSubscription.features?.[featureName] || false;
+}
+
+function getMaxAssets() {
+    return userSubscription?.max_assets || 5;
+}
+
+function applyTierRestrictions() {
+    const tier = getUserTier();
+    const maxAssets = getMaxAssets();
+    
+    console.log(`Applying tier restrictions: ${tier}, max assets: ${maxAssets}`);
+    
+    // Update optimization method dropdown
+    updateOptimizationMethodsDropdown();
+    
+    // Update asset limit indicator
+    updateAssetLimitIndicator();
+    
+    // Update feature toggles
+    updateFeatureToggles();
+    
+    // Update CSV buttons
+    updateCsvButtons();
+    
+    // Update group constraints
+    updateGroupConstraintsAccess();
+}
+
+function updateOptimizationMethodsDropdown() {
+    const select = document.getElementById('optGoal');
+    if (!select) return;
+    
+    const tier = getUserTier();
+    const canAdvanced = tier === 'premium' || tier === 'pro';
+    const canRobust = tier === 'premium' || tier === 'pro';
+    
+    // Add lock icons and disable options
+    Array.from(select.options).forEach(option => {
+        const method = option.value;
+        const originalText = option.getAttribute('data-original-text') || option.text.replace(' 🔒', '').replace(' (Premium)', '').replace(' (Pro)', '');
+        option.setAttribute('data-original-text', originalText);
+        
+        if (ADVANCED_METHODS.includes(method) && !canAdvanced) {
+            option.text = originalText + ' 🔒';
+            option.disabled = true;
+            option.style.color = '#6c757d';
+        } else if (ROBUST_METHODS.includes(method) && !canRobust) {
+            option.text = originalText + ' 🔒';
+            option.disabled = true;
+            option.style.color = '#6c757d';
+        } else {
+            option.text = originalText;
+            option.disabled = false;
+            option.style.color = '';
+        }
+    });
+    
+    // If current selection is locked, switch to max_sharpe
+    const currentValue = select.value;
+    if ((ADVANCED_METHODS.includes(currentValue) && !canAdvanced) ||
+        (ROBUST_METHODS.includes(currentValue) && !canRobust)) {
+        select.value = 'max_sharpe';
+        updateConditionalFields();
+    }
+}
+
+function updateAssetLimitIndicator() {
+    const maxAssets = getMaxAssets();
+    const tier = getUserTier();
+    
+    // Update the table header or add indicator
+    const tableHeader = document.querySelector('#assetsTable thead');
+    if (tableHeader) {
+        let indicator = document.getElementById('assetLimitIndicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'assetLimitIndicator';
+            indicator.className = 'small text-muted mb-2';
+            tableHeader.parentElement.insertBefore(indicator, tableHeader.parentElement.firstChild);
+        }
+        
+        const currentCount = document.querySelectorAll('#assetsTableBody tr').length;
+        
+        if (tier === 'pro') {
+            indicator.innerHTML = `<i class="fas fa-infinity me-1"></i> Unlimited assets`;
+        } else {
+            const color = currentCount >= maxAssets ? 'text-danger' : 'text-muted';
+            indicator.innerHTML = `<span class="${color}"><i class="fas fa-layer-group me-1"></i> ${currentCount}/${maxAssets} assets</span>`;
+            if (currentCount >= maxAssets && tier !== 'pro') {
+                indicator.innerHTML += ` <a href="/pricing" class="small text-primary">Upgrade for more</a>`;
+            }
+        }
+    }
+}
+
+function updateFeatureToggles() {
+    const tier = getUserTier();
+    
+    // Diversification Analytics (Pro only)
+    const divToggle = document.getElementById('showDiversification');
+    const divLabel = divToggle?.parentElement?.querySelector('label');
+    
+    if (divToggle && divLabel) {
+        if (tier !== 'pro') {
+            divToggle.checked = false;
+            divToggle.disabled = true;
+            divLabel.innerHTML = 'Show Diversification Analytics <span class="badge bg-warning text-dark">Pro</span>';
+        } else {
+            divToggle.disabled = false;
+            divLabel.innerHTML = 'Show Diversification Analytics';
+        }
+    }
+    
+    // Health Score Card (Pro only)
+    const healthCard = document.getElementById('healthScoreCard');
+    if (healthCard) {
+        healthCard.style.display = (tier === 'pro' && divToggle?.checked) ? 'block' : 'none';
+    }
+}
+
+function updateCsvButtons() {
+    const tier = getUserTier();
+    const canCsv = tier === 'premium' || tier === 'pro';
+    
+    // Find CSV buttons and update them
+    const csvButtonContainer = document.querySelector('.btn-group');
+    if (csvButtonContainer) {
+        const buttons = csvButtonContainer.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.onclick?.toString().includes('CSV') || 
+                btn.getAttribute('onclick')?.includes('CSV')) {
+                if (!canCsv) {
+                    btn.classList.add('disabled');
+                    btn.setAttribute('data-original-onclick', btn.getAttribute('onclick'));
+                    btn.setAttribute('onclick', 'showUpgradePrompt("csv_import_export", "CSV import/export")');
+                    btn.title = 'Premium feature - click to upgrade';
+                } else {
+                    btn.classList.remove('disabled');
+                    const originalOnclick = btn.getAttribute('data-original-onclick');
+                    if (originalOnclick) {
+                        btn.setAttribute('onclick', originalOnclick);
+                    }
+                    btn.title = '';
+                }
+            }
+        });
+    }
+}
+
+function updateGroupConstraintsAccess() {
+    const tier = getUserTier();
+    const canGroupConstraints = tier === 'pro';
+    
+    const groupCard = document.getElementById('groupConstraintsCard');
+    const groupToggle = document.getElementById('useGroupConstraints');
+    
+    if (groupCard && !canGroupConstraints) {
+        // Add Pro badge to header
+        const header = groupCard.querySelector('.card-header h6');
+        if (header && !header.innerHTML.includes('Pro')) {
+            header.innerHTML = 'GROUP CONSTRAINTS <span class="badge bg-warning text-dark ms-2">Pro</span>';
+        }
+        
+        if (groupToggle) {
+            groupToggle.disabled = true;
+            groupToggle.checked = false;
+        }
+    }
+}
+
+function showUpgradePrompt(feature, featureName) {
+    const tier = getUserTier();
+    
+    let requiredTier = 'Premium';
+    if (['diversification_analytics', 'health_score', 'group_constraints', 'view_others_allocations'].includes(feature)) {
+        requiredTier = 'Pro';
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'upgradeModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-lock me-2"></i>Upgrade Required</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <span class="display-1">🔒</span>
+                    </div>
+                    <h5 class="mb-3">${featureName}</h5>
+                    <p class="text-muted">This feature requires a <strong>${requiredTier}</strong> subscription.</p>
+                    <p class="small text-muted">You're currently on the <strong>${tier.charAt(0).toUpperCase() + tier.slice(1)}</strong> plan.</p>
+                </div>
+                <div class="modal-footer border-secondary justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe Later</button>
+                    <a href="/pricing" class="btn btn-primary"><i class="fas fa-arrow-up me-2"></i>View Plans</a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => {
+        modal.remove();
+    });
+}
+
+function handleTierError(response) {
+    // Handle tier-related API errors
+    if (response.upgrade_required) {
+        showUpgradePrompt(response.feature || 'unknown', response.message);
+        return true;
+    }
+    return false;
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 window.setText = function(id, val) {
     const el = document.getElementById(id);
@@ -195,8 +451,8 @@ window.updateTotal = function() {
             : (sum > 100 ? 'text-danger fw-bold' : 'text-warning fw-bold');
     }
     
-    // Update group constraints display when allocations change
     updateGroupConstraintsDisplay();
+    updateAssetLimitIndicator();
 };
 
 window.toggleUserBenchmark = function() {
@@ -273,7 +529,6 @@ window.refreshPortfolioLists = async function() {
         const res = await fetch('/api/portfolios');
         const portfolios = await res.json();
         
-        // Update manager dropdown
         const managerSelect = document.getElementById('portfolioManager');
         managerSelect.innerHTML = '<option value="">Select to manage...</option>';
         portfolios.forEach(p => {
@@ -283,7 +538,6 @@ window.refreshPortfolioLists = async function() {
             managerSelect.appendChild(opt);
         });
         
-        // Update user benchmark dropdown
         loadUserBenchmarkOptions();
     } catch(e) {
         console.error('Refresh portfolios error:', e);
@@ -291,14 +545,10 @@ window.refreshPortfolioLists = async function() {
 };
 
 // ============================================================================
-// GROUP CONSTRAINTS FUNCTIONS (NEW)
+// GROUP CONSTRAINTS FUNCTIONS
 // ============================================================================
 
 async function fetchAssetMetadata(tickers) {
-    /**
-     * Fetch asset metadata including group classifications
-     * Returns: {metadata: {}, group_summary: {}}
-     */
     if (!tickers || tickers.length === 0) return null;
     
     try {
@@ -317,10 +567,6 @@ async function fetchAssetMetadata(tickers) {
 }
 
 window.updateGroupConstraintsDisplay = async function() {
-    /**
-     * Updates the group constraints UI based on current tickers
-     * Called when: tickers change, allocations change, optimization method changes
-     */
     const rows = document.querySelectorAll('#assetsTableBody tr');
     const tickers = [];
     const allocations = {};
@@ -334,22 +580,19 @@ window.updateGroupConstraintsDisplay = async function() {
     });
     
     const card = document.getElementById('groupConstraintsCard');
-    if (!card) return; // Card not yet in DOM
+    if (!card) return;
     
-    // Hide if less than 2 tickers or incompatible optimization method
     if (tickers.length < 2) {
         card.style.display = 'none';
         return;
     }
     
-    // Check if current optimization method allows group constraints
     const optGoal = document.getElementById('optGoal').value;
     if (optGoal === 'equal_weight' || optGoal === 'risk_parity') {
         card.style.display = 'none';
         return;
     }
     
-    // Fetch metadata
     const data = await fetchAssetMetadata(tickers);
     if (!data || !data.group_summary) {
         card.style.display = 'none';
@@ -359,19 +602,17 @@ window.updateGroupConstraintsDisplay = async function() {
     currentGroupData = data;
     const groups = data.group_summary;
     
-    // Hide if only 1 group
     if (Object.keys(groups).length < 2) {
         card.style.display = 'none';
         return;
     }
     
-    // Show card and populate table
     card.style.display = 'block';
+    updateGroupConstraintsAccess(); // Apply tier restrictions
     
     const tbody = document.getElementById('groupConstraintsBody');
     tbody.innerHTML = '';
     
-    // Calculate current group allocations
     Object.entries(groups).sort().forEach(([groupName, groupInfo]) => {
         let currentAlloc = 0;
         groupInfo.tickers.forEach(ticker => {
@@ -397,10 +638,6 @@ window.updateGroupConstraintsDisplay = async function() {
 };
 
 function collectGroupConstraints() {
-    /**
-     * Collects group constraint inputs from the UI
-     * Returns: {GroupName: {min: number, max: number}}
-     */
     const constraints = {};
     const useGroupConstraints = document.getElementById('useGroupConstraints')?.checked;
     
@@ -412,7 +649,6 @@ function collectGroupConstraints() {
         const minVal = parseFloat(row.querySelector('.group-min').value);
         const maxVal = parseFloat(row.querySelector('.group-max').value);
         
-        // Only include if at least one bound is set
         if (!isNaN(minVal) || !isNaN(maxVal)) {
             constraints[groupName] = {
                 min: isNaN(minVal) ? 0 : minVal,
@@ -425,30 +661,24 @@ function collectGroupConstraints() {
 }
 
 // ============================================================================
-// CONDITIONAL FIELDS (MODIFIED TO INCLUDE GROUP CONSTRAINTS)
+// CONDITIONAL FIELDS
 // ============================================================================
 
 window.updateConditionalFields = function() {
     const goal = document.getElementById('optGoal').value;
     
-    // Hide all conditional fields first
     document.getElementById('targetReturnField').style.display = 'none';
     document.getElementById('targetVolField').style.display = 'none';
     document.getElementById('targetCVaRField').style.display = 'none';
     document.getElementById('targetTEField').style.display = 'none';
     document.getElementById('robustResamplesField').style.display = 'none';
     
-    // Show robust resamples for robust methods
     if (goal.startsWith('robust_')) {
         document.getElementById('robustResamplesField').style.display = 'block';
     }
     
-    // Show relevant field based on goal
-    if (goal === 'min_vol_target_return' || 
-        goal === 'min_cvar_target_return' || 
-        goal === 'min_drawdown_target_return' || 
-        goal === 'max_omega_target_return' || 
-        goal === 'max_sortino_target_return') {
+    if (['min_vol_target_return', 'min_cvar_target_return', 'min_drawdown_target_return', 
+         'max_omega_target_return', 'max_sortino_target_return'].includes(goal)) {
         document.getElementById('targetReturnField').style.display = 'block';
     }
     
@@ -464,7 +694,6 @@ window.updateConditionalFields = function() {
         document.getElementById('targetTEField').style.display = 'block';
     }
     
-    // Update group constraints visibility (NEW)
     updateGroupConstraintsDisplay();
 };
 
@@ -473,6 +702,15 @@ window.updateConditionalFields = function() {
 // ============================================================================
 
 window.addAssetRow = function(ticker = '', alloc = 0, min = '', max = '') {
+    // Check asset limit
+    const maxAssets = getMaxAssets();
+    const currentCount = document.querySelectorAll('#assetsTableBody tr').length;
+    
+    if (currentCount >= maxAssets && getUserTier() !== 'pro') {
+        showUpgradePrompt('max_assets', `Asset limit reached (${maxAssets} assets on ${getUserTier()} plan)`);
+        return;
+    }
+    
     rowCount++;
     const tbody = document.getElementById('assetsTableBody');
     const tr = document.createElement('tr');
@@ -494,7 +732,6 @@ window.addAssetRow = function(ticker = '', alloc = 0, min = '', max = '') {
     tbody.appendChild(tr);
     updateTotal();
     
-    // Trigger group constraints update if ticker is already filled
     if (ticker) {
         updateGroupConstraintsDisplay();
     }
@@ -593,7 +830,6 @@ window.savePortfolio = async function() {
         }
     });
 
-    // Check if making public
     const isPublic = document.getElementById('makePortfolioPublic')?.checked || false;
 
     try {
@@ -602,14 +838,16 @@ window.savePortfolio = async function() {
             body: JSON.stringify({ name, tickers, weights, constraints, is_public: isPublic })
         });
         const data = await res.json();
+        
         if (data.error) {
-            alert('Error: ' + data.error);
+            if (handleTierError(data)) return;
+            alert('Error: ' + data.message || data.error);
         } else {
-            if (data.is_authenticated) {
-                alert('Portfolio saved to your account!');
-            } else {
-                alert('Portfolio saved locally. Sign in to save to your account and share publicly.');
+            let msg = data.message;
+            if (data.portfolios_max && data.portfolios_max < 999) {
+                msg += ` (${data.portfolios_used}/${data.portfolios_max} used)`;
             }
+            alert(msg);
             document.getElementById('portfolioName').value = '';
             refreshPortfolioLists();
         }
@@ -652,11 +890,9 @@ async function loadPortfolio(id) {
         const res = await fetch(`/api/portfolios/${id}`);
         const portfolio = await res.json();
         
-        // Clear current assets
         document.getElementById('assetsTableBody').innerHTML = '';
         rowCount = 0;
         
-        // Load assets
         portfolio.tickers.forEach(ticker => {
             const weight = (portfolio.weights[ticker] * 100) || 0;
             const minW = portfolio.constraints.assets && portfolio.constraints.assets[ticker] 
@@ -674,10 +910,16 @@ async function loadPortfolio(id) {
 }
 
 // ============================================================================
-// CSV IMPORT/EXPORT FUNCTIONS
+// CSV IMPORT/EXPORT
 // ============================================================================
 
 window.exportPortfolioCSV = async function() {
+    // Check feature access
+    if (!canAccessFeature('csv_import_export')) {
+        showUpgradePrompt('csv_import_export', 'CSV Export');
+        return;
+    }
+    
     const rows = document.querySelectorAll('#assetsTableBody tr');
     const tickers = [];
     const weights = {};
@@ -707,15 +949,15 @@ window.exportPortfolioCSV = async function() {
     }
 
     try {
-        const response = await fetch('/api/portfolios/export-csv', {
+        const response = await authenticatedFetch('/api/portfolios/export-csv', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tickers, weights, constraints })
         });
         
         const data = await response.json();
         
         if (data.error) {
+            if (handleTierError(data)) return;
             alert('Export error: ' + data.error);
             return;
         }
@@ -736,6 +978,12 @@ window.exportPortfolioCSV = async function() {
 };
 
 window.importPortfolioCSV = async function() {
+    // Check feature access
+    if (!canAccessFeature('csv_import_export')) {
+        showUpgradePrompt('csv_import_export', 'CSV Import');
+        return;
+    }
+    
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.csv,.txt';
@@ -749,15 +997,15 @@ window.importPortfolioCSV = async function() {
             const csvContent = event.target.result;
             
             try {
-                const response = await fetch('/api/portfolios/import-csv', {
+                const response = await authenticatedFetch('/api/portfolios/import-csv', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ csv: csvContent })
                 });
                 
                 const data = await response.json();
                 
                 if (data.error) {
+                    if (handleTierError(data)) return;
                     alert('Import error: ' + data.error);
                     return;
                 }
@@ -792,15 +1040,19 @@ window.importPortfolioCSV = async function() {
 };
 
 window.quickPasteTickers = function() {
+    const maxAssets = getMaxAssets();
+    const tier = getUserTier();
+    
     const input = prompt(
-        'Enter tickers separated by commas:\n\n' +
-        'Example: AAPL, MSFT, GOOGL, TLT, GLD\n\n' +
-        '(Will auto-append .US if needed)'
+        `Enter tickers separated by commas:\n\n` +
+        `Example: AAPL, MSFT, GOOGL, TLT, GLD\n\n` +
+        `(Will auto-append .US if needed)\n` +
+        `${tier !== 'pro' ? `\nNote: Your ${tier} plan allows up to ${maxAssets} assets` : ''}`
     );
     
     if (!input) return;
     
-    const tickers = input.split(',')
+    let tickers = input.split(',')
         .map(t => t.trim().toUpperCase())
         .filter(t => t.length > 0)
         .map(t => t.includes('.') ? t : t + '.US');
@@ -808,6 +1060,12 @@ window.quickPasteTickers = function() {
     if (tickers.length === 0) {
         alert('No valid tickers entered');
         return;
+    }
+    
+    // Enforce asset limit
+    if (tickers.length > maxAssets && tier !== 'pro') {
+        alert(`Your ${tier} plan allows up to ${maxAssets} assets. Only the first ${maxAssets} will be added.\n\nUpgrade to add more.`);
+        tickers = tickers.slice(0, maxAssets);
     }
     
     document.getElementById('assetsTableBody').innerHTML = '';
@@ -821,7 +1079,6 @@ window.quickPasteTickers = function() {
     
     alert(`Added ${tickers.length} tickers with equal weights (${equalWeight}% each)`);
 };
-
 
 // ============================================================================
 // DOM READY
@@ -840,18 +1097,21 @@ document.addEventListener('DOMContentLoaded', function() {
     addAssetRow('TLT.US', 25);
     addAssetRow('GLD.US', 25);
     
-    // Load portfolio lists
     refreshPortfolioLists();
     
     document.getElementById('runOptimizeBtn').addEventListener('click', runOptimization);
     
-    // Health score weight validation
     document.querySelectorAll('.health-weight').forEach(input => {
         input.addEventListener('change', updateHealthWeightTotal);
     });
     
-    // Show/hide health score settings based on diversification toggle
-    document.getElementById('showDiversification').addEventListener('change', function() {
+    document.getElementById('showDiversification')?.addEventListener('change', function() {
+        const tier = getUserTier();
+        if (tier !== 'pro' && this.checked) {
+            this.checked = false;
+            showUpgradePrompt('diversification_analytics', 'Diversification Analytics');
+            return;
+        }
         document.getElementById('healthScoreCard').style.display = this.checked ? 'block' : 'none';
     });
 });
@@ -869,7 +1129,7 @@ function updateHealthWeightTotal() {
 }
 
 // ============================================================================
-// OPTIMIZATION REQUEST (MODIFIED TO INCLUDE GROUP CONSTRAINTS)
+// OPTIMIZATION REQUEST
 // ============================================================================
 
 async function runOptimization() {
@@ -906,9 +1166,8 @@ async function runOptimization() {
     const useConstraints = document.getElementById('useConstraints').checked;
     const useGroupConstraints = document.getElementById('useGroupConstraints')?.checked || false;
     const groupConstraints = useGroupConstraints ? collectGroupConstraints() : {};
-    const showDiversification = document.getElementById('showDiversification').checked;
+    const showDiversification = document.getElementById('showDiversification')?.checked || false;
     
-    // Collect health score weights if customized
     let healthScoreWeights = null;
     if (showDiversification) {
         const sharpe = parseInt(document.getElementById('healthSharpe').value) || 40;
@@ -926,9 +1185,8 @@ async function runOptimization() {
         const userBenchmarkId = useUserBench ? document.getElementById('userBenchmark').value : null;
         const optGoal = document.getElementById('optGoal').value;
         
-        const response = await fetch('/api/optimize', {
+        const response = await authenticatedFetch('/api/optimize', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 tickers: tickers,
                 user_weights: user_weights,
@@ -953,12 +1211,15 @@ async function runOptimization() {
         const data = await response.json();
         
         if (data.error) {
-            if (data.error === 'coverage_gap') {
+            if (handleTierError(data)) {
+                document.getElementById('resultsPlaceholder').style.display = 'block';
+            } else if (data.error === 'coverage_gap') {
                 alert(data.message + "\n\nSuggested Start: " + data.suggested_start_date);
+                document.getElementById('resultsPlaceholder').style.display = 'block';
             } else {
-                alert("Error: " + data.message || data.error);
+                alert("Error: " + (data.message || data.error));
+                document.getElementById('resultsPlaceholder').style.display = 'block';
             }
-            document.getElementById('resultsPlaceholder').style.display = 'block';
         } else {
             renderResults(data);
         }
@@ -973,7 +1234,7 @@ async function runOptimization() {
 }
 
 // ============================================================================
-// RESULTS RENDERING (MODIFIED TO SHOW GROUP ALLOCATIONS)
+// RESULTS RENDERING
 // ============================================================================
 
 function renderResults(data) {
@@ -983,11 +1244,9 @@ function renderResults(data) {
     const user = data.user_portfolio;
     const bench = data.benchmark_portfolio;
     
-    // Update card titles
-    const goalName = document.getElementById('optGoal').selectedOptions[0].text;
+    const goalName = document.getElementById('optGoal').selectedOptions[0].text.replace(' 🔒', '');
     setText('optCardTitle', goalName);
     
-    // Update benchmark title dynamically
     if (bench && bench.name) {
         setText('benchCardTitle', bench.name);
         setText('colBench', bench.name);
@@ -996,9 +1255,7 @@ function renderResults(data) {
         setText('colBench', 'Benchmark');
     }
     
-    // ========================================================================
-    // COMPARISON TABLE
-    // ========================================================================
+    // Comparison Table
     const metrics = [
         {label: 'Annualized Return (CAGR)', key: 'return', suffix: '%'},
         {label: 'Standard Deviation', key: 'volatility', suffix: '%'},
@@ -1027,16 +1284,15 @@ function renderResults(data) {
         tbody.appendChild(row);
     });
     
-    // Add diversification metrics if available
-    if (data.diversification) {
+    // Diversification metrics (Pro only)
+    if (data.diversification && data.tier_info?.diversification_enabled) {
         const divData = data.diversification;
         const optDiv = divData.optimized;
         const userDiv = divData.user;
         const benchDiv = divData.benchmark;
         
-        // Add separator row
         const sepRow = document.createElement('tr');
-        sepRow.innerHTML = `<td colspan="4" class="bg-light small text-muted fw-bold pt-2">DIVERSIFICATION METRICS</td>`;
+        sepRow.innerHTML = `<td colspan="4" class="bg-light small text-muted fw-bold pt-2">DIVERSIFICATION METRICS <span class="badge bg-warning text-dark">Pro</span></td>`;
         tbody.appendChild(sepRow);
         
         const divMetrics = [
@@ -1064,18 +1320,13 @@ function renderResults(data) {
         });
     }
     
-    // ========================================================================
-    // ALLOCATION TABLES
-    // ========================================================================
-    
-    // Optimized Portfolio Table
+    // Allocation Tables
     const optTable = document.getElementById('optTable');
     optTable.innerHTML = '';
     Object.entries(opt.weights).sort((a, b) => b[1] - a[1]).forEach(([ticker, weight]) => {
         optTable.innerHTML += `<tr><td>${ticker}</td><td class="text-end fw-bold">${weight}%</td></tr>`;
     });
     
-    // User Portfolio Table
     const yourTable = document.getElementById('yourTable');
     if (user && user.weights) {
         yourTable.innerHTML = '';
@@ -1086,7 +1337,6 @@ function renderResults(data) {
         yourTable.innerHTML = '<tr><td colspan="2" class="text-center text-muted p-3">No allocation</td></tr>';
     }
     
-    // Benchmark Table
     const benchTable = document.getElementById('benchTable');
     if (bench && bench.weights) {
         benchTable.innerHTML = '';
@@ -1097,9 +1347,7 @@ function renderResults(data) {
         benchTable.innerHTML = '<tr><td colspan="2" class="text-center text-muted p-3">No benchmark</td></tr>';
     }
     
-    // ========================================================================
-    // GROUP ALLOCATIONS DISPLAY (NEW)
-    // ========================================================================
+    // Group Allocations
     if (data.group_allocations) {
         const groupAllocSection = document.getElementById('groupAllocationsSection');
         if (groupAllocSection) {
@@ -1126,7 +1374,6 @@ function renderResults(data) {
                     const maxBound = constraint.max || 100;
                     constraintText = `${minBound}% - ${maxBound}%`;
                     
-                    // Check if optimized allocation violates constraints
                     if (optAlloc < minBound || optAlloc > maxBound) {
                         violationClass = 'table-danger';
                     }
@@ -1150,10 +1397,9 @@ function renderResults(data) {
         }
     }
     
-    // ========================================================================
-    // PLOTLY CHARTS
-    // ========================================================================
+    // Charts
     if (typeof Plotly !== 'undefined') {
+        // Efficient Frontier
         const scatterX = data.frontier_scatter.map(p => p.volatility);
         const scatterY = data.frontier_scatter.map(p => p.return);
 
@@ -1208,9 +1454,7 @@ function renderResults(data) {
             plot_bgcolor: '#f8f9fa'
         });
 
-        // ====================================================================
-        // DRAWDOWN
-        // ====================================================================
+        // Drawdown
         if (opt.drawdown_curve && opt.drawdown_curve.length > 0) {
             const dates = opt.drawdown_curve.map(d => d.date);
             const vals = opt.drawdown_curve.map(d => d.value * 100);
@@ -1247,9 +1491,7 @@ function renderResults(data) {
             });
         }
 
-        // ====================================================================
-        // MONTHLY HEATMAP (Green=High, Red=Low)
-        // ====================================================================
+        // Monthly Heatmap
         if (opt.monthly_heatmap) {
             const hm = opt.monthly_heatmap;
             const dynamicHeight = Math.max(450, (hm.years.length * 45) + 120);
@@ -1260,11 +1502,11 @@ function renderResults(data) {
                 y: hm.years,
                 type: 'heatmap',
                 colorscale: [
-                    [0, '#d32f2f'],    // Deep red for negative
-                    [0.4, '#ff6b6b'],  // Light red
-                    [0.5, '#ffffff'],  // White at zero
-                    [0.6, '#81c784'],  // Light green
-                    [1, '#2e7d32']     // Deep green for high positive
+                    [0, '#d32f2f'],
+                    [0.4, '#ff6b6b'],
+                    [0.5, '#ffffff'],
+                    [0.6, '#81c784'],
+                    [1, '#2e7d32']
                 ],
                 zmid: 0,
                 xgap: 3,
@@ -1280,14 +1522,11 @@ function renderResults(data) {
             });
         }
 
-        // ====================================================================
-        // CORRELATION MATRIX (Blue=High, Red=Low)
-        // ====================================================================
+        // Correlation Matrix
         const corrData = data.correlation_matrix;
         const assets = Object.keys(corrData);
         const z = assets.map(r => assets.map(c => corrData[r][c]));
         
-        // Create annotations with correlation values
         const annotations = [];
         for (let i = 0; i < assets.length; i++) {
             for (let j = 0; j < assets.length; j++) {
@@ -1310,9 +1549,9 @@ function renderResults(data) {
             y: assets,
             type: 'heatmap',
             colorscale: [
-                [0, '#d32f2f'],     // Red for -1 (negative correlation)
-                [0.5, '#ffffff'],   // White for 0
-                [1, '#1976d2']      // Blue for +1 (positive correlation)
+                [0, '#d32f2f'],
+                [0.5, '#ffffff'],
+                [1, '#1976d2']
             ],
             zmin: -1,
             zmax: 1,
@@ -1327,11 +1566,28 @@ function renderResults(data) {
             annotations: annotations
         });
         
-        // ====================================================================
-        // DIVERSIFICATION METRICS
-        // ====================================================================
-        if (data.diversification) {
+        // Diversification Tab
+        if (data.diversification && data.tier_info?.diversification_enabled) {
             renderDiversificationMetrics(data.diversification);
+        } else {
+            // Show upgrade prompt in diversification tab
+            const divBody = document.getElementById('diversificationBody');
+            if (divBody) {
+                divBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="fas fa-lock fa-2x text-muted mb-3"></i>
+                            <p class="mb-2">Diversification Analytics requires Pro subscription</p>
+                            <a href="/pricing" class="btn btn-sm btn-primary">Upgrade to Pro</a>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // Hide health score cards
+            document.getElementById('optHealthScore').innerText = '🔒';
+            document.getElementById('userHealthScore').innerText = '🔒';
+            document.getElementById('benchHealthScore').innerText = '🔒';
         }
     }
 }
@@ -1341,12 +1597,10 @@ function renderDiversificationMetrics(divData) {
     const userDiv = divData.user;
     const benchDiv = divData.benchmark;
     
-    // Update health score cards
     document.getElementById('optHealthScore').innerText = optDiv ? optDiv.health_score : '--';
     document.getElementById('userHealthScore').innerText = userDiv ? userDiv.health_score : '--';
     document.getElementById('benchHealthScore').innerText = benchDiv ? benchDiv.health_score : '--';
     
-    // Color code based on score
     const scoreColor = (score) => {
         if (!score) return '';
         if (score >= 70) return 'text-success';
@@ -1358,7 +1612,6 @@ function renderDiversificationMetrics(divData) {
     document.getElementById('userHealthScore').className = `display-4 mb-0 ${scoreColor(userDiv?.health_score)}`;
     document.getElementById('benchHealthScore').className = `display-4 mb-0 ${scoreColor(benchDiv?.health_score)}`;
     
-    // Build metrics table
     const tbody = document.getElementById('diversificationBody');
     tbody.innerHTML = '';
     
@@ -1367,29 +1620,25 @@ function renderDiversificationMetrics(divData) {
             label: 'HHI (Concentration)',
             key: 'hhi',
             format: v => v?.toFixed(4) || '-',
-            interpret: optDiv?.hhi_interpretation || '-',
-            tooltip: 'Lower is better. 1/N is perfectly diversified, 1.0 is single asset.'
+            interpret: optDiv?.hhi_interpretation || '-'
         },
         {
             label: 'Diversification Ratio',
             key: 'diversification_ratio',
             format: v => v?.toFixed(2) || '-',
-            interpret: optDiv?.dr_interpretation || '-',
-            tooltip: 'Higher is better. Shows how much volatility is cancelled by diversification.'
+            interpret: optDiv?.dr_interpretation || '-'
         },
         {
             label: 'Effective # of Bets',
             key: 'effective_num_bets',
             format: v => v?.toFixed(1) || '-',
-            interpret: optDiv?.enb_interpretation || '-',
-            tooltip: 'How many independent risk exposures you actually have.'
+            interpret: optDiv?.enb_interpretation || '-'
         },
         {
             label: 'Health Score',
             key: 'health_score',
             format: v => v ? `${v}/100` : '-',
-            interpret: 'Composite quality metric',
-            tooltip: 'Weighted combination of Sharpe, DR, HHI, and Drawdown Duration.'
+            interpret: 'Composite quality metric'
         }
     ];
     
@@ -1400,7 +1649,7 @@ function renderDiversificationMetrics(divData) {
         const benchVal = benchDiv ? m.format(benchDiv[m.key]) : '-';
         
         row.innerHTML = `
-            <td title="${m.tooltip}">${m.label} <i class="fas fa-info-circle text-muted small"></i></td>
+            <td>${m.label}</td>
             <td class="text-center">${userVal}</td>
             <td class="text-center fw-bold text-primary">${optVal}</td>
             <td class="text-center text-muted">${benchVal}</td>
@@ -1409,13 +1658,12 @@ function renderDiversificationMetrics(divData) {
         tbody.appendChild(row);
     });
     
-    // Radar chart for health components
+    // Radar chart
     if (optDiv && optDiv.health_components && typeof Plotly !== 'undefined') {
         const categories = ['Sharpe', 'Diversification', 'Concentration', 'Drawdown'];
         
         const traces = [];
         
-        // Optimized portfolio
         traces.push({
             type: 'scatterpolar',
             r: [
@@ -1423,7 +1671,7 @@ function renderDiversificationMetrics(divData) {
                 optDiv.health_components.div_ratio_score,
                 optDiv.health_components.hhi_score,
                 optDiv.health_components.drawdown_score,
-                optDiv.health_components.sharpe_score  // Close the loop
+                optDiv.health_components.sharpe_score
             ],
             theta: [...categories, categories[0]],
             fill: 'toself',
@@ -1432,7 +1680,6 @@ function renderDiversificationMetrics(divData) {
             fillcolor: 'rgba(13, 110, 253, 0.2)'
         });
         
-        // User portfolio
         if (userDiv && userDiv.health_components) {
             traces.push({
                 type: 'scatterpolar',
@@ -1451,7 +1698,6 @@ function renderDiversificationMetrics(divData) {
             });
         }
         
-        // Benchmark
         if (benchDiv && benchDiv.health_components) {
             traces.push({
                 type: 'scatterpolar',
@@ -1474,9 +1720,7 @@ function renderDiversificationMetrics(divData) {
             polar: {
                 radialaxis: {
                     visible: true,
-                    range: [0, 100],
-                    ticksuffix: '',
-                    showline: false
+                    range: [0, 100]
                 }
             },
             showlegend: true,
