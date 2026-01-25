@@ -12,7 +12,7 @@
             --bg-card: #12121a;
             --bg-elevated: #1a1a24;
             --text-primary: #ffffff;
-            --text-secondary: #a0a0b0;
+            --text-secondary: #d1d5db; /* Improved from #a0a0b0 for better readability */
             --accent-blue: #3b82f6;
             --border-color: #2a2a3a;
             --warning-color: #f59e0b;
@@ -68,6 +68,7 @@
             font-weight: 600;
             margin-top: 25px;
             margin-bottom: 15px;
+            color: var(--text-primary);
         }
         
         .legal-section p, .legal-section li {
@@ -94,12 +95,17 @@
         
         .highlight-box.warning {
             border-left-color: var(--warning-color);
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(245, 158, 11, 0.15);
         }
         
         .highlight-box.danger {
             border-left-color: var(--danger-color);
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.15);
+        }
+        
+        .highlight-box p {
+            color: var(--text-primary);
+            margin-bottom: 10px;
         }
         
         .highlight-box p:last-child {
@@ -230,7 +236,7 @@
         
         <div class="legal-header">
             <h1>Investment Disclaimer</h1>
-            <p class="effective-date">Please Read Carefully Before Using FolioForecast</p>
+            <p class="effective-date">Version 1.0.0 | Please Read Carefully Before Using FolioForecast</p>
         </div>
         
         <div class="warning-banner">
