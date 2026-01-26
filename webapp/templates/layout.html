@@ -13,7 +13,7 @@
         async 
         crossorigin="anonymous" 
         data-clerk-publishable-key="pk_test_ZGl2ZXJzZS1ld2UtMTUuY2xlcmsuYWNjb3VudHMuZGV2JA"
-        src="https://diverse-ewe-15.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+        src="https://diverse-ewe-15.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
         type="text/javascript">
     </script>
     
@@ -33,9 +33,369 @@
         footer a:hover {
             color: #3b82f6 !important;
         }
+        
+        /* ===== AGREEMENT MODAL STYLES ===== */
+        .agreement-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 2rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .agreement-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .agreement-modal {
+            background: #1a1a24;
+            border: 1px solid #2a2a3a;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+            color: #ffffff;
+        }
+        
+        .agreement-modal-overlay.active .agreement-modal {
+            transform: translateY(0);
+        }
+        
+        .agreement-modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #2a2a3a;
+        }
+        
+        .agreement-modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .agreement-modal-header .step-indicator {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+        
+        .agreement-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem 2rem;
+            color: #d1d5db;
+        }
+        
+        .agreement-modal-body h3 {
+            color: #ffffff;
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.75rem;
+        }
+        
+        .agreement-modal-body h3:first-child {
+            margin-top: 0;
+        }
+        
+        .agreement-modal-body p {
+            margin-bottom: 1rem;
+        }
+        
+        .agreement-modal-body ul {
+            margin: 0.5rem 0 1rem 1.5rem;
+        }
+        
+        .agreement-modal-body li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .agreement-warning-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .agreement-warning-box h4 {
+            color: #f59e0b;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .agreement-danger-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .agreement-danger-box h4 {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .agreement-scroll-indicator {
+            text-align: center;
+            padding: 1rem;
+            color: #6b7280;
+            font-size: 0.85rem;
+            border-top: 1px solid #2a2a3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .agreement-scroll-indicator.hidden {
+            display: none;
+        }
+        
+        .agreement-scroll-indicator svg {
+            animation: agreementBounce 1s infinite;
+        }
+        
+        @keyframes agreementBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(4px); }
+        }
+        
+        .agreement-modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #2a2a3a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .agreement-modal-footer .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .agreement-modal-footer input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .agreement-modal-footer label {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .agreement-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+        
+        .agreement-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        .agreement-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Loading overlay for agreements */
+        .agreement-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+        }
+        
+        .agreement-loading-overlay.hidden {
+            display: none;
+        }
+        
+        .agreement-loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #2a2a3a;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: agreementSpin 1s linear infinite;
+        }
+        
+        @keyframes agreementSpin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <!-- Agreement Loading Overlay -->
+    <div class="agreement-loading-overlay" id="agreementLoadingOverlay">
+        <div class="agreement-loading-spinner"></div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div class="agreement-modal-overlay" id="termsModal">
+        <div class="agreement-modal">
+            <div class="agreement-modal-header">
+                <h2>
+                    📋 Terms of Service
+                    <span class="step-indicator">Step 1 of 2</span>
+                </h2>
+            </div>
+            <div class="agreement-modal-body" id="termsModalBody">
+                <p>Please read and accept our Terms of Service before using FolioForecast.</p>
+                
+                <h3>1. Acceptance of Terms</h3>
+                <p>By accessing or using FolioForecast, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+
+                <h3>2. Service Description</h3>
+                <p>FolioForecast provides portfolio optimization and analysis tools for educational and informational purposes only. We do not provide financial advice.</p>
+
+                <h3>3. User Accounts</h3>
+                <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
+
+                <h3>4. Subscription & Payments</h3>
+                <p>Paid subscriptions are billed monthly. You may cancel at any time, with access continuing until the end of your billing period.</p>
+
+                <div class="agreement-danger-box">
+                    <h4>⚠️ NO REFUNDS POLICY</h4>
+                    <p><strong>ALL SUBSCRIPTION PAYMENTS ARE FINAL AND NON-REFUNDABLE.</strong></p>
+                    <p>This includes: unused subscription time, service dissatisfaction, accidental purchases, and account termination. We strongly encourage you to evaluate our free tier before subscribing.</p>
+                </div>
+
+                <h3>5. Intellectual Property</h3>
+                <p>All content, features, and functionality of FolioForecast are owned by us and protected by intellectual property laws.</p>
+
+                <h3>6. Limitation of Liability</h3>
+                <p>FolioForecast is provided "as is" without warranties. We are not liable for any investment decisions made based on information from our service.</p>
+
+                <h3>7. Termination</h3>
+                <p>We may terminate or suspend your account at any time for violations of these terms. Account termination does not entitle you to any refund.</p>
+
+                <h3>8. Changes to Terms</h3>
+                <p>We may update these terms at any time. Continued use constitutes acceptance of updated terms.</p>
+
+                <p style="margin-top: 2rem; font-size: 0.85rem; color: #6b7280;">
+                    <strong>Version 1.0.0</strong> | Effective: January 25, 2026 | 
+                    <a href="/terms" target="_blank" style="color: #3b82f6;">View Full Terms</a>
+                </p>
+            </div>
+            <div class="agreement-scroll-indicator" id="termsScrollIndicator">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+                Scroll to read all terms
+            </div>
+            <div class="agreement-modal-footer">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="termsCheckbox" disabled>
+                    <label for="termsCheckbox">I have read and agree to the Terms of Service</label>
+                </div>
+                <button class="agreement-btn" id="termsAcceptBtn" disabled>Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Disclaimer Modal -->
+    <div class="agreement-modal-overlay" id="disclaimerModal">
+        <div class="agreement-modal">
+            <div class="agreement-modal-header">
+                <h2>
+                    ⚠️ Investment Disclaimer
+                    <span class="step-indicator">Step 2 of 2</span>
+                </h2>
+            </div>
+            <div class="agreement-modal-body" id="disclaimerModalBody">
+                <div class="agreement-warning-box">
+                    <h4>⚠️ IMPORTANT: READ CAREFULLY</h4>
+                    <p>FolioForecast is an educational tool, NOT a financial advisor. You are solely responsible for your investment decisions.</p>
+                </div>
+
+                <h3>Not Financial Advice</h3>
+                <p>Nothing on FolioForecast constitutes financial, investment, legal, or tax advice. All content is for educational and informational purposes only.</p>
+
+                <h3>No Guarantees</h3>
+                <p>Past performance does not guarantee future results. Portfolio optimization models are based on historical data and mathematical assumptions that may not reflect future market conditions.</p>
+
+                <h3>Investment Risks</h3>
+                <ul>
+                    <li>All investments carry risk of loss, including total loss of principal</li>
+                    <li>Market conditions can change rapidly and unpredictably</li>
+                    <li>Historical correlations may not persist in the future</li>
+                    <li>Optimization results are theoretical and may not be achievable in practice</li>
+                </ul>
+
+                <h3>Your Responsibility</h3>
+                <p>You should:</p>
+                <ul>
+                    <li>Consult qualified financial professionals before making investment decisions</li>
+                    <li>Conduct your own research and due diligence</li>
+                    <li>Consider your personal financial situation, risk tolerance, and investment goals</li>
+                    <li>Never invest money you cannot afford to lose</li>
+                </ul>
+
+                <h3>Limitation of Liability</h3>
+                <p>FolioForecast and its operators shall not be held liable for any losses, damages, or negative outcomes resulting from the use of this service or any investment decisions influenced by it.</p>
+
+                <div class="agreement-danger-box">
+                    <h4>🛑 Final Acknowledgment</h4>
+                    <p>By accepting this disclaimer, you confirm that you understand FolioForecast does not provide investment advice, and you accept full responsibility for your own investment decisions and their outcomes.</p>
+                </div>
+
+                <p style="margin-top: 2rem; font-size: 0.85rem; color: #6b7280;">
+                    <strong>Version 1.0.0</strong> | Effective: January 25, 2026 | 
+                    <a href="/disclaimer" target="_blank" style="color: #3b82f6;">View Full Disclaimer</a>
+                </p>
+            </div>
+            <div class="agreement-scroll-indicator" id="disclaimerScrollIndicator">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+                Scroll to read entire disclaimer
+            </div>
+            <div class="agreement-modal-footer">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="disclaimerCheckbox" disabled>
+                    <label for="disclaimerCheckbox">I understand and accept this disclaimer</label>
+                </div>
+                <button class="agreement-btn" id="disclaimerAcceptBtn" disabled>Accept & Continue to App</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar navbar-dark bg-dark">
         <div class="container-fluid">
             <a href="/" class="navbar-brand mb-0 h1">
@@ -93,7 +453,8 @@
         </div>
     </nav>
 
-    <div class="container-fluid">
+    <!-- Main App Content (hidden until agreements accepted) -->
+    <div class="container-fluid" id="mainAppContent" style="display: none;">
         <div class="row">
             {% block content %}{% endblock %}
         </div>
@@ -101,6 +462,320 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    
+    <!-- Agreement Logic Script -->
+    <script>
+        // ===== AGREEMENT SYSTEM =====
+        const AgreementState = {
+            user: null,
+            agreements: null,
+            clerkReady: false
+        };
+        
+        // DOM elements for agreements
+        const agreementElements = {
+            loadingOverlay: document.getElementById('agreementLoadingOverlay'),
+            mainAppContent: document.getElementById('mainAppContent'),
+            termsModal: document.getElementById('termsModal'),
+            termsModalBody: document.getElementById('termsModalBody'),
+            termsScrollIndicator: document.getElementById('termsScrollIndicator'),
+            termsCheckbox: document.getElementById('termsCheckbox'),
+            termsAcceptBtn: document.getElementById('termsAcceptBtn'),
+            disclaimerModal: document.getElementById('disclaimerModal'),
+            disclaimerModalBody: document.getElementById('disclaimerModalBody'),
+            disclaimerScrollIndicator: document.getElementById('disclaimerScrollIndicator'),
+            disclaimerCheckbox: document.getElementById('disclaimerCheckbox'),
+            disclaimerAcceptBtn: document.getElementById('disclaimerAcceptBtn')
+        };
+        
+        // Setup scroll detection for agreement modals
+        function setupAgreementScrollDetection(modalBody, scrollIndicator, checkbox, acceptBtn) {
+            const checkScroll = () => {
+                const scrolledToBottom = 
+                    modalBody.scrollHeight - modalBody.scrollTop - modalBody.clientHeight < 50;
+                
+                if (scrolledToBottom) {
+                    scrollIndicator.classList.add('hidden');
+                    checkbox.disabled = false;
+                } else {
+                    scrollIndicator.classList.remove('hidden');
+                }
+            };
+            
+            modalBody.addEventListener('scroll', checkScroll);
+            
+            // Check initially
+            setTimeout(() => {
+                if (modalBody.scrollHeight <= modalBody.clientHeight) {
+                    scrollIndicator.classList.add('hidden');
+                    checkbox.disabled = false;
+                }
+            }, 100);
+            
+            checkbox.addEventListener('change', () => {
+                acceptBtn.disabled = !checkbox.checked;
+            });
+        }
+        
+        // Show Terms Modal
+        function showTermsModal() {
+            agreementElements.loadingOverlay.classList.add('hidden');
+            agreementElements.termsModal.classList.add('active');
+            agreementElements.termsCheckbox.checked = false;
+            agreementElements.termsCheckbox.disabled = true;
+            agreementElements.termsAcceptBtn.disabled = true;
+            agreementElements.termsScrollIndicator.classList.remove('hidden');
+            agreementElements.termsModalBody.scrollTop = 0;
+            
+            setupAgreementScrollDetection(
+                agreementElements.termsModalBody,
+                agreementElements.termsScrollIndicator,
+                agreementElements.termsCheckbox,
+                agreementElements.termsAcceptBtn
+            );
+        }
+        
+        // Show Disclaimer Modal
+        function showDisclaimerModal() {
+            agreementElements.termsModal.classList.remove('active');
+            agreementElements.disclaimerModal.classList.add('active');
+            agreementElements.disclaimerCheckbox.checked = false;
+            agreementElements.disclaimerCheckbox.disabled = true;
+            agreementElements.disclaimerAcceptBtn.disabled = true;
+            agreementElements.disclaimerScrollIndicator.classList.remove('hidden');
+            agreementElements.disclaimerModalBody.scrollTop = 0;
+            
+            setupAgreementScrollDetection(
+                agreementElements.disclaimerModalBody,
+                agreementElements.disclaimerScrollIndicator,
+                agreementElements.disclaimerCheckbox,
+                agreementElements.disclaimerAcceptBtn
+            );
+        }
+        
+        // Show main app content
+        function showMainApp() {
+            agreementElements.loadingOverlay.classList.add('hidden');
+            agreementElements.termsModal.classList.remove('active');
+            agreementElements.disclaimerModal.classList.remove('active');
+            agreementElements.mainAppContent.style.display = 'block';
+        }
+        
+        // Accept agreement API call
+        async function acceptAgreement(agreementType) {
+            try {
+                const token = await window.Clerk.session.getToken();
+                
+                const res = await fetch('/api/agreements/accept', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ agreement_type: agreementType })
+                });
+                
+                if (!res.ok) {
+                    throw new Error('Failed to record agreement');
+                }
+                
+                const result = await res.json();
+                AgreementState.agreements = result.status;
+                return true;
+            } catch (error) {
+                console.error('Error accepting agreement:', error);
+                return false;
+            }
+        }
+        
+        // Check agreements when user is authenticated
+        async function checkUserAgreements() {
+            if (!window.Clerk || !window.Clerk.user) {
+                // Not signed in - show app anyway (they'll need to sign in for features)
+                showMainApp();
+                return;
+            }
+            
+            try {
+                const token = await window.Clerk.session.getToken();
+                
+                // Check agreement status
+                const agreementRes = await fetch('/api/agreements/status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (agreementRes.ok) {
+                    AgreementState.agreements = await agreementRes.json();
+                    
+                    if (!AgreementState.agreements.all_accepted) {
+                        if (AgreementState.agreements.missing.includes('terms') || 
+                            AgreementState.agreements.outdated.includes('terms')) {
+                            showTermsModal();
+                        } else if (AgreementState.agreements.missing.includes('disclaimer') ||
+                                   AgreementState.agreements.outdated.includes('disclaimer')) {
+                            showDisclaimerModal();
+                        } else {
+                            showMainApp();
+                        }
+                    } else {
+                        showMainApp();
+                    }
+                } else {
+                    // API error - show terms to be safe
+                    showTermsModal();
+                }
+            } catch (error) {
+                console.error('Error checking agreements:', error);
+                // On error, show terms modal
+                showTermsModal();
+            }
+        }
+        
+        // Setup agreement button listeners
+        function setupAgreementListeners() {
+            // Terms accept
+            agreementElements.termsAcceptBtn.addEventListener('click', async () => {
+                agreementElements.termsAcceptBtn.disabled = true;
+                agreementElements.termsAcceptBtn.textContent = 'Processing...';
+                
+                const success = await acceptAgreement('terms');
+                
+                if (success) {
+                    if (AgreementState.agreements && !AgreementState.agreements.all_accepted) {
+                        showDisclaimerModal();
+                    } else {
+                        showMainApp();
+                    }
+                } else {
+                    agreementElements.termsAcceptBtn.disabled = false;
+                    agreementElements.termsAcceptBtn.textContent = 'Continue';
+                    alert('Failed to save agreement. Please try again.');
+                }
+            });
+            
+            // Disclaimer accept
+            agreementElements.disclaimerAcceptBtn.addEventListener('click', async () => {
+                agreementElements.disclaimerAcceptBtn.disabled = true;
+                agreementElements.disclaimerAcceptBtn.textContent = 'Processing...';
+                
+                const success = await acceptAgreement('disclaimer');
+                
+                if (success) {
+                    showMainApp();
+                } else {
+                    agreementElements.disclaimerAcceptBtn.disabled = false;
+                    agreementElements.disclaimerAcceptBtn.textContent = 'Accept & Continue to App';
+                    alert('Failed to save agreement. Please try again.');
+                }
+            });
+        }
+        
+        // ===== CLERK AUTH FUNCTIONS =====
+        let clerkInstance = null;
+        
+        async function initializeClerk() {
+            try {
+                await window.Clerk.load();
+                clerkInstance = window.Clerk;
+                AgreementState.clerkReady = true;
+                
+                document.getElementById('authLoading').style.display = 'none';
+                
+                if (clerkInstance.user) {
+                    // User is signed in
+                    document.getElementById('signedInSection').style.display = 'flex';
+                    document.getElementById('signedOutButtons').style.display = 'none';
+                    document.getElementById('usernameDisplay').textContent = 
+                        clerkInstance.user.firstName || clerkInstance.user.username || 'User';
+                    
+                    // Sync user and check agreements
+                    try {
+                        const token = await clerkInstance.session.getToken();
+                        await fetch('/api/auth/sync', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('User sync failed:', e);
+                    }
+                    
+                    // Check agreements
+                    await checkUserAgreements();
+                } else {
+                    // User is signed out
+                    document.getElementById('signedOutButtons').style.display = 'flex';
+                    document.getElementById('signedInSection').style.display = 'none';
+                    // Show app (but they'll need to sign in for most features)
+                    showMainApp();
+                }
+                
+                // Listen for auth state changes
+                clerkInstance.addListener((event) => {
+                    if (event.user) {
+                        document.getElementById('signedInSection').style.display = 'flex';
+                        document.getElementById('signedOutButtons').style.display = 'none';
+                        document.getElementById('usernameDisplay').textContent = 
+                            event.user.firstName || event.user.username || 'User';
+                        checkUserAgreements();
+                    } else {
+                        document.getElementById('signedOutButtons').style.display = 'flex';
+                        document.getElementById('signedInSection').style.display = 'none';
+                        showMainApp();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Clerk initialization error:', error);
+                document.getElementById('authLoading').style.display = 'none';
+                document.getElementById('signedOutButtons').style.display = 'flex';
+                showMainApp();
+            }
+        }
+        
+        function clerkSignIn() {
+            if (clerkInstance) {
+                clerkInstance.openSignIn();
+            }
+        }
+        
+        function clerkSignUp() {
+            if (clerkInstance) {
+                clerkInstance.openSignUp();
+            }
+        }
+        
+        function clerkSignOut() {
+            if (clerkInstance) {
+                clerkInstance.signOut().then(() => {
+                    window.location.reload();
+                });
+            }
+        }
+        
+        function openUserProfile() {
+            if (clerkInstance) {
+                clerkInstance.openUserProfile();
+            }
+        }
+        
+        function showMyPortfolios() {
+            // Scroll to saved portfolios tab if it exists
+            const portfoliosTab = document.querySelector('[href="#savedPortfolios"]');
+            if (portfoliosTab) {
+                portfoliosTab.click();
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            setupAgreementListeners();
+            initializeClerk();
+        });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>
