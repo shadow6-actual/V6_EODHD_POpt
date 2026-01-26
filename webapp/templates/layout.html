@@ -212,9 +212,17 @@
             color: var(--color-text);
         }
         
-        .card-header.bg-light {
+        .card-header.bg-light,
+        .card-header.bg-light h6,
+        .card-header.bg-light .fw-bold {
             background: var(--color-bg-elevated) !important;
-            color: var(--color-text-muted);
+            color: var(--color-text-muted) !important;
+        }
+        
+        .card-header h6,
+        .card-header .small,
+        .card-header .fw-bold {
+            color: var(--color-text-muted) !important;
         }
         
         .card-header.bg-primary {
@@ -285,22 +293,57 @@
             --bs-table-border-color: var(--color-border);
         }
         
-        .table-light {
-            --bs-table-bg: var(--color-bg-elevated);
-            --bs-table-color: var(--color-text-muted);
+        .table td,
+        .table th {
+            color: var(--color-text) !important;
+            border-color: var(--color-border) !important;
+        }
+        
+        .table tbody td {
+            color: var(--color-text-muted) !important;
+        }
+        
+        .table tbody td.text-primary,
+        .table tbody td.fw-bold.text-primary {
+            color: var(--color-primary) !important;
+        }
+        
+        .table tbody td.text-muted {
+            color: var(--color-text-dim) !important;
+        }
+        
+        .table tbody td.text-success {
+            color: var(--color-accent) !important;
+        }
+        
+        .table tbody td.text-danger {
+            color: #ef4444 !important;
+        }
+        
+        .table-light,
+        .table-light th,
+        .table-light td {
+            --bs-table-bg: var(--color-bg-elevated) !important;
+            background-color: var(--color-bg-elevated) !important;
+            color: var(--color-text-muted) !important;
         }
         
         .table-hover > tbody > tr:hover {
             --bs-table-hover-bg: var(--color-bg-elevated);
-            color: var(--color-text);
+            background-color: var(--color-bg-elevated) !important;
+        }
+        
+        .table-hover > tbody > tr:hover td {
+            color: var(--color-text) !important;
         }
         
         .table thead th {
-            color: var(--color-text-muted);
+            color: var(--color-text-muted) !important;
             font-weight: 600;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            background-color: var(--color-bg-elevated) !important;
         }
         
         /* Button overrides */
@@ -401,6 +444,24 @@
         
         .text-warning {
             color: var(--color-accent-secondary) !important;
+        }
+        
+        .text-white {
+            color: #fff !important;
+        }
+        
+        /* Ensure all text content is visible */
+        p, span, div, label, small, h1, h2, h3, h4, h5, h6 {
+            color: inherit;
+        }
+        
+        .small, small {
+            color: var(--color-text-muted);
+        }
+        
+        /* Fix metric labels in tables */
+        .table td:first-child {
+            color: var(--color-text) !important;
         }
         
         /* Modal dark theme */
