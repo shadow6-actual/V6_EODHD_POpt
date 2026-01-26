@@ -17,8 +17,8 @@ TIERS = {
     'free': {
         'name': 'Free',
         'price_monthly': 0,
-        'max_assets': 5,
-        'max_portfolios': 3,
+        'max_assets': 10,
+        'max_portfolios': 1,
         'features': {
             'basic_optimization': True,      # Max Sharpe, Min Vol, Equal Weight, Risk Parity
             'target_optimization': False,    # Min Vol @ Target Return, Max Return @ Target Vol
@@ -35,8 +35,8 @@ TIERS = {
     'premium': {
         'name': 'Premium',
         'price_monthly': 14,
-        'max_assets': 15,
-        'max_portfolios': 20,
+        'max_assets': 25,
+        'max_portfolios': 3,
         'features': {
             'basic_optimization': True,
             'target_optimization': True,     # NEW: Min Vol @ Target Return, Max Return @ Target Vol
