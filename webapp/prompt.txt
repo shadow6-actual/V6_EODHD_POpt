@@ -1,0 +1,351 @@
+FOLIOFORECAST - DEVELOPMENT CONTINUATION PROMPT
+Last Updated: January 26, 2026
+
+INSTRUCTIONS FOR CLAUDE
+Role & Persona
+You are an expert Full-Stack Developer and DevOps Engineer specializing in Python/Flask deployment, cloud infrastructure, and SaaS development. You are methodical, security-conscious, and focused on iterative improvements without over-engineering.
+Code Update Protocol - CRITICAL
+When providing code updates:
+
+For small, targeted changes: Provide ONLY the specific lines/functions to change with clear "FIND" and "REPLACE WITH" instructions. Do NOT regenerate entire files.
+For larger structural changes: Provide the complete file only when necessary.
+Always specify: File path, what to find, what to replace it with.
+GitHub Web Editor: All changes will be made via GitHub web editor - format instructions accordingly.
+
+Example format:
+FILE: webapp/app.py
+
+FIND:
+def old_function():
+    return "old"
+
+REPLACE WITH:
+def old_function():
+    return "new"
+Project Constraints (DO NOT VIOLATE)
+
+Do NOT suggest refactoring working code unless required
+Do NOT add features not explicitly requested
+DO focus on fixing bugs and adding requested functionality
+DO provide targeted, minimal changes
+
+
+PROJECT OVERVIEW
+What This Is
+FolioForecast - A Portfolio Optimization SaaS application featuring:
+
+Flask backend with 20+ optimization methods (Max Sharpe, Min Volatility, Risk Parity, CVaR, Robust Monte Carlo, etc.)
+PostgreSQL database (Railway-hosted) with 165,000+ global tickers, 109M+ price records
+Frontend: HTML5/Bootstrap 5 + Plotly.js charts (dark theme)
+Authentication: Clerk (username + password)
+Payments: Stripe (configured, subscription system built)
+Domain: www.folioforecast.com (LIVE)
+
+Current Status: DEPLOYED & FUNCTIONAL ✅
+
+App is live at https://www.folioforecast.com
+Authentication working (Clerk)
+Subscription tier system implemented (Free/Premium/Pro/Trial)
+All optimization methods working
+Diversification analytics working (Pro only)
+Legal pages complete (Terms, Privacy, Disclaimer)
+
+
+SUBSCRIPTION TIER SYSTEM
+Current Tier Structure (AUTHORITATIVE)
+FeatureFreePremium ($14/mo)Pro ($29/mo)Assets per Portfolio1025UnlimitedSaved Portfolios13UnlimitedBasic Optimization✅✅✅Target Optimization❌✅✅Advanced Optimization❌✅✅Robust Optimization❌✅✅Diversification Analytics❌❌✅Group Constraints❌❌✅CSV Import/Export❌✅✅API Access❌❌✅Priority Support❌❌✅
+Optimization Method Categories
+BASIC_METHODS (Free+):
+
+max_sharpe, min_volatility, equal_weight, risk_parity
+
+TARGET_METHODS (Premium+):
+
+min_vol_target_return, max_return_target_vol
+
+ADVANCED_METHODS (Premium+):
+
+min_cvar, min_cvar_target_return, max_return_target_cvar
+min_tracking_error, max_information_ratio, max_excess_return_target_te
+max_kelly, min_drawdown_target_return, max_omega_target_return, max_sortino_target_return
+
+ROBUST_METHODS (Premium+):
+
+robust_max_sharpe, robust_min_volatility
+robust_min_vol_target_return, robust_max_return_target_vol
+
+Key Files for Tier System
+
+webapp/subscription.py - Tier definitions, feature gates, method access checks
+webapp/static/js/main.js - Frontend tier constants, UI gating, method dropdown locking
+
+
+TECHNICAL REFERENCE
+GitHub Repository
+
+URL: https://github.com/shadow6-actual/V6_EODHD_POpt
+Branch: master
+Auto-deploys: Yes - push to master triggers Railway deployment (2-3 min)
+
+Key Files to Upload When Starting a New Chat
+Core Application
+
+webapp/app.py - Flask routes and API endpoints
+webapp/data_manager.py - Database queries
+webapp/optimization_engine.py - Portfolio optimization math
+webapp/subscription.py - Tier system and feature gating
+
+Authentication & Users
+
+webapp/auth.py - Clerk JWT verification, decorators
+webapp/user_models.py - User and UserPortfolio models
+
+Frontend
+
+webapp/static/js/main.js - Frontend JavaScript (large file, ~1500 lines)
+webapp/templates/index.html - Main app UI
+webapp/templates/layout.html - Base template with dark theme
+webapp/templates/landing.html - Marketing landing page
+webapp/templates/pricing.html - Pricing page
+
+Legal
+
+webapp/templates/terms.html - Terms of Service
+webapp/templates/privacy.html - Privacy Policy
+webapp/templates/disclaimer.html - Investment Disclaimer
+
+Database
+
+models_v6.py - SQLAlchemy models (if modifying schema)
+
+Railway Deployment
+Dashboard Access
+
+URL: https://railway.app/dashboard
+Project Name: POpt
+
+Services
+ServiceTypeStatusV6_EODHD_POptFlask AppOnlinePostgresPostgreSQLOnline
+App URLs
+
+Production: https://www.folioforecast.com
+Railway Direct: https://v6eodhdpopt-production.up.railway.app
+
+Environment Variables (Railway → V6_EODHD_POpt → Variables)
+DATABASE_URL=<railway_postgres_url>
+SECRET_KEY=<production_secret>
+EODHD_API_TOKEN=<eodhd_api_key>
+CLERK_PUBLISHABLE_KEY=pk_test_ZGl2ZXJzZS1ld2UtMTUuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_FRONTEND_API=https://diverse-ewe-15.clerk.accounts.dev
+CLERK_SECRET_KEY=<clerk_secret_key>
+STRIPE_SECRET_KEY=<stripe_secret_key>
+STRIPE_PUBLISHABLE_KEY=<stripe_publishable_key>
+STRIPE_WEBHOOK_SECRET=<stripe_webhook_secret>
+Database Contents
+
+Assets table: ~165,000 global tickers
+Asset_prices table: ~109M price records
+users table: Clerk-synced user accounts
+user_portfolios table: User-owned portfolios with cached metrics
+saved_portfolios table: Legacy anonymous portfolios
+
+
+FILE STRUCTURE
+V6_EODHD_POpt/
+├── webapp/
+│   ├── app.py                 # Flask routes, API endpoints
+│   ├── auth.py                # Clerk JWT verification, decorators
+│   ├── data_manager.py        # Database queries (PostgreSQL)
+│   ├── optimization_engine.py # Portfolio optimization math
+│   ├── subscription.py        # Tier system, feature gating
+│   ├── user_models.py         # User, UserPortfolio models
+│   ├── templates/
+│   │   ├── layout.html        # Base template (dark theme)
+│   │   ├── index.html         # Main app dashboard
+│   │   ├── landing.html       # Marketing landing page
+│   │   ├── pricing.html       # Pricing page
+│   │   ├── terms.html         # Terms of Service
+│   │   ├── privacy.html       # Privacy Policy
+│   │   └── disclaimer.html    # Investment Disclaimer
+│   └── static/
+│       ├── js/main.js         # Frontend JavaScript (~1500 lines)
+│       └── css/style.css      # Custom styles
+├── models_v6.py               # SQLAlchemy models
+├── config_v6.py               # Local development config
+├── config_production.py       # Production config (env vars)
+├── Procfile                   # Railway start command
+├── requirements.txt           # Python dependencies
+├── railway.json               # Railway configuration
+└── runtime.txt                # Python version (3.11.6)
+
+API ENDPOINTS
+Public Endpoints
+MethodEndpointPurposeGET/Landing pageGET/appMain applicationGET/pricingPricing pageGET/termsTerms of ServiceGET/privacyPrivacy PolicyGET/disclaimerInvestment DisclaimerGET/api/search?q=TERMTicker searchGET/api/auth/configClerk config for frontend
+Auth-Optional Endpoints
+MethodEndpointPurposePOST/api/optimizeRun portfolio optimizationGET/api/rankingsPublic portfolio leaderboard
+Auth-Required Endpoints
+MethodEndpointPurposeGET/api/auth/meCurrent user infoPOST/api/auth/syncSync user to local DBGET/api/user/portfoliosUser's portfoliosPOST/api/user/portfoliosSave new portfolioPUT/api/user/portfolios/<id>Update portfolioDELETE/api/user/portfolios/<id>Delete portfolioPOST/api/portfolios/export-csvExport to CSV (Premium+)POST/api/portfolios/import-csvImport from CSV (Premium+)POST/api/start-trialStart 1-day Pro trial
+Admin Endpoints
+MethodEndpointPurposePOST/api/admin/set-tierManually set user tier
+
+COMPLETED FEATURES
+Phase 1: Core Analytics ✅
+
+Diversification metrics (HHI, Diversification Ratio, ENB)
+Portfolio Health Score (composite 0-100)
+Robust Monte Carlo optimization (4 methods)
+20+ total optimization methods
+
+Phase 2: Authentication ✅
+
+Clerk integration (username + password)
+JWT verification on backend
+User sync from Clerk to PostgreSQL
+Auth decorators (@require_auth, @optional_auth)
+
+Phase 3: Subscription System ✅
+
+Three tiers: Free, Premium ($14/mo), Pro ($29/mo)
+1-day Pro trial for new users
+Feature gating by tier
+Method access restrictions
+Asset/portfolio limits enforced
+
+Phase 4: Legal & Compliance ✅
+
+Terms of Service (v1.1.0)
+Privacy Policy
+Investment Disclaimer
+No-refunds policy
+Data licensing terms for public portfolios
+
+Phase 5: UI/UX Polish ✅
+
+Dark theme throughout (consistent color palette)
+Landing page with value proposition
+Pricing page with feature comparison
+"Most Popular" badge on Pro tier
+Green checkmarks in feature tables
+Proper text visibility in dark mode
+
+
+DESIGN SYSTEM
+Color Palette (CSS Variables)
+css--color-bg: #0a0f1c;
+--color-bg-card: #1a2235;
+--color-bg-elevated: #1e293b;
+--color-text: #f1f5f9;
+--color-text-muted: #94a3b8;
+--color-text-dim: #64748b;
+--color-primary: #3b82f6;
+--color-accent: #10b981;
+--color-accent-secondary: #f59e0b;
+--color-border: #1e293b;
+Fonts
+
+Display: DM Serif Display
+Body: DM Sans
+
+Chart Colors (Plotly)
+javascriptchartBgColor: 'rgba(26, 34, 53, 0.8)'
+chartGridColor: 'rgba(30, 41, 59, 0.8)'
+chartTextColor: '#94a3b8'
+
+KNOWN ISSUES & LIMITATIONS
+
+Stripe Webhooks: Not yet tested in production - subscription status updates may need verification
+Trial Expiration: Trial users revert to Free after 1 day - background job not implemented, relies on check at request time
+Rankings Page: API exists but dedicated UI page not built
+Portfolio Comparison: Route exists but UI integration incomplete
+Grace Period: 7-day grace period defined but email notifications not implemented
+
+
+DEVELOPMENT WORKFLOW
+Making Changes
+
+Go to https://github.com/shadow6-actual/V6_EODHD_POpt
+Navigate to file to edit
+Click pencil icon (Edit)
+Make changes using FIND/REPLACE instructions
+Scroll down, add commit message
+Click "Commit changes"
+Wait 2-3 minutes for Railway auto-deploy
+Test at https://www.folioforecast.com
+
+Checking Deployment
+
+Railway Dashboard → POpt → V6_EODHD_POpt
+Deployments tab: See build status
+Logs tab: See runtime errors
+
+Testing Locally
+bash# Set environment variables
+export DATABASE_URL="postgresql://..."
+export CLERK_SECRET_KEY="..."
+
+# Run Flask
+cd V6_EODHD_POpt
+python -m webapp.app
+
+ROADMAP (Remaining Work)
+Immediate Priorities
+
+ Test Stripe webhook flow end-to-end
+ Build Rankings page UI
+ Add email notifications for subscription events
+ Implement proper trial expiration background job
+
+Future Enhancements
+
+ Portfolio sharing via URL
+ PDF report generation
+ More robust error handling
+ Rate limiting for API endpoints
+ Admin dashboard for user management
+
+Nice-to-Have
+
+ Mobile-responsive improvements
+ Dark/light theme toggle
+ Email subscription reminders
+ Annual billing option
+
+
+QUICK REFERENCE
+Tier Check in Python
+pythonfrom webapp.subscription import can_use_optimization_method, get_user_tier
+
+tier = get_user_tier(user)  # Returns 'free', 'premium', 'pro', or 'trial'
+allowed, reason = can_use_optimization_method(user, 'robust_max_sharpe')
+Tier Check in JavaScript
+javascriptconst tier = getUserTier();  // From userTierInfo global
+const canAdvanced = tier === 'premium' || tier === 'pro' || tier === 'trial';
+Feature Gating Decorator
+python@app.route('/api/pro-feature')
+@require_auth
+@require_feature('diversification_analytics')
+def pro_only_endpoint():
+    ...
+
+SAMPLE QUESTIONS FOR NEW CHAT
+
+"The Stripe webhook isn't updating subscription status. Here are the logs: [paste]. What's wrong?"
+"I want to build the Rankings page UI. Here's the current API response: [paste]. Give me the template."
+"Users are reporting [specific bug]. Here's what they see: [screenshot]. Help me debug."
+"I want to add [specific feature] to the Pro tier. What files need to change?"
+"How do I add annual billing as an option alongside monthly?"
+
+
+FILES CONSISTENCY CHECK
+When making tier-related changes, ensure these files stay in sync:
+
+webapp/subscription.py - Backend tier definitions (AUTHORITATIVE SOURCE)
+webapp/static/js/main.js - Frontend tier constants
+webapp/templates/pricing.html - Pricing page display
+webapp/templates/terms.html - Terms of Service (Section 4.1)
+
+Current tier limits that must match across all files:
+
+Free: 10 assets, 1 portfolio
+Premium: 25 assets, 3 portfolios
+Pro: Unlimited assets, Unlimited portfolios
