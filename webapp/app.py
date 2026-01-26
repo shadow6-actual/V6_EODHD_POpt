@@ -1466,7 +1466,184 @@ def compare_portfolios():
     except Exception as e:
         logger.error(f"Portfolio comparison error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+        
+# ============================================================================
+# DATA UPDATER API ROUTES
+# Add these routes to your webapp/app.py file
+# ============================================================================
 
+# Add this import at the top of app.py:
+# from webapp.data_updater import (
+#     background_updater, get_update_statistics, trigger_manual_update,
+#     update_specific_tickers, UPDATE_ENABLED
+# )
+
+# Add these routes after your existing routes:
+
+# ============================================================================
+# DATA UPDATE ROUTES (Admin)
+# ============================================================================
+
+@app.route('/api/admin/data-status')
+@require_auth
+def admin_data_status():
+    """
+    Get data freshness statistics.
+    Shows how many tickers need updates.
+    """
+    from webapp.data_updater import get_update_statistics, background_updater
+    
+    # Check admin access
+    ADMIN_USERNAMES = ['shadow6']  # Your admin username(s)
+    if g.username not in ADMIN_USERNAMES:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        stats = get_update_statistics()
+        updater_status = background_updater.get_status()
+        
+        return jsonify({
+            'data_statistics': stats,
+            'background_updater': updater_status
+        })
+    except Exception as e:
+        logger.error(f"Data status error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/trigger-update', methods=['POST'])
+@require_auth
+def admin_trigger_update():
+    """
+    Manually trigger a batch data update.
+    
+    POST body (optional):
+    {
+        "batch_size": 50  // Number of tickers to update (default: 100)
+    }
+    """
+    from webapp.data_updater import trigger_manual_update
+    
+    ADMIN_USERNAMES = ['shadow6']
+    if g.username not in ADMIN_USERNAMES:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        data = request.get_json() or {}
+        batch_size = data.get('batch_size', 100)
+        
+        # Run update
+        stats = trigger_manual_update(batch_size)
+        
+        return jsonify({
+            'message': 'Update completed',
+            'stats': stats
+        })
+    except Exception as e:
+        logger.error(f"Manual update error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/update-tickers', methods=['POST'])
+@require_auth
+def admin_update_specific_tickers():
+    """
+    Update specific tickers by symbol.
+    
+    POST body:
+    {
+        "symbols": ["AAPL.US", "MSFT.US", "GOOGL.US"]
+    }
+    """
+    from webapp.data_updater import update_specific_tickers
+    
+    ADMIN_USERNAMES = ['shadow6']
+    if g.username not in ADMIN_USERNAMES:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        data = request.get_json()
+        if not data or 'symbols' not in data:
+            return jsonify({'error': 'symbols array required'}), 400
+        
+        symbols = data['symbols']
+        if not isinstance(symbols, list) or len(symbols) == 0:
+            return jsonify({'error': 'symbols must be a non-empty array'}), 400
+        
+        # Limit to prevent abuse
+        if len(symbols) > 50:
+            return jsonify({'error': 'Maximum 50 symbols per request'}), 400
+        
+        stats = update_specific_tickers(symbols)
+        
+        return jsonify({
+            'message': f'Updated {len(symbols)} tickers',
+            'stats': stats
+        })
+    except Exception as e:
+        logger.error(f"Update tickers error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/background-updater', methods=['POST'])
+@require_auth
+def admin_control_background_updater():
+    """
+    Control the background updater.
+    
+    POST body:
+    {
+        "action": "start" | "stop" | "status"
+    }
+    """
+    from webapp.data_updater import background_updater
+    
+    ADMIN_USERNAMES = ['shadow6']
+    if g.username not in ADMIN_USERNAMES:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        data = request.get_json() or {}
+        action = data.get('action', 'status')
+        
+        if action == 'start':
+            background_updater.start()
+            return jsonify({
+                'message': 'Background updater started',
+                'status': background_updater.get_status()
+            })
+        elif action == 'stop':
+            background_updater.stop()
+            return jsonify({
+                'message': 'Background updater stopped',
+                'status': background_updater.get_status()
+            })
+        else:  # status
+            return jsonify({
+                'status': background_updater.get_status()
+            })
+            
+    except Exception as e:
+        logger.error(f"Background updater control error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# AUTO-START BACKGROUND UPDATER (Optional)
+# Add this at the bottom of app.py, before the if __name__ == '__main__': block
+# ============================================================================
+
+# Uncomment to auto-start background updates when the app starts:
+# def start_background_services():
+#     """Start background services when app starts"""
+#     from webapp.data_updater import background_updater, UPDATE_ENABLED
+#     if UPDATE_ENABLED:
+#         background_updater.start()
+# 
+# # Only start in production (not during imports or tests)
+# import os
+# if os.environ.get('RAILWAY_ENVIRONMENT'):
+#     start_background_services()
 
 # ============================================================================
 # 5. ENTRY POINT
