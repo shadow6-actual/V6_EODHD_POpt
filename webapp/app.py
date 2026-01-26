@@ -56,6 +56,192 @@ logger = logging.getLogger("WebApp")
 app = Flask(__name__)
 app.secret_key = "folio_visualizer_v6_secret"
 
+
+# =============================================================================
+# AGREEMENT CONFIGURATION
+# =============================================================================
+
+AGREEMENT_VERSIONS = {
+    'terms': '1.0.0',
+    'disclaimer': '1.0.0'
+}
+
+REQUIRED_AGREEMENTS = ['terms', 'disclaimer']
+
+
+# =============================================================================
+# AGREEMENT HELPER FUNCTIONS
+# =============================================================================
+
+def get_agreement_client_ip():
+    """Get client IP, handling proxies."""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    elif request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    return request.remote_addr or 'unknown'
+
+
+def get_user_agreement_status(clerk_user_id):
+    """Check which agreements a user has accepted."""
+    try:
+        with data_manager._get_session() as session:
+            from sqlalchemy import text
+            
+            result = session.execute(
+                text("""
+                    SELECT agreement_type, version, agreed_at
+                    FROM user_agreements
+                    WHERE user_id = :user_id
+                """),
+                {'user_id': str(clerk_user_id)}
+            )
+            rows = result.fetchall()
+            
+            # Handle results
+            user_agreements = {}
+            for row in rows:
+                atype, version, agreed_at = row[0], row[1], row[2]
+                
+                if atype not in user_agreements:
+                    current_ver = AGREEMENT_VERSIONS.get(atype, '1.0.0')
+                    user_agreements[atype] = {
+                        'version': version,
+                        'agreed_at': agreed_at.isoformat() if agreed_at else None,
+                        'current_version': current_ver,
+                        'needs_update': version != current_ver
+                    }
+            
+            missing = [a for a in REQUIRED_AGREEMENTS if a not in user_agreements]
+            outdated = [a for a in REQUIRED_AGREEMENTS if a in user_agreements and user_agreements[a]['needs_update']]
+            
+            return {
+                'all_accepted': len(missing) == 0 and len(outdated) == 0,
+                'missing': missing,
+                'outdated': outdated,
+                'current_versions': AGREEMENT_VERSIONS,
+                'user_agreements': user_agreements
+            }
+    except Exception as e:
+        logger.error(f"Error in get_user_agreement_status: {e}")
+        return {
+            'all_accepted': False,
+            'missing': REQUIRED_AGREEMENTS,
+            'outdated': [],
+            'current_versions': AGREEMENT_VERSIONS,
+            'user_agreements': {},
+            'error': str(e)
+        }
+
+
+def record_user_agreement(clerk_user_id, agreement_type):
+    """Record a user's agreement acceptance."""
+    if agreement_type not in AGREEMENT_VERSIONS:
+        return {'success': False, 'error': f'Invalid agreement type: {agreement_type}'}
+    
+    version = AGREEMENT_VERSIONS[agreement_type]
+    ip_address = get_agreement_client_ip()
+    user_agent = (request.headers.get('User-Agent', '') or '')[:500]
+    
+    try:
+        with data_manager._get_session() as session:
+            from sqlalchemy import text
+            
+            result = session.execute(
+                text("""
+                    INSERT INTO user_agreements (user_id, agreement_type, version, agreed_at, ip_address, user_agent)
+                    VALUES (:user_id, :agreement_type, :version, NOW(), :ip_address, :user_agent)
+                    ON CONFLICT (user_id, agreement_type, version) 
+                    DO UPDATE SET 
+                        agreed_at = NOW(),
+                        ip_address = EXCLUDED.ip_address,
+                        user_agent = EXCLUDED.user_agent
+                    RETURNING id, agreed_at
+                """),
+                {
+                    'user_id': str(clerk_user_id),
+                    'agreement_type': agreement_type,
+                    'version': version,
+                    'ip_address': ip_address,
+                    'user_agent': user_agent
+                }
+            )
+            
+            row = result.fetchone()
+            session.commit()
+            
+            agreed_at = row[1] if row else None
+            
+            logger.info(f"Agreement recorded: user={clerk_user_id}, type={agreement_type}, version={version}")
+            
+            return {
+                'success': True,
+                'agreement_type': agreement_type,
+                'version': version,
+                'agreed_at': agreed_at.isoformat() if agreed_at else None
+            }
+    except Exception as e:
+        logger.error(f"Error in record_user_agreement: {e}")
+        return {'success': False, 'error': str(e)}
+
+
+# =============================================================================
+# AGREEMENT API ROUTES
+# =============================================================================
+
+@app.route('/api/agreements/status', methods=['GET'])
+@require_auth
+def api_agreements_status():
+    """Get user's agreement status."""
+    clerk_id = g.user_id
+    
+    if not clerk_id:
+        return jsonify({'error': 'User not authenticated'}), 401
+    
+    status = get_user_agreement_status(clerk_id)
+    return jsonify(status)
+
+
+@app.route('/api/agreements/accept', methods=['POST'])
+@require_auth
+def api_agreements_accept():
+    """Accept an agreement."""
+    clerk_id = g.user_id
+    
+    if not clerk_id:
+        return jsonify({'error': 'User not authenticated'}), 401
+    
+    data = request.get_json()
+    if not data or 'agreement_type' not in data:
+        return jsonify({'error': 'agreement_type is required'}), 400
+    
+    agreement_type = data['agreement_type']
+    
+    if agreement_type not in REQUIRED_AGREEMENTS:
+        return jsonify({'error': f'Invalid agreement type: {agreement_type}'}), 400
+    
+    result = record_user_agreement(clerk_id, agreement_type)
+    
+    if result['success']:
+        status = get_user_agreement_status(clerk_id)
+        return jsonify({
+            'success': True,
+            'accepted': result,
+            'status': status
+        })
+    else:
+        return jsonify(result), 500
+
+
+@app.route('/api/agreements/versions', methods=['GET'])
+def api_agreements_versions():
+    """Get current agreement versions (public)."""
+    return jsonify({
+        'versions': AGREEMENT_VERSIONS,
+        'required': REQUIRED_AGREEMENTS
+    })
+
+
 # 3. ROUTES - PAGE VIEWS
 # ============================================================================
 @app.route('/')
