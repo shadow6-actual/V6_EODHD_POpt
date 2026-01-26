@@ -228,7 +228,7 @@ function canAccessFeature(featureName) {
 }
 
 function getMaxAssets() {
-    return userSubscription?.max_assets || 5;
+    return userSubscription?.max_assets || 10;
 }
 
 function applyTierRestrictions() {
@@ -258,8 +258,8 @@ function updateOptimizationMethodsDropdown() {
     if (!select) return;
     
     const tier = getUserTier();
-    const canAdvanced = tier === 'premium' || tier === 'pro';
-    const canRobust = tier === 'premium' || tier === 'pro';
+    const canAdvanced = tier === 'premium' || tier === 'pro' || tier === 'trial';
+    const canRobust = tier === 'premium' || tier === 'pro' || tier === 'trial';
     
     // Add lock icons and disable options
     Array.from(select.options).forEach(option => {
@@ -328,7 +328,7 @@ function updateFeatureToggles() {
     const divLabel = divToggle?.parentElement?.querySelector('label');
     
     if (divToggle && divLabel) {
-        if (tier !== 'pro') {
+        if (tier !== 'pro' && tier !== 'trial') {
             divToggle.checked = false;
             divToggle.disabled = true;
             divLabel.innerHTML = 'Show Diversification Analytics <span class="badge bg-warning text-dark">Pro</span>';
@@ -341,13 +341,13 @@ function updateFeatureToggles() {
     // Health Score Card (Pro only)
     const healthCard = document.getElementById('healthScoreCard');
     if (healthCard) {
-        healthCard.style.display = (tier === 'pro' && divToggle?.checked) ? 'block' : 'none';
+        healthCard.style.display = ((tier === 'pro' || tier === 'trial') && divToggle?.checked) ? 'block' : 'none';
     }
 }
 
 function updateCsvButtons() {
     const tier = getUserTier();
-    const canCsv = tier === 'premium' || tier === 'pro';
+    const canCsv = tier === 'premium' || tier === 'pro' || tier === 'trial';
     
     // Find CSV buttons and update them
     const csvButtonContainer = document.querySelector('.btn-group');
@@ -376,7 +376,7 @@ function updateCsvButtons() {
 
 function updateGroupConstraintsAccess() {
     const tier = getUserTier();
-    const canGroupConstraints = tier === 'pro';
+    const canGroupConstraints = tier === 'pro' || tier === 'trial';
     
     const groupCard = document.getElementById('groupConstraintsCard');
     const groupToggle = document.getElementById('useGroupConstraints');
@@ -408,8 +408,8 @@ function showUpgradePrompt(feature, featureName) {
     modal.id = 'upgradeModal';
     modal.innerHTML = `
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-light">
-                <div class="modal-header border-secondary">
+            <div class="modal-content" style="background: var(--color-bg-card, #1a2235); color: var(--color-text, #f1f5f9); border: 1px solid var(--color-border, #1e293b);">
+                <div class="modal-header" style="border-bottom-color: var(--color-border, #1e293b);">
                     <h5 class="modal-title"><i class="fas fa-lock me-2"></i>Upgrade Required</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -421,7 +421,7 @@ function showUpgradePrompt(feature, featureName) {
                     <p class="text-muted">This feature requires a <strong>${requiredTier}</strong> subscription.</p>
                     <p class="small text-muted">You're currently on the <strong>${tier.charAt(0).toUpperCase() + tier.slice(1)}</strong> plan.</p>
                 </div>
-                <div class="modal-footer border-secondary justify-content-center">
+                <div class="modal-footer justify-content-center" style="border-top-color: var(--color-border, #1e293b);">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe Later</button>
                     <a href="/pricing" class="btn btn-primary"><i class="fas fa-arrow-up me-2"></i>View Plans</a>
                 </div>
@@ -439,11 +439,12 @@ function showUpgradePrompt(feature, featureName) {
 }
 
 function handleTierError(response) {
-    // Handle tier-related API errors
+    // Handle login-required errors
     if (response.error === 'login_required') {
         showLoginPrompt(response.message);
         return true;
     }
+    // Handle tier-related API errors
     if (response.upgrade_required) {
         showUpgradePrompt(response.feature || 'unknown', response.message);
         return true;
@@ -457,8 +458,8 @@ function showLoginPrompt(message) {
     modal.id = 'loginModal';
     modal.innerHTML = `
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-light">
-                <div class="modal-header border-secondary">
+            <div class="modal-content" style="background: var(--color-bg-card, #1a2235); color: var(--color-text, #f1f5f9); border: 1px solid var(--color-border, #1e293b);">
+                <div class="modal-header" style="border-bottom-color: var(--color-border, #1e293b);">
                     <h5 class="modal-title"><i class="fas fa-user me-2"></i>Sign In Required</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -469,7 +470,7 @@ function showLoginPrompt(message) {
                     <h5 class="mb-3">${message || 'Please sign in to continue'}</h5>
                     <p class="text-muted">Creating an account is free and takes just seconds.</p>
                 </div>
-                <div class="modal-footer border-secondary justify-content-center">
+                <div class="modal-footer justify-content-center" style="border-top-color: var(--color-border, #1e293b);">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe Later</button>
                     <button type="button" class="btn btn-primary" onclick="clerkSignIn(); bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();">
                         <i class="fas fa-sign-in-alt me-2"></i>Sign In
@@ -507,8 +508,8 @@ window.updateTotal = function() {
     
     const totalEl = document.getElementById('totalAllocation');
     if (totalEl) {
-        totalEl.innerText = sum + '%';
-        totalEl.className = sum === 100 
+        totalEl.innerText = sum.toFixed(1) + '%';
+        totalEl.className = Math.abs(sum - 100) < 0.1
             ? 'text-success fw-bold' 
             : (sum > 100 ? 'text-danger fw-bold' : 'text-warning fw-bold');
     }
@@ -600,6 +601,19 @@ window.refreshPortfolioLists = async function() {
             managerSelect.appendChild(opt);
         });
         
+        // Also update the comparison select
+        const compareSelect = document.getElementById('portfolioCompareSelect');
+        if (compareSelect) {
+            // Keep SPY option
+            compareSelect.innerHTML = '<option value="SPY.US">S&P 500 (SPY)</option>';
+            portfolios.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.text = p.name;
+                compareSelect.appendChild(opt);
+            });
+        }
+        
         loadUserBenchmarkOptions();
     } catch(e) {
         console.error('Refresh portfolios error:', e);
@@ -634,10 +648,14 @@ window.updateGroupConstraintsDisplay = async function() {
     const allocations = {};
     
     rows.forEach(row => {
-        const ticker = row.querySelector('.asset-ticker').value.trim();
-        if (ticker) {
-            tickers.push(ticker);
-            allocations[ticker] = parseFloat(row.querySelector('.asset-alloc').value) || 0;
+        const tickerInput = row.querySelector('.asset-ticker');
+        if (tickerInput) {
+            const ticker = tickerInput.value.trim();
+            if (ticker) {
+                tickers.push(ticker);
+                const allocInput = row.querySelector('.asset-alloc');
+                allocations[ticker] = parseFloat(allocInput?.value) || 0;
+            }
         }
     });
     
@@ -707,15 +725,18 @@ function collectGroupConstraints() {
     
     const rows = document.querySelectorAll('#groupConstraintsBody tr');
     rows.forEach(row => {
-        const groupName = row.querySelector('.group-min').dataset.group;
-        const minVal = parseFloat(row.querySelector('.group-min').value);
-        const maxVal = parseFloat(row.querySelector('.group-max').value);
-        
-        if (!isNaN(minVal) || !isNaN(maxVal)) {
-            constraints[groupName] = {
-                min: isNaN(minVal) ? 0 : minVal,
-                max: isNaN(maxVal) ? 100 : maxVal
-            };
+        const minInput = row.querySelector('.group-min');
+        if (minInput) {
+            const groupName = minInput.dataset.group;
+            const minVal = parseFloat(minInput.value);
+            const maxVal = parseFloat(row.querySelector('.group-max').value);
+            
+            if (!isNaN(minVal) || !isNaN(maxVal)) {
+                constraints[groupName] = {
+                    min: isNaN(minVal) ? 0 : minVal,
+                    max: isNaN(maxVal) ? 100 : maxVal
+                };
+            }
         }
     });
     
@@ -729,6 +750,7 @@ function collectGroupConstraints() {
 window.updateConditionalFields = function() {
     const goal = document.getElementById('optGoal').value;
     
+    // Hide all conditional fields first
     document.getElementById('targetReturnField').style.display = 'none';
     document.getElementById('targetVolField').style.display = 'none';
     document.getElementById('targetCVaRField').style.display = 'none';
@@ -740,13 +762,13 @@ window.updateConditionalFields = function() {
         document.getElementById('robustResamplesField').style.display = 'block';
     }
     
-    // Target Return field
+    // Target Return field - includes robust variants
     if (['min_vol_target_return', 'min_cvar_target_return', 'min_drawdown_target_return', 
          'max_omega_target_return', 'max_sortino_target_return', 'robust_min_vol_target_return'].includes(goal)) {
         document.getElementById('targetReturnField').style.display = 'block';
     }
     
-    // Target Volatility field
+    // Target Volatility field - includes robust variants
     if (['max_return_target_vol', 'robust_max_return_target_vol'].includes(goal)) {
         document.getElementById('targetVolField').style.display = 'block';
     }
@@ -770,9 +792,10 @@ window.addAssetRow = function(ticker = '', alloc = 0, min = '', max = '') {
     // Check asset limit
     const maxAssets = getMaxAssets();
     const currentCount = document.querySelectorAll('#assetsTableBody tr').length;
+    const tier = getUserTier();
     
-    if (currentCount >= maxAssets && getUserTier() !== 'pro') {
-        showUpgradePrompt('max_assets', `Asset limit reached (${maxAssets} assets on ${getUserTier()} plan)`);
+    if (currentCount >= maxAssets && tier !== 'pro') {
+        showUpgradePrompt('max_assets', `Asset limit reached (${maxAssets} assets on ${tier} plan)`);
         return;
     }
     
@@ -786,7 +809,7 @@ window.addAssetRow = function(ticker = '', alloc = 0, min = '', max = '') {
                 <input type="text" class="form-control asset-ticker" value="${ticker}" placeholder="Ticker" 
                        onkeyup="handleSearch(this, ${rowCount})" onblur="setTimeout(()=>hideSearch(${rowCount}), 200)"
                        onchange="updateGroupConstraintsDisplay()">
-                <div id="searchResults-${rowCount}" class="list-group position-absolute w-100 shadow-sm" style="top: 100%; z-index: 1050; display: none;"></div>
+                <div id="searchResults-${rowCount}" class="list-group position-absolute w-100 shadow-sm" style="top: 100%; z-index: 1050; display: none; max-height: 200px; overflow-y: auto;"></div>
             </div>
         </td>
         <td><input type="number" class="form-control form-control-sm asset-alloc" value="${alloc}" min="0" max="100" step="0.1" onchange="updateTotal()"></td>
@@ -880,20 +903,28 @@ window.savePortfolio = async function() {
     const constraints = { assets: {} };
 
     rows.forEach(row => {
-        const ticker = row.querySelector('.asset-ticker').value.trim();
-        if (ticker) {
-            tickers.push(ticker);
-            weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
-            const minVal = parseFloat(row.querySelector('.asset-min').value);
-            const maxVal = parseFloat(row.querySelector('.asset-max').value);
-            if (!isNaN(minVal) || !isNaN(maxVal)) {
-                constraints.assets[ticker] = {
-                    min: (isNaN(minVal) ? 0 : minVal / 100.0),
-                    max: (isNaN(maxVal) ? 1 : maxVal / 100.0)
-                };
+        const tickerInput = row.querySelector('.asset-ticker');
+        if (tickerInput) {
+            const ticker = tickerInput.value.trim();
+            if (ticker) {
+                tickers.push(ticker);
+                weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
+                const minVal = parseFloat(row.querySelector('.asset-min').value);
+                const maxVal = parseFloat(row.querySelector('.asset-max').value);
+                if (!isNaN(minVal) || !isNaN(maxVal)) {
+                    constraints.assets[ticker] = {
+                        min: (isNaN(minVal) ? 0 : minVal / 100.0),
+                        max: (isNaN(maxVal) ? 1 : maxVal / 100.0)
+                    };
+                }
             }
         }
     });
+
+    if (tickers.length === 0) {
+        alert('Please add at least one asset');
+        return;
+    }
 
     const isPublic = document.getElementById('makePortfolioPublic')?.checked || false;
 
@@ -906,10 +937,10 @@ window.savePortfolio = async function() {
         
         if (data.error) {
             if (handleTierError(data)) return;
-            alert('Error: ' + data.message || data.error);
+            alert('Error: ' + (data.message || data.error));
         } else {
             let msg = data.message;
-            if (data.portfolios_max && data.portfolios_max < 999) {
+            if (data.portfolios_max && data.portfolios_max !== 'unlimited') {
                 msg += ` (${data.portfolios_used}/${data.portfolios_max} used)`;
             }
             alert(msg);
@@ -960,11 +991,11 @@ async function loadPortfolio(id) {
         
         portfolio.tickers.forEach(ticker => {
             const weight = (portfolio.weights[ticker] * 100) || 0;
-            const minW = portfolio.constraints.assets && portfolio.constraints.assets[ticker] 
+            const minW = portfolio.constraints?.assets?.[ticker]?.min !== undefined
                 ? (portfolio.constraints.assets[ticker].min * 100) : '';
-            const maxW = portfolio.constraints.assets && portfolio.constraints.assets[ticker] 
+            const maxW = portfolio.constraints?.assets?.[ticker]?.max !== undefined
                 ? (portfolio.constraints.assets[ticker].max * 100) : '';
-            addAssetRow(ticker, weight, minW, maxW);
+            addAssetRow(ticker, weight.toFixed(1), minW, maxW);
         });
         
         document.getElementById('portfolioName').value = portfolio.name;
@@ -980,7 +1011,8 @@ async function loadPortfolio(id) {
 
 window.exportPortfolioCSV = async function() {
     // Check feature access
-    if (!canAccessFeature('csv_import_export')) {
+    const tier = getUserTier();
+    if (tier !== 'premium' && tier !== 'pro' && tier !== 'trial') {
         showUpgradePrompt('csv_import_export', 'CSV Export');
         return;
     }
@@ -991,19 +1023,22 @@ window.exportPortfolioCSV = async function() {
     const constraints = { assets: {} };
 
     rows.forEach(row => {
-        const ticker = row.querySelector('.asset-ticker').value.trim();
-        if (ticker) {
-            tickers.push(ticker);
-            weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
-            
-            const minVal = parseFloat(row.querySelector('.asset-min').value);
-            const maxVal = parseFloat(row.querySelector('.asset-max').value);
-            
-            if (!isNaN(minVal) || !isNaN(maxVal)) {
-                constraints.assets[ticker] = {
-                    min: isNaN(minVal) ? 0 : minVal / 100.0,
-                    max: isNaN(maxVal) ? 1 : maxVal / 100.0
-                };
+        const tickerInput = row.querySelector('.asset-ticker');
+        if (tickerInput) {
+            const ticker = tickerInput.value.trim();
+            if (ticker) {
+                tickers.push(ticker);
+                weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
+                
+                const minVal = parseFloat(row.querySelector('.asset-min').value);
+                const maxVal = parseFloat(row.querySelector('.asset-max').value);
+                
+                if (!isNaN(minVal) || !isNaN(maxVal)) {
+                    constraints.assets[ticker] = {
+                        min: isNaN(minVal) ? 0 : minVal / 100.0,
+                        max: isNaN(maxVal) ? 1 : maxVal / 100.0
+                    };
+                }
             }
         }
     });
@@ -1044,7 +1079,8 @@ window.exportPortfolioCSV = async function() {
 
 window.importPortfolioCSV = async function() {
     // Check feature access
-    if (!canAccessFeature('csv_import_export')) {
+    const tier = getUserTier();
+    if (tier !== 'premium' && tier !== 'pro' && tier !== 'trial') {
         showUpgradePrompt('csv_import_export', 'CSV Import');
         return;
     }
@@ -1080,7 +1116,7 @@ window.importPortfolioCSV = async function() {
                 
                 data.tickers.forEach(ticker => {
                     const weight = (data.weights[ticker] || 0) * 100;
-                    const assetConstraints = data.constraints.assets[ticker] || {};
+                    const assetConstraints = data.constraints?.assets?.[ticker] || {};
                     const minW = assetConstraints.min !== undefined ? assetConstraints.min * 100 : '';
                     const maxW = assetConstraints.max !== undefined ? assetConstraints.max * 100 : '';
                     
@@ -1146,6 +1182,81 @@ window.quickPasteTickers = function() {
 };
 
 // ============================================================================
+// PORTFOLIO COMPARISON
+// ============================================================================
+
+window.compareSelectedPortfolios = async function() {
+    const select = document.getElementById('portfolioCompareSelect');
+    const selectedIds = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedIds.length < 1) {
+        alert('Please select at least one portfolio to compare');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/compare-portfolios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                portfolio_ids: selectedIds,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Comparison error: ' + data.error);
+            return;
+        }
+        
+        renderPortfolioComparison(data.portfolios);
+        
+    } catch (e) {
+        alert('Comparison failed: ' + e.message);
+    }
+};
+
+function renderPortfolioComparison(portfolios) {
+    const container = document.getElementById('portfolioComparisonTable');
+    if (!container || portfolios.length === 0) return;
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-sm table-hover small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Portfolio</th>
+                        <th class="text-end">Return</th>
+                        <th class="text-end">Volatility</th>
+                        <th class="text-end">Sharpe</th>
+                        <th class="text-end">Sortino</th>
+                        <th class="text-end">Max DD</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    portfolios.forEach(p => {
+        html += `
+            <tr>
+                <td>${p.name}</td>
+                <td class="text-end">${p.return}%</td>
+                <td class="text-end">${p.volatility}%</td>
+                <td class="text-end">${p.sharpe_ratio}</td>
+                <td class="text-end">${p.sortino_ratio}</td>
+                <td class="text-end text-danger">${p.max_drawdown}%</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// ============================================================================
 // DOM READY
 // ============================================================================
 
@@ -1164,33 +1275,44 @@ document.addEventListener('DOMContentLoaded', function() {
     
     refreshPortfolioLists();
     
-    document.getElementById('runOptimizeBtn').addEventListener('click', runOptimization);
+    const runBtn = document.getElementById('runOptimizeBtn');
+    if (runBtn) {
+        runBtn.addEventListener('click', runOptimization);
+    }
     
     document.querySelectorAll('.health-weight').forEach(input => {
         input.addEventListener('change', updateHealthWeightTotal);
     });
     
-    document.getElementById('showDiversification')?.addEventListener('change', function() {
-        const tier = getUserTier();
-        if (tier !== 'pro' && this.checked) {
-            this.checked = false;
-            showUpgradePrompt('diversification_analytics', 'Diversification Analytics');
-            return;
-        }
-        document.getElementById('healthScoreCard').style.display = this.checked ? 'block' : 'none';
-    });
+    const divToggle = document.getElementById('showDiversification');
+    if (divToggle) {
+        divToggle.addEventListener('change', function() {
+            const tier = getUserTier();
+            if (tier !== 'pro' && tier !== 'trial' && this.checked) {
+                this.checked = false;
+                showUpgradePrompt('diversification_analytics', 'Diversification Analytics');
+                return;
+            }
+            const healthCard = document.getElementById('healthScoreCard');
+            if (healthCard) {
+                healthCard.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
 });
 
 function updateHealthWeightTotal() {
-    const sharpe = parseInt(document.getElementById('healthSharpe').value) || 0;
-    const divRatio = parseInt(document.getElementById('healthDivRatio').value) || 0;
-    const hhi = parseInt(document.getElementById('healthHHI').value) || 0;
-    const drawdown = parseInt(document.getElementById('healthDrawdown').value) || 0;
+    const sharpe = parseInt(document.getElementById('healthSharpe')?.value) || 0;
+    const divRatio = parseInt(document.getElementById('healthDivRatio')?.value) || 0;
+    const hhi = parseInt(document.getElementById('healthHHI')?.value) || 0;
+    const drawdown = parseInt(document.getElementById('healthDrawdown')?.value) || 0;
     
     const total = sharpe + divRatio + hhi + drawdown;
     const totalEl = document.getElementById('healthWeightTotal');
-    totalEl.innerText = total;
-    totalEl.className = total === 100 ? 'small fw-bold text-success' : 'small fw-bold text-danger';
+    if (totalEl) {
+        totalEl.innerText = total;
+        totalEl.className = total === 100 ? 'small fw-bold text-success' : 'small fw-bold text-danger';
+    }
 }
 
 // ============================================================================
@@ -1204,18 +1326,21 @@ async function runOptimization() {
     const constraints = { assets: {} };
 
     rows.forEach(row => {
-        const ticker = row.querySelector('.asset-ticker').value.trim();
-        if (ticker) {
-            tickers.push(ticker);
-            user_weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
-            
-            const minVal = parseFloat(row.querySelector('.asset-min').value);
-            const maxVal = parseFloat(row.querySelector('.asset-max').value);
-            
-            constraints.assets[ticker] = {
-                min: (isNaN(minVal) ? 0 : minVal / 100.0),
-                max: (isNaN(maxVal) ? 1 : maxVal / 100.0)
-            };
+        const tickerInput = row.querySelector('.asset-ticker');
+        if (tickerInput) {
+            const ticker = tickerInput.value.trim();
+            if (ticker) {
+                tickers.push(ticker);
+                user_weights[ticker] = parseFloat(row.querySelector('.asset-alloc').value) / 100.0 || 0;
+                
+                const minVal = parseFloat(row.querySelector('.asset-min').value);
+                const maxVal = parseFloat(row.querySelector('.asset-max').value);
+                
+                constraints.assets[ticker] = {
+                    min: (isNaN(minVal) ? 0 : minVal / 100.0),
+                    max: (isNaN(maxVal) ? 1 : maxVal / 100.0)
+                };
+            }
         }
     });
 
@@ -1235,10 +1360,10 @@ async function runOptimization() {
     
     let healthScoreWeights = null;
     if (showDiversification) {
-        const sharpe = parseInt(document.getElementById('healthSharpe').value) || 40;
-        const divRatio = parseInt(document.getElementById('healthDivRatio').value) || 30;
-        const hhi = parseInt(document.getElementById('healthHHI').value) || 10;
-        const drawdown = parseInt(document.getElementById('healthDrawdown').value) || 20;
+        const sharpe = parseInt(document.getElementById('healthSharpe')?.value) || 40;
+        const divRatio = parseInt(document.getElementById('healthDivRatio')?.value) || 30;
+        const hhi = parseInt(document.getElementById('healthHHI')?.value) || 10;
+        const drawdown = parseInt(document.getElementById('healthDrawdown')?.value) || 20;
         
         if (sharpe + divRatio + hhi + drawdown === 100) {
             healthScoreWeights = { sharpe, div_ratio: divRatio, hhi, drawdown };
@@ -1309,7 +1434,8 @@ function renderResults(data) {
     const user = data.user_portfolio;
     const bench = data.benchmark_portfolio;
     
-    const goalName = document.getElementById('optGoal').selectedOptions[0].text.replace(' 🔒', '');
+    const optGoalSelect = document.getElementById('optGoal');
+    const goalName = optGoalSelect.selectedOptions[0].text.replace(' 🔒', '');
     setText('optCardTitle', goalName);
     
     if (bench && bench.name) {
@@ -1357,7 +1483,7 @@ function renderResults(data) {
         const benchDiv = divData.benchmark;
         
         const sepRow = document.createElement('tr');
-        sepRow.innerHTML = `<td colspan="4" class="bg-light small text-muted fw-bold pt-2">DIVERSIFICATION METRICS <span class="badge bg-warning text-dark">Pro</span></td>`;
+        sepRow.innerHTML = `<td colspan="4" class="small text-muted fw-bold pt-2" style="background: var(--color-bg-elevated, #f8f9fa);">DIVERSIFICATION METRICS <span class="badge bg-warning text-dark">Pro</span></td>`;
         tbody.appendChild(sepRow);
         
         const divMetrics = [
@@ -1464,6 +1590,11 @@ function renderResults(data) {
     
     // Charts
     if (typeof Plotly !== 'undefined') {
+        // Chart colors for dark theme
+        const chartBgColor = 'rgba(26, 34, 53, 0.8)';
+        const chartGridColor = 'rgba(30, 41, 59, 0.8)';
+        const chartTextColor = '#94a3b8';
+        
         // Efficient Frontier
         const scatterX = data.frontier_scatter.map(p => p.volatility);
         const scatterY = data.frontier_scatter.map(p => p.return);
@@ -1481,9 +1612,10 @@ function renderResults(data) {
             x: [opt.volatility], 
             y: [opt.return], 
             mode: 'markers+text', 
-            marker: { color: '#dc3545', size: 16, symbol: 'star', line: {color: 'white', width: 2} }, 
+            marker: { color: '#10b981', size: 16, symbol: 'star', line: {color: 'white', width: 2} }, 
             text: ['Optimized'],
             textposition: 'top center',
+            textfont: { color: chartTextColor },
             name: 'Optimized'
         }];
         
@@ -1492,9 +1624,10 @@ function renderResults(data) {
                 x: [user.volatility], 
                 y: [user.return], 
                 mode: 'markers+text', 
-                marker: { color: '#6c757d', size: 14, symbol: 'circle', line: {color: 'white', width: 2} }, 
+                marker: { color: '#f59e0b', size: 14, symbol: 'circle', line: {color: 'white', width: 2} }, 
                 text: ['Your'],
                 textposition: 'bottom center',
+                textfont: { color: chartTextColor },
                 name: 'Your Portfolio'
             });
         }
@@ -1504,19 +1637,22 @@ function renderResults(data) {
                 x: [bench.volatility], 
                 y: [bench.return], 
                 mode: 'markers+text', 
-                marker: { color: '#28a745', size: 14, symbol: 'diamond', line: {color: 'white', width: 2} }, 
+                marker: { color: '#3b82f6', size: 14, symbol: 'diamond', line: {color: 'white', width: 2} }, 
                 text: ['Benchmark'],
                 textposition: 'top right',
+                textfont: { color: chartTextColor },
                 name: 'Benchmark'
             });
         }
 
         Plotly.newPlot('frontierChart', traces, {
-            title: {text: 'Efficient Frontier', font: {size: 16}},
-            xaxis: {title: 'Volatility (%)', showgrid: true},
-            yaxis: {title: 'Return (%)', showgrid: true},
+            title: {text: 'Efficient Frontier', font: {size: 16, color: chartTextColor}},
+            xaxis: {title: 'Volatility (%)', showgrid: true, gridcolor: chartGridColor, color: chartTextColor},
+            yaxis: {title: 'Return (%)', showgrid: true, gridcolor: chartGridColor, color: chartTextColor},
             hovermode: 'closest',
-            plot_bgcolor: '#f8f9fa'
+            plot_bgcolor: chartBgColor,
+            paper_bgcolor: 'transparent',
+            font: { color: chartTextColor }
         });
 
         // Drawdown
@@ -1529,14 +1665,16 @@ function renderResults(data) {
                 y: vals, 
                 fill: 'tozeroy', 
                 type: 'scatter', 
-                line: {color: '#d9534f', width: 2},
-                fillcolor: 'rgba(217, 83, 79, 0.1)'
+                line: {color: '#ef4444', width: 2},
+                fillcolor: 'rgba(239, 68, 68, 0.1)'
             }], {
-                title: {text: 'Portfolio Drawdown', font: {size: 16}},
-                xaxis: {title: 'Date'},
-                yaxis: {title: 'Drawdown (%)'},
+                title: {text: 'Portfolio Drawdown', font: {size: 16, color: chartTextColor}},
+                xaxis: {title: 'Date', color: chartTextColor, gridcolor: chartGridColor},
+                yaxis: {title: 'Drawdown (%)', color: chartTextColor, gridcolor: chartGridColor},
                 hovermode: 'x unified',
-                plot_bgcolor: '#f8f9fa',
+                plot_bgcolor: chartBgColor,
+                paper_bgcolor: 'transparent',
+                font: { color: chartTextColor },
                 height: 400
             });
         }
@@ -1567,23 +1705,25 @@ function renderResults(data) {
                 y: hm.years,
                 type: 'heatmap',
                 colorscale: [
-                    [0, '#d32f2f'],
-                    [0.4, '#ff6b6b'],
-                    [0.5, '#ffffff'],
-                    [0.6, '#81c784'],
-                    [1, '#2e7d32']
+                    [0, '#ef4444'],
+                    [0.4, '#f87171'],
+                    [0.5, '#1e293b'],
+                    [0.6, '#4ade80'],
+                    [1, '#22c55e']
                 ],
                 zmid: 0,
                 xgap: 3,
                 ygap: 3,
                 hovertemplate: '%{y} %{x}: %{z:.2f}%<extra></extra>',
-                colorbar: {title: 'Return %'}
+                colorbar: {title: 'Return %', tickfont: {color: chartTextColor}}
             }], {
                 height: dynamicHeight,
-                title: {text: 'Monthly Returns (%)', font: {size: 16}},
-                xaxis: {side: 'top'},
-                yaxis: {type: 'category', dtick: 1, autorange: 'reversed'},
-                plot_bgcolor: '#ffffff'
+                title: {text: 'Monthly Returns (%)', font: {size: 16, color: chartTextColor}},
+                xaxis: {side: 'top', color: chartTextColor},
+                yaxis: {type: 'category', dtick: 1, autorange: 'reversed', color: chartTextColor},
+                plot_bgcolor: chartBgColor,
+                paper_bgcolor: 'transparent',
+                font: { color: chartTextColor }
             });
         }
 
@@ -1600,7 +1740,7 @@ function renderResults(data) {
                     y: assets[i],
                     text: z[i][j].toFixed(2),
                     font: {
-                        color: Math.abs(z[i][j]) > 0.5 ? 'white' : 'black',
+                        color: Math.abs(z[i][j]) > 0.5 ? 'white' : chartTextColor,
                         size: 11
                     },
                     showarrow: false
@@ -1614,21 +1754,24 @@ function renderResults(data) {
             y: assets,
             type: 'heatmap',
             colorscale: [
-                [0, '#d32f2f'],
-                [0.5, '#ffffff'],
-                [1, '#1976d2']
+                [0, '#ef4444'],
+                [0.5, '#1e293b'],
+                [1, '#3b82f6']
             ],
             zmin: -1,
             zmax: 1,
             hovertemplate: '%{y} vs %{x}: %{z:.2f}<extra></extra>',
-            colorbar: {title: 'Correlation'},
+            colorbar: {title: 'Correlation', tickfont: {color: chartTextColor}},
             showscale: true
         }], {
-            title: {text: 'Asset Correlation Matrix', font: {size: 16}},
-            xaxis: {tickangle: -45, side: 'bottom'},
-            yaxis: {autorange: 'reversed'},
+            title: {text: 'Asset Correlation Matrix', font: {size: 16, color: chartTextColor}},
+            xaxis: {tickangle: -45, side: 'bottom', color: chartTextColor},
+            yaxis: {autorange: 'reversed', color: chartTextColor},
             height: 500,
-            annotations: annotations
+            annotations: annotations,
+            plot_bgcolor: chartBgColor,
+            paper_bgcolor: 'transparent',
+            font: { color: chartTextColor }
         });
         
         // Diversification Tab
@@ -1641,7 +1784,7 @@ function renderResults(data) {
                 divBody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center py-4">
-                            <i class="fas fa-lock fa-2x text-muted mb-3"></i>
+                            <i class="fas fa-lock fa-2x text-muted mb-3 d-block"></i>
                             <p class="mb-2">Diversification Analytics requires Pro subscription</p>
                             <a href="/pricing" class="btn btn-sm btn-primary">Upgrade to Pro</a>
                         </td>
@@ -1649,10 +1792,13 @@ function renderResults(data) {
                 `;
             }
             
-            // Hide health score cards
-            document.getElementById('optHealthScore').innerText = '🔒';
-            document.getElementById('userHealthScore').innerText = '🔒';
-            document.getElementById('benchHealthScore').innerText = '🔒';
+            // Show lock icons for health score cards
+            const optHealth = document.getElementById('optHealthScore');
+            const userHealth = document.getElementById('userHealthScore');
+            const benchHealth = document.getElementById('benchHealthScore');
+            if (optHealth) optHealth.innerText = '🔒';
+            if (userHealth) userHealth.innerText = '🔒';
+            if (benchHealth) benchHealth.innerText = '🔒';
         }
     }
 }
@@ -1662,9 +1808,13 @@ function renderDiversificationMetrics(divData) {
     const userDiv = divData.user;
     const benchDiv = divData.benchmark;
     
-    document.getElementById('optHealthScore').innerText = optDiv ? optDiv.health_score : '--';
-    document.getElementById('userHealthScore').innerText = userDiv ? userDiv.health_score : '--';
-    document.getElementById('benchHealthScore').innerText = benchDiv ? benchDiv.health_score : '--';
+    const optHealth = document.getElementById('optHealthScore');
+    const userHealth = document.getElementById('userHealthScore');
+    const benchHealth = document.getElementById('benchHealthScore');
+    
+    if (optHealth) optHealth.innerText = optDiv ? optDiv.health_score : '--';
+    if (userHealth) userHealth.innerText = userDiv ? userDiv.health_score : '--';
+    if (benchHealth) benchHealth.innerText = benchDiv ? benchDiv.health_score : '--';
     
     const scoreColor = (score) => {
         if (!score) return '';
@@ -1673,11 +1823,13 @@ function renderDiversificationMetrics(divData) {
         return 'text-danger';
     };
     
-    document.getElementById('optHealthScore').className = `display-4 mb-0 ${scoreColor(optDiv?.health_score)}`;
-    document.getElementById('userHealthScore').className = `display-4 mb-0 ${scoreColor(userDiv?.health_score)}`;
-    document.getElementById('benchHealthScore').className = `display-4 mb-0 ${scoreColor(benchDiv?.health_score)}`;
+    if (optHealth) optHealth.className = `display-4 mb-0 ${scoreColor(optDiv?.health_score)}`;
+    if (userHealth) userHealth.className = `display-4 mb-0 ${scoreColor(userDiv?.health_score)}`;
+    if (benchHealth) benchHealth.className = `display-4 mb-0 ${scoreColor(benchDiv?.health_score)}`;
     
     const tbody = document.getElementById('diversificationBody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     const metrics = [
@@ -1726,6 +1878,7 @@ function renderDiversificationMetrics(divData) {
     // Radar chart
     if (optDiv && optDiv.health_components && typeof Plotly !== 'undefined') {
         const categories = ['Sharpe', 'Diversification', 'Concentration', 'Drawdown'];
+        const chartTextColor = '#94a3b8';
         
         const traces = [];
         
@@ -1741,8 +1894,8 @@ function renderDiversificationMetrics(divData) {
             theta: [...categories, categories[0]],
             fill: 'toself',
             name: 'Optimized',
-            line: {color: '#0d6efd'},
-            fillcolor: 'rgba(13, 110, 253, 0.2)'
+            line: {color: '#10b981'},
+            fillcolor: 'rgba(16, 185, 129, 0.2)'
         });
         
         if (userDiv && userDiv.health_components) {
@@ -1758,8 +1911,8 @@ function renderDiversificationMetrics(divData) {
                 theta: [...categories, categories[0]],
                 fill: 'toself',
                 name: 'Your Portfolio',
-                line: {color: '#6c757d'},
-                fillcolor: 'rgba(108, 117, 125, 0.2)'
+                line: {color: '#f59e0b'},
+                fillcolor: 'rgba(245, 158, 11, 0.2)'
             });
         }
         
@@ -1776,8 +1929,8 @@ function renderDiversificationMetrics(divData) {
                 theta: [...categories, categories[0]],
                 fill: 'toself',
                 name: 'Benchmark',
-                line: {color: '#198754'},
-                fillcolor: 'rgba(25, 135, 84, 0.2)'
+                line: {color: '#3b82f6'},
+                fillcolor: 'rgba(59, 130, 246, 0.2)'
             });
         }
         
@@ -1785,12 +1938,21 @@ function renderDiversificationMetrics(divData) {
             polar: {
                 radialaxis: {
                     visible: true,
-                    range: [0, 100]
-                }
+                    range: [0, 100],
+                    color: chartTextColor,
+                    gridcolor: 'rgba(30, 41, 59, 0.8)'
+                },
+                angularaxis: {
+                    color: chartTextColor
+                },
+                bgcolor: 'rgba(26, 34, 53, 0.8)'
             },
             showlegend: true,
-            title: {text: 'Health Score Components (0-100)', font: {size: 16}},
-            height: 450
+            legend: { font: { color: chartTextColor } },
+            title: {text: 'Health Score Components (0-100)', font: {size: 16, color: chartTextColor}},
+            height: 450,
+            paper_bgcolor: 'transparent',
+            font: { color: chartTextColor }
         });
     }
 }
