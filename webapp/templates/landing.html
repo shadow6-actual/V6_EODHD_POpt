@@ -9,7 +9,7 @@
     content="Design and stress-test portfolios using professional-grade metrics and historical data—translated into plain English. No advice. No predictions. Just clear trade-offs so you stay in control."
   />
 
-  <!-- Fonts (keep your premium punch) -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -17,12 +17,11 @@
     rel="stylesheet"
   />
 
-  <!-- Icons (optional, used for small UI affordances) -->
+  <!-- Icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
 
   <style>
     :root {
-      /* Core palette (blend of your two designs) */
       --bg-primary: #0a0a0f;
       --bg-secondary: #111827;
       --bg-tertiary: #14141f;
@@ -56,7 +55,7 @@
       overflow-x: hidden;
     }
 
-    /* Subtle grid background (from original landing) */
+    /* Subtle grid background */
     body::before {
       content: "";
       position: fixed;
@@ -110,6 +109,16 @@
       letter-spacing: -0.02em;
       color: var(--text-primary);
     }
+    /* Custom logo text with sigma and R styling */
+    .logo-text .sigma {
+      color: var(--accent-blue);
+      font-family: "Times New Roman", serif;
+      font-style: italic;
+    }
+    .logo-text .return-r {
+      color: var(--accent-green);
+    }
+    
     .nav-links {
       display: flex;
       gap: 2rem;
@@ -262,7 +271,7 @@
       margin-bottom: 1.25rem;
     }
 
-    /* NEW: 3-step “bridge” for usability */
+    /* 3-step bridge */
     .hero-steps {
       display: flex;
       flex-wrap: wrap;
@@ -307,7 +316,7 @@
     }
     .hero-reassurance-item i { color: var(--accent-green); }
 
-    /* HERO VISUAL: reuse your original chart (SVG + floats) */
+    /* HERO VISUAL */
     .hero-visual { position: relative; }
     .hero-chart {
       background: var(--bg-card);
@@ -721,7 +730,7 @@
     <div class="nav-container">
       <a href="/" class="logo" aria-label="FolioForecast Home">
         <div class="logo-icon">FF</div>
-        <span class="logo-text">FolioForecast</span>
+        <span class="logo-text">F<span class="sigma">σ</span>li<span class="return-r">o</span>F<span class="return-r">R</span>ecast</span>
       </a>
       <div class="nav-links">
         <a href="#what">How It Works</a>
@@ -738,23 +747,20 @@
       <div class="hero-content">
         <div class="hero-badge">Now in Public Beta</div>
 
-        <!-- Refined hero statement -->
         <h1>
           Wall Street Math.<br />
           <span class="gradient">Main Street Clarity.</span>
         </h1>
 
-        <!-- Refined subline (punchy + usable) -->
         <p class="hero-subtitle">
           Design and stress-test portfolios with professional-grade metrics—translated into plain English.
           See the trade-offs. You stay in control.
         </p>
 
-        <!-- Tighter promise box (Point #3) -->
         <div class="hero-promise">
           <div class="hero-promise-title">
             <i class="fas fa-shield-alt"></i>
-            What This Tool Does — And Doesn’t
+            What This Tool Does — And Doesn't
           </div>
           <p>
             FolioForecast runs <strong>historical portfolio analysis and optimization</strong>.
@@ -763,24 +769,22 @@
           </p>
         </div>
 
-        <!-- CTA: more concrete -->
         <div class="hero-cta">
           <a href="/app" class="btn btn-primary btn-large">
             Analyze a Portfolio <i class="fas fa-arrow-right"></i>
           </a>
           <a href="#what" class="btn btn-secondary btn-large">
-            Watch 60-Second Demo <i class="fas fa-play-circle"></i>
+            See How It Works <i class="fas fa-chevron-down"></i>
           </a>
         </div>
 
-        <!-- NEW: 3-step bridge for usability -->
+        <!-- 3-step bridge -->
         <div class="hero-steps" aria-label="How it works in three steps">
           <span class="step-pill"><span class="step-num">1</span> Pick 3–10 tickers</span>
           <span class="step-pill"><span class="step-num">2</span> Choose your goal</span>
           <span class="step-pill"><span class="step-num">3</span> Compare trade-offs</span>
         </div>
 
-        <!-- Reassurance row -->
         <div class="hero-reassurance">
           <div class="hero-reassurance-item"><i class="fas fa-check"></i> No signup required</div>
           <div class="hero-reassurance-item"><i class="fas fa-check"></i> No credit card</div>
@@ -788,7 +792,7 @@
         </div>
       </div>
 
-      <!-- Hero Visual (from your original landing) -->
+      <!-- Hero Visual -->
       <div class="hero-visual">
         <div class="hero-float hero-float-1">
           <div class="hero-float-icon blue"><i class="fas fa-chart-line"></i></div>
@@ -806,7 +810,6 @@
           <div class="hero-chart-header">
             <div>
               <div class="hero-chart-title">Efficient Frontier Analysis</div>
-              <!-- NEW: data context line (small, legitimizing, not overwhelming) -->
               <span class="hero-chart-subtitle">Example: 2004–2024 (monthly returns)</span>
             </div>
             <span class="hero-chart-badge">Historical • Optimized</span>
@@ -889,7 +892,7 @@
       <span class="section-label">How It Works</span>
       <h2>Clarity Without Complexity</h2>
       <p class="lead">
-        You don’t need to be “a finance person.” FolioForecast runs the math and shows what it means in plain English—so you can choose confidently.
+        You don't need to be "a finance person." FolioForecast runs the math and shows what it means in plain English—so you can choose confidently.
       </p>
 
       <div class="what-grid">
@@ -897,7 +900,7 @@
           <div class="what-icon">📊</div>
           <h3>See Historical Reality</h3>
           <p>
-            Backtest combinations of stocks, bonds, and funds across real markets—bull runs, crashes, and recoveries—so you can see what you would’ve lived through.
+            Backtest combinations of stocks, bonds, and funds across real markets—bull runs, crashes, and recoveries—so you can see what you would've lived through.
           </p>
         </div>
         <div class="what-card">
@@ -911,7 +914,7 @@
           <div class="what-icon">🎯</div>
           <h3>Stay In Control</h3>
           <p>
-            There’s no single “best” portfolio—only what fits your goals, timeline, and risk tolerance. We provide clarity. You decide what to do.
+            There's no single "best" portfolio—only what fits your goals, timeline, and risk tolerance. We provide clarity. You decide what to do.
           </p>
         </div>
       </div>
@@ -924,7 +927,7 @@
       <div class="translate-header">
         <span class="section-label">Learn the Terms</span>
         <h2>Wall Street Jargon, Translated</h2>
-        <p>These sound intimidating, but the ideas are simple. Here’s what they actually mean.</p>
+        <p>These sound intimidating, but the ideas are simple. Here's what they actually mean.</p>
       </div>
 
       <div class="translate-grid">
@@ -948,7 +951,7 @@
           <div class="translate-icon">🎲</div>
           <div>
             <div class="translate-term">Volatility</div>
-            <div class="translate-meaning">How “bumpy” the ride was. Lower volatility typically means fewer stomach-dropping swings.</div>
+            <div class="translate-meaning">How "bumpy" the ride was. Lower volatility typically means fewer stomach-dropping swings.</div>
           </div>
         </div>
 
@@ -956,7 +959,7 @@
           <div class="translate-icon">🥧</div>
           <div>
             <div class="translate-term">Diversification</div>
-            <div class="translate-meaning">Not just “more holdings”—but whether your investments truly move differently from each other.</div>
+            <div class="translate-meaning">Not just "more holdings"—but whether your investments truly move differently from each other.</div>
           </div>
         </div>
 
@@ -964,7 +967,7 @@
           <div class="translate-icon">⚖️</div>
           <div>
             <div class="translate-term">Risk Parity</div>
-            <div class="translate-meaning">Balances risk so one holding doesn’t dominate your portfolio’s ups and downs.</div>
+            <div class="translate-meaning">Balances risk so one holding doesn't dominate your portfolio's ups and downs.</div>
           </div>
         </div>
 
@@ -972,7 +975,7 @@
           <div class="translate-icon">🛡️</div>
           <div>
             <div class="translate-term">CVaR</div>
-            <div class="translate-meaning">A “bad times” lens: what losses might look like in the roughest scenarios, not just average down days.</div>
+            <div class="translate-meaning">A "bad times" lens: what losses might look like in the roughest scenarios, not just average down days.</div>
           </div>
         </div>
       </div>
@@ -985,7 +988,7 @@
       <span class="section-label">Our Promise</span>
       <h2>Transparency, Not Sales Pitches</h2>
       <p class="lead">
-        We built FolioForecast because people deserve access to real analysis—without gatekeeping, upsells, or “trust me” advice.
+        We built FolioForecast because people deserve access to real analysis—without gatekeeping, upsells, or "trust me" advice.
       </p>
 
       <div class="trust-box">
@@ -997,7 +1000,7 @@
           </div>
           <div class="trust-point">
             <i class="fas fa-check"></i>
-            <p><strong>No predictions.</strong> Past performance isn’t a promise. We never pretend otherwise.</p>
+            <p><strong>No predictions.</strong> Past performance isn't a promise. We never pretend otherwise.</p>
           </div>
           <div class="trust-point">
             <i class="fas fa-check"></i>
@@ -1005,7 +1008,7 @@
           </div>
           <div class="trust-point">
             <i class="fas fa-check"></i>
-            <p><strong>Privacy-first.</strong> We don’t sell your data or track what you invest in.</p>
+            <p><strong>Privacy-first.</strong> We don't sell your data or track what you invest in.</p>
           </div>
         </div>
       </div>
@@ -1032,7 +1035,7 @@
         <div class="footer-brand">
           <a href="/" class="logo">
             <div class="logo-icon">FF</div>
-            <span class="logo-text">FolioForecast</span>
+            <span class="logo-text">F<span class="sigma">σ</span>li<span class="return-r">o</span>F<span class="return-r">R</span>ecast</span>
           </a>
           <p>
             Wall Street math, translated for everyone. See historical trade-offs, understand the risk, and stay in control of your decisions.
@@ -1086,7 +1089,7 @@
       });
     });
 
-    // Subtle parallax to floating elements (kept from your original landing)
+    // Subtle parallax to floating elements
     window.addEventListener('scroll', () => {
       const scrolled = window.pageYOffset;
       const floats = document.querySelectorAll('.hero-float');
