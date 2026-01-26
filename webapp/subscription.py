@@ -18,9 +18,10 @@ TIERS = {
         'name': 'Free',
         'price_monthly': 0,
         'max_assets': 5,
-        'max_portfolios': 3,  # Requires login
+        'max_portfolios': 3,
         'features': {
             'basic_optimization': True,      # Max Sharpe, Min Vol, Equal Weight, Risk Parity
+            'target_optimization': False,    # Min Vol @ Target Return, Max Return @ Target Vol
             'advanced_optimization': False,  # CVaR, Kelly, Omega, Sortino, Tracking Error, Min Drawdown
             'robust_optimization': False,    # Monte Carlo resampling
             'diversification_analytics': False,
@@ -33,11 +34,12 @@ TIERS = {
     },
     'premium': {
         'name': 'Premium',
-        'price_monthly': 14,  # Updated from $9 to $14
+        'price_monthly': 14,
         'max_assets': 15,
         'max_portfolios': 20,
         'features': {
             'basic_optimization': True,
+            'target_optimization': True,     # NEW: Min Vol @ Target Return, Max Return @ Target Vol
             'advanced_optimization': True,
             'robust_optimization': True,
             'diversification_analytics': False,  # Pro only
@@ -55,6 +57,7 @@ TIERS = {
         'max_portfolios': 999,  # Effectively unlimited
         'features': {
             'basic_optimization': True,
+            'target_optimization': True,
             'advanced_optimization': True,
             'robust_optimization': True,
             'diversification_analytics': True,
@@ -73,6 +76,7 @@ TIERS = {
         'trial_days': 1,
         'features': {
             'basic_optimization': True,
+            'target_optimization': True,
             'advanced_optimization': True,
             'robust_optimization': True,
             'diversification_analytics': True,
@@ -96,9 +100,13 @@ BASIC_OPTIMIZATION_METHODS = [
     'risk_parity',
 ]
 
+# NEW: Target-based MVO methods (Premium+)
+TARGET_OPTIMIZATION_METHODS = [
+    'min_vol_target_return',    # Minimize Volatility subject to Target Return
+    'max_return_target_vol',    # Maximize Return subject to Target Volatility
+]
+
 ADVANCED_OPTIMIZATION_METHODS = [
-    'min_vol_target_return',    # Premium - target-based MVO
-    'max_return_target_vol',    # Premium - target-based MVO
     'min_cvar',
     'min_cvar_target_return',
     'max_return_target_cvar',
@@ -224,6 +232,12 @@ def can_use_optimization_method(user, method_name):
     if method_name in BASIC_OPTIMIZATION_METHODS:
         return True, None
     
+    # Target-based MVO methods - require premium+
+    if method_name in TARGET_OPTIMIZATION_METHODS:
+        if tier_config['features'].get('target_optimization'):
+            return True, None
+        return False, f"'{method_name}' requires Premium or Pro subscription"
+    
     # Advanced methods - require premium+
     if method_name in ADVANCED_OPTIMIZATION_METHODS:
         if tier_config['features'].get('advanced_optimization'):
@@ -322,6 +336,7 @@ def get_user_tier_info(user):
         'days_until_expiry': days_until_expiry,
         'in_grace_period': in_grace_period,
         'basic_methods': BASIC_OPTIMIZATION_METHODS,
+        'target_methods': TARGET_OPTIMIZATION_METHODS,
         'advanced_methods': ADVANCED_OPTIMIZATION_METHODS,
         'robust_methods': ROBUST_OPTIMIZATION_METHODS
     }
@@ -415,13 +430,14 @@ def get_pricing_data():
                 'description': 'Get started with portfolio optimization',
                 'features': [
                     f'Up to {TIERS["free"]["max_assets"]} assets per optimization',
-                    f'Save up to {TIERS["free"]["max_portfolios"]} portfolios (requires login)',
+                    f'{TIERS["free"]["max_portfolios"]} saved portfolios',
                     'Basic optimization (Max Sharpe, Min Vol, Risk Parity)',
                     'Efficient frontier visualization',
                     'Correlation matrix',
                     'Monthly returns heatmap'
                 ],
                 'limitations': [
+                    'No target-based optimization',
                     'No advanced optimization methods',
                     'No CSV import/export',
                     'No diversification analytics'
@@ -438,8 +454,9 @@ def get_pricing_data():
                 'description': 'For serious individual investors',
                 'features': [
                     f'Up to {TIERS["premium"]["max_assets"]} assets per optimization',
-                    f'Save up to {TIERS["premium"]["max_portfolios"]} portfolios',
+                    f'Up to {TIERS["premium"]["max_portfolios"]} saved portfolios',
                     'All basic optimization methods',
+                    'Target-based optimization (Min Vol @ Return, Max Return @ Vol)',
                     'Advanced optimization (CVaR, Kelly, Sortino, Omega)',
                     'Tracking error optimization',
                     'Robust Monte Carlo optimization',
@@ -451,7 +468,7 @@ def get_pricing_data():
                     'Cannot view others\' allocations'
                 ],
                 'cta': 'Start Premium',
-                'highlighted': True
+                'highlighted': False
             },
             {
                 'id': 'pro',
@@ -472,7 +489,7 @@ def get_pricing_data():
                 ],
                 'limitations': [],
                 'cta': 'Start Free Trial',
-                'highlighted': False
+                'highlighted': True
             }
         ]
     }
