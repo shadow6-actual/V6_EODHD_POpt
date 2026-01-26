@@ -1,965 +1,573 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FolioForecast - Portfolio Optimization</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Clerk Authentication SDK -->
-    <script 
-        async 
-        crossorigin="anonymous" 
-        data-clerk-publishable-key="pk_test_ZGl2ZXJzZS1ld2UtMTUuY2xlcmsuYWNjb3VudHMuZGV2JA"
-        src="https://diverse-ewe-15.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-        type="text/javascript"
-    ></script>
-    <style>
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-tertiary: #1a1a24;
-            --text-primary: #ffffff;
-            --text-secondary: #d1d5db;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-blue-hover: #2563eb;
-            --accent-purple: #8b5cf6;
-            --accent-green: #10b981;
-            --border-color: #2a2a3a;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-        }
+{% extends "layout.html" %}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0.75rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.25rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-menu {
-            position: relative;
-        }
-
-        .user-button {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .user-button:hover {
-            background: var(--border-color);
-        }
-
-        .user-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 0.5rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            min-width: 200px;
-            display: none;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            z-index: 200;
-        }
-
-        .user-dropdown.open {
-            display: block;
-        }
-
-        .user-dropdown a,
-        .user-dropdown button {
-            display: block;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            text-align: left;
-            color: var(--text-secondary);
-            text-decoration: none;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-        .user-dropdown a:hover,
-        .user-dropdown button:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .user-dropdown .divider {
-            height: 1px;
-            background: var(--border-color);
-            margin: 0.5rem 0;
-        }
-
-        .tier-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .tier-free { background: var(--bg-tertiary); color: var(--text-muted); }
-        .tier-premium { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
-        .tier-pro { background: rgba(139, 92, 246, 0.2); color: var(--accent-purple); }
-
-        /* Main Content */
-        .main-content {
-            padding-top: 60px;
-            min-height: 100vh;
-        }
-
-        /* Loading State */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--bg-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--accent-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 2rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            width: 100%;
-            max-width: 700px;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-            transform: translateY(20px);
-            transition: transform 0.3s;
-        }
-
-        .modal-overlay.active .modal {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .modal-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .modal-header .step-indicator {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        .modal-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem 2rem;
-            color: var(--text-secondary);
-        }
-
-        .modal-body h3 {
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            margin: 1.5rem 0 0.75rem;
-        }
-
-        .modal-body h3:first-child {
-            margin-top: 0;
-        }
-
-        .modal-body p {
-            margin-bottom: 1rem;
-        }
-
-        .modal-body ul {
-            margin: 0.5rem 0 1rem 1.5rem;
-        }
-
-        .modal-body li {
-            margin-bottom: 0.5rem;
-        }
-
-        .warning-box {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .warning-box h4 {
-            color: var(--warning);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .danger-box {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .danger-box h4 {
-            color: var(--danger);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .scroll-indicator {
-            text-align: center;
-            padding: 1rem;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .scroll-indicator.hidden {
-            display: none;
-        }
-
-        .scroll-indicator svg {
-            animation: bounce 1s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(4px); }
-        }
-
-        .modal-footer {
-            padding: 1.5rem 2rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .modal-footer .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .modal-footer input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--accent-blue);
-            cursor: pointer;
-        }
-
-        .modal-footer label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border-color);
-            color: var(--text-primary);
-        }
-
-        /* App Container (placeholder) */
-        .app-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .app-placeholder {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-muted);
-        }
-
-        .app-placeholder h2 {
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-
-        /* Auth Required State */
-        .auth-required {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 60px);
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .auth-required h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .auth-required p {
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            max-width: 400px;
-        }
-
-        /* Clerk styling overrides */
-        .cl-rootBox {
-            margin: 0 auto;
-        }
-    </style>
-</head>
-<body>
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="nav">
-        <div class="nav-container">
-            <a href="/" class="logo">FolioForecast</a>
-            <div class="nav-actions">
-                <!-- User menu - shown when authenticated -->
-                <div class="user-menu" id="userMenu" style="display: none;">
-                    <button class="user-button" id="userButton">
-                        <span id="userName">User</span>
-                        <span class="tier-badge tier-free" id="tierBadge">FREE</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M6 9l6 6 6-6"/>
-                        </svg>
-                    </button>
-                    <div class="user-dropdown" id="userDropdown">
-                        <a href="/pricing">Upgrade Plan</a>
-                        <div class="divider"></div>
-                        <a href="/terms" target="_blank">Terms of Service</a>
-                        <a href="/disclaimer" target="_blank">Investment Disclaimer</a>
-                        <a href="/privacy" target="_blank">Privacy Policy</a>
-                        <div class="divider"></div>
-                        <button id="signOutBtn">Sign Out</button>
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="row">
+        
+        <!-- LEFT PANEL: Configuration -->
+        <div class="col-md-4 border-end" id="configPanel">
+            <h4 class="mb-4 text-primary"><i class="fas fa-sliders-h me-2"></i>Portfolio Configuration</h4>
+            
+            <!-- Time Period -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 small fw-bold">TIME PERIOD</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small">Start Date</label>
+                            <input type="date" class="form-control form-control-sm" id="startDate" value="2018-01-01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">End Date</label>
+                            <input type="date" class="form-control form-control-sm" id="endDate">
+                        </div>
                     </div>
                 </div>
-                <!-- Auth buttons - shown when not authenticated -->
-                <div id="authButtons">
-                    <div id="clerk-auth"></div>
+            </div>
+
+            <!-- Optimization Settings -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 small fw-bold">OPTIMIZATION</h6>
                 </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Auth Required (shown if not signed in) -->
-        <div class="auth-required" id="authRequired" style="display: none;">
-            <h2>Sign in to continue</h2>
-            <p>Create an account or sign in to access FolioForecast's portfolio optimization tools.</p>
-            <div id="clerk-signin"></div>
-        </div>
-
-        <!-- App Container (shown when authenticated and agreements accepted) -->
-        <div class="app-container" id="appContainer" style="display: none;">
-            <div class="app-placeholder">
-                <h2>Welcome to FolioForecast</h2>
-                <p>Portfolio optimization app content goes here...</p>
-            </div>
-        </div>
-    </main>
-
-    <!-- Terms of Service Modal -->
-    <div class="modal-overlay" id="termsModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>
-                    📋 Terms of Service
-                    <span class="step-indicator">Step 1 of 2</span>
-                </h2>
-            </div>
-            <div class="modal-body" id="termsModalBody">
-                <p>Please read and accept our Terms of Service before using FolioForecast.</p>
-                
-                <h3>1. Acceptance of Terms</h3>
-                <p>By accessing or using FolioForecast, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
-
-                <h3>2. Service Description</h3>
-                <p>FolioForecast provides portfolio optimization and analysis tools for educational and informational purposes only. We do not provide financial advice.</p>
-
-                <h3>3. User Accounts</h3>
-                <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
-
-                <h3>4. Subscription & Payments</h3>
-                <p>Paid subscriptions are billed monthly. You may cancel at any time, with access continuing until the end of your billing period.</p>
-
-                <div class="danger-box">
-                    <h4>⚠️ NO REFUNDS POLICY</h4>
-                    <p><strong>ALL SUBSCRIPTION PAYMENTS ARE FINAL AND NON-REFUNDABLE.</strong></p>
-                    <p>This includes: unused subscription time, service dissatisfaction, accidental purchases, and account termination. We strongly encourage you to evaluate our free tier before subscribing.</p>
-                </div>
-
-                <h3>5. Intellectual Property</h3>
-                <p>All content, features, and functionality of FolioForecast are owned by us and protected by intellectual property laws.</p>
-
-                <h3>6. Limitation of Liability</h3>
-                <p>FolioForecast is provided "as is" without warranties. We are not liable for any investment decisions made based on information from our service.</p>
-
-                <h3>7. Termination</h3>
-                <p>We may terminate or suspend your account at any time for violations of these terms. Account termination does not entitle you to any refund.</p>
-
-                <h3>8. Changes to Terms</h3>
-                <p>We may update these terms at any time. Continued use constitutes acceptance of updated terms.</p>
-
-                <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted);">
-                    <strong>Version 1.0.0</strong> | Effective: January 25, 2026 | 
-                    <a href="/terms" target="_blank" style="color: var(--accent-blue);">View Full Terms</a>
-                </p>
-            </div>
-            <div class="scroll-indicator" id="termsScrollIndicator">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M19 12l-7 7-7-7"/>
-                </svg>
-                Scroll to read all terms
-            </div>
-            <div class="modal-footer">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="termsCheckbox" disabled>
-                    <label for="termsCheckbox">I have read and agree to the Terms of Service</label>
-                </div>
-                <button class="btn btn-primary" id="termsAcceptBtn" disabled>Continue</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Investment Disclaimer Modal -->
-    <div class="modal-overlay" id="disclaimerModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>
-                    ⚠️ Investment Disclaimer
-                    <span class="step-indicator">Step 2 of 2</span>
-                </h2>
-            </div>
-            <div class="modal-body" id="disclaimerModalBody">
-                <div class="warning-box">
-                    <h4>⚠️ IMPORTANT: READ CAREFULLY</h4>
-                    <p>FolioForecast is an educational tool, NOT a financial advisor. You are solely responsible for your investment decisions.</p>
-                </div>
-
-                <h3>Not Financial Advice</h3>
-                <p>Nothing on FolioForecast constitutes financial, investment, legal, or tax advice. All content is for educational and informational purposes only.</p>
-
-                <h3>No Guarantees</h3>
-                <p>Past performance does not guarantee future results. Portfolio optimization models are based on historical data and mathematical assumptions that may not reflect future market conditions.</p>
-
-                <h3>Investment Risks</h3>
-                <ul>
-                    <li>All investments carry risk of loss, including total loss of principal</li>
-                    <li>Market conditions can change rapidly and unpredictably</li>
-                    <li>Historical correlations may not persist in the future</li>
-                    <li>Optimization results are theoretical and may not be achievable in practice</li>
-                </ul>
-
-                <h3>Your Responsibility</h3>
-                <p>You should:</p>
-                <ul>
-                    <li>Consult qualified financial professionals before making investment decisions</li>
-                    <li>Conduct your own research and due diligence</li>
-                    <li>Consider your personal financial situation, risk tolerance, and investment goals</li>
-                    <li>Never invest money you cannot afford to lose</li>
-                </ul>
-
-                <h3>Limitation of Liability</h3>
-                <p>FolioForecast and its operators shall not be held liable for any losses, damages, or negative outcomes resulting from the use of this service or any investment decisions influenced by it.</p>
-
-                <div class="danger-box">
-                    <h4>🛑 Final Acknowledgment</h4>
-                    <p>By accepting this disclaimer, you confirm that you understand FolioForecast does not provide investment advice, and you accept full responsibility for your own investment decisions and their outcomes.</p>
-                </div>
-
-                <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted);">
-                    <strong>Version 1.0.0</strong> | Effective: January 25, 2026 | 
-                    <a href="/disclaimer" target="_blank" style="color: var(--accent-blue);">View Full Disclaimer</a>
-                </p>
-            </div>
-            <div class="scroll-indicator" id="disclaimerScrollIndicator">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M19 12l-7 7-7-7"/>
-                </svg>
-                Scroll to read entire disclaimer
-            </div>
-            <div class="modal-footer">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="disclaimerCheckbox" disabled>
-                    <label for="disclaimerCheckbox">I understand and accept this disclaimer</label>
-                </div>
-                <button class="btn btn-primary" id="disclaimerAcceptBtn" disabled>Accept & Continue to App</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // App State
-        const AppState = {
-            user: null,
-            agreements: null,
-            clerkLoaded: false
-        };
-
-        // Clerk Configuration
-        const CLERK_PUBLISHABLE_KEY = 'pk_test_ZGl2ZXJzZS1ld2UtMTUuY2xlcmsuYWNjb3VudHMuZGV2JA';
-
-        // DOM Elements
-        const elements = {
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            authRequired: document.getElementById('authRequired'),
-            appContainer: document.getElementById('appContainer'),
-            userMenu: document.getElementById('userMenu'),
-            userButton: document.getElementById('userButton'),
-            userDropdown: document.getElementById('userDropdown'),
-            userName: document.getElementById('userName'),
-            tierBadge: document.getElementById('tierBadge'),
-            signOutBtn: document.getElementById('signOutBtn'),
-            termsModal: document.getElementById('termsModal'),
-            termsModalBody: document.getElementById('termsModalBody'),
-            termsScrollIndicator: document.getElementById('termsScrollIndicator'),
-            termsCheckbox: document.getElementById('termsCheckbox'),
-            termsAcceptBtn: document.getElementById('termsAcceptBtn'),
-            disclaimerModal: document.getElementById('disclaimerModal'),
-            disclaimerModalBody: document.getElementById('disclaimerModalBody'),
-            disclaimerScrollIndicator: document.getElementById('disclaimerScrollIndicator'),
-            disclaimerCheckbox: document.getElementById('disclaimerCheckbox'),
-            disclaimerAcceptBtn: document.getElementById('disclaimerAcceptBtn')
-        };
-
-        // Initialize Clerk - using window load event since Clerk is loaded via script tag
-        async function initClerk() {
-            try {
-                // Wait for Clerk to be available (loaded via script tag in head)
-                await window.Clerk.load();
-                AppState.clerkLoaded = true;
-                
-                // Check authentication status
-                if (window.Clerk.user) {
-                    await handleAuthenticated(window.Clerk.user);
-                } else {
-                    showAuthRequired();
-                }
-                
-                // Listen for auth changes
-                window.Clerk.addListener((event) => {
-                    if (event.user) {
-                        handleAuthenticated(event.user);
-                    } else {
-                        showAuthRequired();
-                    }
-                });
-            } catch (error) {
-                console.error('Error initializing Clerk:', error);
-                showError('Authentication service unavailable. Please try again later.');
-            }
-        }
-
-        // Handle authenticated user
-        async function handleAuthenticated(clerkUser) {
-            AppState.user = clerkUser;
-            
-            // Update UI with user info
-            elements.userName.textContent = clerkUser.firstName || clerkUser.username || 'User';
-            elements.userMenu.style.display = 'block';
-            document.getElementById('authButtons').style.display = 'none';
-            
-            // Sync user with backend and check agreements
-            try {
-                const token = await window.Clerk.session.getToken();
-                
-                // Sync user
-                await fetch('/api/auth/sync', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                // Check agreement status
-                const agreementRes = await fetch('/api/agreements/status', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (agreementRes.ok) {
-                    AppState.agreements = await agreementRes.json();
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label small">Optimization Goal</label>
+                        <select class="form-select form-select-sm" id="optGoal" onchange="updateConditionalFields()">
+                            <optgroup label="Mean-Variance">
+                                <option value="max_sharpe">Maximize Sharpe Ratio</option>
+                                <option value="min_volatility">Minimize Volatility</option>
+                                <option value="min_vol_target_return">Minimize Volatility subject to Target Return</option>
+                                <option value="max_return_target_vol">Maximize Return subject to Target Volatility</option>
+                            </optgroup>
+                            <optgroup label="Risk Metrics">
+                                <option value="risk_parity">Risk Parity</option>
+                                <option value="min_cvar">CVaR - Minimize Conditional Value-at-Risk</option>
+                                <option value="min_cvar_target_return">CVaR - Min CVaR subject to Target Return</option>
+                                <option value="max_return_target_cvar">CVaR - Max Return subject to Target CVaR</option>
+                            </optgroup>
+                            <optgroup label="Tracking Error">
+                                <option value="min_tracking_error">Minimize Tracking Error</option>
+                                <option value="max_information_ratio">Maximize Information Ratio</option>
+                                <option value="max_excess_return_target_te">Max Excess Return subject to Target TE</option>
+                            </optgroup>
+                            <optgroup label="Advanced">
+                                <option value="max_kelly">Maximize Kelly Criterion</option>
+                                <option value="min_drawdown_target_return">Min Max Drawdown subject to Target Return</option>
+                                <option value="max_omega_target_return">Max Omega Ratio subject to Target Return</option>
+                                <option value="max_sortino_target_return">Max Sortino Ratio subject to Target Return</option>
+                            </optgroup>
+                            <optgroup label="Robust (Monte Carlo)">
+                                <option value="robust_max_sharpe">Robust Max Sharpe Ratio</option>
+                                <option value="robust_min_volatility">Robust Min Volatility</option>
+                                <option value="robust_min_vol_target_return">Robust Min Vol @ Target Return</option>
+                                <option value="robust_max_return_target_vol">Robust Max Return @ Target Vol</option>
+                            </optgroup>
+                            <optgroup label="Baseline">
+                                <option value="equal_weight">Equal Weight</option>
+                            </optgroup>
+                        </select>
+                    </div>
                     
-                    if (!AppState.agreements.all_accepted) {
-                        // Show appropriate modal
-                        if (AppState.agreements.missing.includes('terms') || 
-                            AppState.agreements.outdated.includes('terms')) {
-                            showTermsModal();
-                        } else if (AppState.agreements.missing.includes('disclaimer') ||
-                                   AppState.agreements.outdated.includes('disclaimer')) {
-                            showDisclaimerModal();
-                        }
-                    } else {
-                        showApp();
-                    }
-                } else {
-                    // If agreements endpoint not available, show modals anyway
-                    showTermsModal();
-                }
-                
-                // Get user tier info
-                const userRes = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (userRes.ok) {
-                    const userData = await userRes.json();
-                    updateTierBadge(userData.subscription_tier || 'free');
-                }
-                
-            } catch (error) {
-                console.error('Error during auth flow:', error);
-                // On error, still show modals to be safe
-                showTermsModal();
-            }
+                    <div class="mb-2" id="targetReturnField" style="display:none;">
+                        <label class="form-label small">Target Annual Return (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetReturn" value="15" step="0.5">
+                    </div>
+                    
+                    <div class="mb-2" id="targetVolField" style="display:none;">
+                        <label class="form-label small">Target Annual Volatility (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetVolatility" value="15" step="0.5">
+                    </div>
+                    
+                    <div class="mb-2" id="targetCVaRField" style="display:none;">
+                        <label class="form-label small">Target Monthly CVaR (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetCVaR" value="-2" step="0.1">
+                    </div>
+                    
+                    <div class="mb-2" id="targetTEField" style="display:none;">
+                        <label class="form-label small">Target Tracking Error (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="targetTE" value="5" step="0.5">
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label small">Benchmark</label>
+                        <select class="form-select form-select-sm" id="benchmark">
+                            <option value="SPY.US">S&P 500 (SPY)</option>
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useUserBenchmark" onchange="toggleUserBenchmark()">
+                        <label class="form-check-label small" for="useUserBenchmark">Use Saved Portfolio as Benchmark</label>
+                    </div>
+                    
+                    <div class="mb-2" id="userBenchmarkField" style="display:none;">
+                        <label class="form-label small">Saved Portfolio Benchmark</label>
+                        <select class="form-select form-select-sm" id="userBenchmark">
+                            <option value="">Select a saved portfolio...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useConstraints" checked onchange="toggleConstraints()">
+                        <label class="form-check-label small" for="useConstraints">Use Asset Constraints</label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="showDiversification" checked>
+                        <label class="form-check-label small" for="showDiversification">Show Diversification Analytics</label>
+                    </div>
+                    
+                    <div class="mb-2" id="robustResamplesField" style="display:none;">
+                        <label class="form-label small">Robust Resamples</label>
+                        <select class="form-select form-select-sm" id="robustResamples">
+                            <option value="50">50 (Fast)</option>
+                            <option value="100" selected>100 (Balanced)</option>
+                            <option value="200">200 (Thorough)</option>
+                        </select>
+                        <small class="text-muted">More resamples = more stable but slower</small>
+                    </div>
+                </div>
+            </div>
             
-            hideLoading();
-        }
+            <!-- Health Score Settings (Collapsible) -->
+            <div class="card mb-3 shadow-sm" id="healthScoreCard" style="display:none;">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">HEALTH SCORE WEIGHTS</h6>
+                    <button class="btn btn-xs btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#healthScoreBody">
+                        <i class="fas fa-cog small"></i>
+                    </button>
+                </div>
+                <div class="collapse" id="healthScoreBody">
+                    <div class="card-body p-2">
+                        <p class="small text-muted mb-2">Adjust how the Health Score is calculated (must sum to 100)</p>
+                        <div class="row g-2 small">
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Sharpe Ratio</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthSharpe" value="40" min="0" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Diversification Ratio</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthDivRatio" value="30" min="0" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">HHI (Concentration)</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthHHI" value="10" min="0" max="100">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">Drawdown Duration</label>
+                                <input type="number" class="form-control form-control-sm health-weight" id="healthDrawdown" value="20" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-end">
+                            <span class="small text-muted">Total: </span>
+                            <span class="small fw-bold" id="healthWeightTotal">100</span>
+                            <span class="small text-muted">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        // Show auth required screen
-        function showAuthRequired() {
-            elements.loadingOverlay.style.display = 'none';
-            elements.authRequired.style.display = 'flex';
-            elements.appContainer.style.display = 'none';
-            elements.userMenu.style.display = 'none';
-            
-            // Mount Clerk sign-in
-            if (window.Clerk) {
-                window.Clerk.mountSignIn(document.getElementById('clerk-signin'));
-            }
-        }
+            <!-- Assets Table -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">PORTFOLIO ASSETS</h6>
+                    <button class="btn btn-xs btn-outline-primary py-0 px-2" onclick="addAssetRow()">
+                        <i class="fas fa-plus small"></i> Add
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0 small" id="assetsTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 35%">Ticker</th>
+                                    <th style="width: 20%">Alloc %</th>
+                                    <th style="width: 18%" class="constraint-col">Min %</th>
+                                    <th style="width: 18%" class="constraint-col">Max %</th>
+                                    <th style="width: 9%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="assetsTableBody"></tbody>
+                            <tfoot class="table-light sticky-bottom">
+                                <tr>
+                                    <td class="text-end">Total:</td>
+                                    <td id="totalAllocation" class="text-primary">0%</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer p-2 bg-white">
+                    <button class="btn btn-primary w-100" id="runOptimizeBtn">
+                        <i class="fas fa-bolt me-2"></i>Run Optimization
+                    </button>
+                </div>
+            </div>
 
-        // Show main app
-        function showApp() {
-            elements.termsModal.classList.remove('active');
-            elements.disclaimerModal.classList.remove('active');
-            elements.authRequired.style.display = 'none';
-            elements.appContainer.style.display = 'block';
-            hideLoading();
-        }
+            <!-- Group Constraints (NEW) -->
+            <div class="card mt-3 shadow-sm" id="groupConstraintsCard" style="display:none;">
+                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">GROUP CONSTRAINTS</h6>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="useGroupConstraints">
+                        <label class="form-check-label small" for="useGroupConstraints">Enable</label>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <p class="small text-muted mb-2">
+                        <i class="fas fa-info-circle me-1"></i>Set allocation limits by asset group
+                    </p>
+                    
+                    <div class="table-responsive" style="max-height: 25vh; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0 small" id="groupConstraintsTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 30%">Group</th>
+                                    <th style="width: 12%" class="text-center">Assets</th>
+                                    <th style="width: 16%" class="text-center">Current</th>
+                                    <th style="width: 21%">Min %</th>
+                                    <th style="width: 21%">Max %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groupConstraintsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-        // Update tier badge
-        function updateTierBadge(tier) {
-            const badge = elements.tierBadge;
-            badge.textContent = tier.toUpperCase();
-            badge.className = 'tier-badge tier-' + tier.toLowerCase();
-        }
+            <!-- Save Portfolio -->
+            <div class="card mt-3 shadow-sm">
+                <div class="card-body p-2">
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" class="form-control" id="portfolioName" placeholder="Portfolio name">
+                        <button class="btn btn-outline-secondary" onclick="savePortfolio()">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="loadPortfolioModal()">
+                            <i class="fas fa-folder-open"></i> Load
+                        </button>
+                    </div>
+                    <div class="form-check form-switch mb-2" id="publicPortfolioOption" style="display: none;">
+                        <input class="form-check-input" type="checkbox" id="makePortfolioPublic">
+                        <label class="form-check-label small" for="makePortfolioPublic">
+                            <i class="fas fa-globe me-1"></i>Share in public rankings
+                        </label>
+                    </div>
+                    <div class="btn-group btn-group-sm w-100 mb-2" role="group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="exportPortfolioCSV()" title="Export to CSV">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="importPortfolioCSV()" title="Import from CSV">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="quickPasteTickers()" title="Quick paste tickers">
+                            <i class="fas fa-paste"></i> Paste
+                        </button>
+                    </div>
+                    
+                    <label class="form-label small mb-1">Manage Saved Portfolios</label>
+                    <div class="input-group input-group-sm">
+                        <select class="form-select" id="portfolioManager" onchange="portfolioSelected()">
+                            <option value="">Select to manage...</option>
+                        </select>
+                        <button class="btn btn-outline-danger" onclick="deleteSelectedPortfolio()" id="deletePortfolioBtn" disabled>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        // Hide loading
-        function hideLoading() {
-            elements.loadingOverlay.style.display = 'none';
-        }
+        <!-- RIGHT PANEL: Results -->
+        <div class="col-md-8" id="resultsPanel">
+            
+            <!-- Disclaimer Banner Above Results -->
+            <div class="alert alert-warning py-2 mb-3" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Not investment advice.</strong> Results are hypothetical and based on historical data. Past performance ≠ future results.
+                <a href="/disclaimer" target="_blank" class="ms-1">Full disclaimer</a>
+            </div>
+            
+            <div id="resultsPlaceholder" class="text-center py-5 text-muted">
+                <i class="fas fa-chart-pie fa-4x mb-3 text-light"></i>
+                <h5>Ready to Optimize</h5>
+                <p>Configure your assets and click "Run Optimization"</p>
+            </div>
 
-        // Show error
-        function showError(message) {
-            hideLoading();
-            alert(message); // Replace with better error UI
-        }
+            <div id="loadingSpinner" class="text-center py-5" style="display:none;">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+                <p class="text-muted mt-3">Optimizing...</p>
+            </div>
 
-        // Scroll detection for modals
-        function setupScrollDetection(modalBody, scrollIndicator, checkbox, acceptBtn) {
-            const checkScroll = () => {
-                const scrolledToBottom = 
-                    modalBody.scrollHeight - modalBody.scrollTop - modalBody.clientHeight < 50;
+            <div id="resultsContent" style="display:none;">
+                <h4 class="mb-3">Performance Comparison</h4>
                 
-                if (scrolledToBottom) {
-                    scrollIndicator.classList.add('hidden');
-                    checkbox.disabled = false;
-                } else {
-                    scrollIndicator.classList.remove('hidden');
-                }
-            };
-            
-            modalBody.addEventListener('scroll', checkScroll);
-            
-            // Check initially (in case content fits without scrolling)
-            setTimeout(() => {
-                if (modalBody.scrollHeight <= modalBody.clientHeight) {
-                    scrollIndicator.classList.add('hidden');
-                    checkbox.disabled = false;
-                }
-            }, 100);
-            
-            // Checkbox enables button
-            checkbox.addEventListener('change', () => {
-                acceptBtn.disabled = !checkbox.checked;
-            });
-        }
+                <!-- Comparison Table -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-hover small" id="comparisonTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Metric</th>
+                                <th id="colYour">Your Portfolio</th>
+                                <th id="colOpt">Optimized</th>
+                                <th id="colBench">Benchmark</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonBody"></tbody>
+                    </table>
+                </div>
 
-        // Show Terms Modal
-        function showTermsModal() {
-            elements.termsModal.classList.add('active');
-            elements.termsCheckbox.checked = false;
-            elements.termsCheckbox.disabled = true;
-            elements.termsAcceptBtn.disabled = true;
-            elements.termsScrollIndicator.classList.remove('hidden');
-            elements.termsModalBody.scrollTop = 0;
-            
-            setupScrollDetection(
-                elements.termsModalBody,
-                elements.termsScrollIndicator,
-                elements.termsCheckbox,
-                elements.termsAcceptBtn
-            );
-        }
+                <!-- Allocation Tables -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white py-2">
+                                <h6 class="mb-0 small" id="optCardTitle">Optimized Portfolio</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th class="text-end">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="optTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-secondary text-white py-2">
+                                <h6 class="mb-0 small">Your Portfolio</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th class="text-end">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="yourTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white py-2">
+                                <h6 class="mb-0 small" id="benchCardTitle">Benchmark</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticker</th>
+                                            <th class="text-end">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="benchTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        // Show Disclaimer Modal
-        function showDisclaimerModal() {
-            elements.termsModal.classList.remove('active');
-            elements.disclaimerModal.classList.add('active');
-            elements.disclaimerCheckbox.checked = false;
-            elements.disclaimerCheckbox.disabled = true;
-            elements.disclaimerAcceptBtn.disabled = true;
-            elements.disclaimerScrollIndicator.classList.remove('hidden');
-            elements.disclaimerModalBody.scrollTop = 0;
-            
-            setupScrollDetection(
-                elements.disclaimerModalBody,
-                elements.disclaimerScrollIndicator,
-                elements.disclaimerCheckbox,
-                elements.disclaimerAcceptBtn
-            );
-        }
+                <!-- Group Allocations Display (NEW) -->
+                <div class="card mb-4 shadow-sm" id="groupAllocationsSection" style="display:none;">
+                    <div class="card-header bg-info text-white py-2">
+                        <h6 class="mb-0 small"><i class="fas fa-layer-group me-2"></i>Group Allocations</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-hover mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Group</th>
+                                    <th class="text-end">Your Portfolio</th>
+                                    <th class="text-end">Optimized</th>
+                                    <th class="text-center">Constraints</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groupAllocBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-        // Accept agreement
-        async function acceptAgreement(agreementType) {
-            try {
-                const token = await window.Clerk.session.getToken();
-                
-                const res = await fetch('/api/agreements/accept', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ agreement_type: agreementType })
-                });
-                
-                if (!res.ok) {
-                    throw new Error('Failed to record agreement acceptance');
-                }
-                
-                const result = await res.json();
-                AppState.agreements = result.status;
-                
-                return true;
-            } catch (error) {
-                console.error('Error accepting agreement:', error);
-                return false;
-            }
-        }
+                <!-- Tabs -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <ul class="nav nav-tabs card-header-tabs" id="resultTabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#frontier">Efficient Frontier</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#drawdown">Drawdown</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#monthly">Monthly Returns</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#correlation">Correlation</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#diversification">Diversification</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#savedPortfolios">Saved Portfolios</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="frontier">
+                                <div id="frontierChart" style="height: 500px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="drawdown">
+                                <div id="drawdownChart" style="height: 400px;"></div>
+                                <h6 class="mt-3 text-muted small">Historical Stress Periods</h6>
+                                <table class="table table-sm" id="stressTable">
+                                    <thead><tr><th>Event</th><th>Start</th><th>End</th><th class="text-end">Return</th></tr></thead>
+                                    <tbody id="stressTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="monthly">
+                                <div id="monthlyHeatmap"></div>
+                            </div>
+                            <div class="tab-pane fade" id="correlation">
+                                <div id="corrHeatmap" style="height: 500px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="diversification">
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-muted small mb-3"><i class="fas fa-chart-radar me-2"></i>Portfolio Health Comparison</h6>
+                                    </div>
+                                </div>
+                                
+                                <!-- Health Score Cards -->
+                                <div class="row g-3 mb-4" id="healthScoreCards">
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-primary">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-subtitle mb-2 text-muted small">Optimized</h6>
+                                                <h2 class="display-4 text-primary mb-0" id="optHealthScore">--</h2>
+                                                <p class="text-muted small mb-0">Health Score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-secondary">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-subtitle mb-2 text-muted small">Your Portfolio</h6>
+                                                <h2 class="display-4 text-secondary mb-0" id="userHealthScore">--</h2>
+                                                <p class="text-muted small mb-0">Health Score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-success">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-subtitle mb-2 text-muted small">Benchmark</h6>
+                                                <h2 class="display-4 text-success mb-0" id="benchHealthScore">--</h2>
+                                                <p class="text-muted small mb-0">Health Score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Diversification Metrics Table -->
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-sm table-hover small" id="diversificationTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Metric</th>
+                                                <th class="text-center">Your Portfolio</th>
+                                                <th class="text-center">Optimized</th>
+                                                <th class="text-center">Benchmark</th>
+                                                <th>Interpretation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="diversificationBody"></tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Radar Chart -->
+                                <div id="radarChart" style="height: 450px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="savedPortfolios">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <h6 class="text-muted small">Compare Saved Portfolios</h6>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <select class="form-select form-select-sm" id="portfolioCompareSelect" multiple style="height: 120px;">
+                                                <option value="SPY.US">S&P 500 (SPY)</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary w-100" onclick="compareSelectedPortfolios()">
+                                            <i class="fas fa-chart-bar me-1"></i>Compare Selected
+                                        </button>
+                                        <small class="text-muted d-block mt-1">Hold Ctrl to select multiple</small>
+                                    </div>
+                                </div>
+                                <div id="portfolioComparisonTable"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Event Listeners - use 'load' event to ensure Clerk script is loaded
-        window.addEventListener('load', async () => {
-            // Initialize Clerk
-            await initClerk();
-            
-            // User menu toggle
-            elements.userButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                elements.userDropdown.classList.toggle('open');
-            });
-            
-            document.addEventListener('click', () => {
-                elements.userDropdown.classList.remove('open');
-            });
-            
-            // Sign out
-            elements.signOutBtn.addEventListener('click', async () => {
-                if (window.Clerk) {
-                    await window.Clerk.signOut();
-                    window.location.reload();
-                }
-            });
-            
-            // Terms accept button
-            elements.termsAcceptBtn.addEventListener('click', async () => {
-                elements.termsAcceptBtn.disabled = true;
-                elements.termsAcceptBtn.textContent = 'Processing...';
-                
-                const success = await acceptAgreement('terms');
-                
-                if (success) {
-                    // Check if disclaimer also needed
-                    if (AppState.agreements && !AppState.agreements.all_accepted) {
-                        showDisclaimerModal();
-                    } else {
-                        showApp();
-                    }
-                } else {
-                    elements.termsAcceptBtn.disabled = false;
-                    elements.termsAcceptBtn.textContent = 'Continue';
-                    showError('Failed to save agreement. Please try again.');
-                }
-            });
-            
-            // Disclaimer accept button
-            elements.disclaimerAcceptBtn.addEventListener('click', async () => {
-                elements.disclaimerAcceptBtn.disabled = true;
-                elements.disclaimerAcceptBtn.textContent = 'Processing...';
-                
-                const success = await acceptAgreement('disclaimer');
-                
-                if (success) {
-                    showApp();
-                } else {
-                    elements.disclaimerAcceptBtn.disabled = false;
-                    elements.disclaimerAcceptBtn.textContent = 'Accept & Continue to App';
-                    showError('Failed to save agreement. Please try again.');
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+<!-- Footer with Legal Links -->
+<footer class="bg-dark text-light py-3 mt-4 border-top">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <small class="text-muted">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    FolioForecast is for educational purposes only. Not investment advice.
+                </small>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="/terms" class="text-muted small me-3">Terms</a>
+                <a href="/privacy" class="text-muted small me-3">Privacy</a>
+                <a href="/disclaimer" class="text-muted small me-3">Disclaimer</a>
+                <a href="/pricing" class="text-muted small">Pricing</a>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-12 text-center">
+                <small class="text-muted">© 2026 FolioForecast. All rights reserved.</small>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Load Portfolio Modal -->
+<div class="modal fade" id="loadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Load Portfolio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="portfolioList" class="list-group"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+{% endblock %}
