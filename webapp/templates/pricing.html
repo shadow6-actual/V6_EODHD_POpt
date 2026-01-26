@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pricing - FolioForecast</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -21,6 +23,11 @@
             --accent-green: #10b981;
             --border-color: #2a2a3a;
             --warning: #f59e0b;
+            
+            /* Fonts */
+            --font-display: "DM Serif Display", Georgia, serif;
+            --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-inter: 'Inter', sans-serif;
         }
 
         * {
@@ -30,21 +37,21 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: var(--font-body); /* Updated to DM Sans to match app feel */
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
         }
 
-        /* Navigation */
+        /* Navigation - Synced with Landing Page for "No Pop" */
         .nav {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
-            background: rgba(10, 10, 15, 0.95);
+            background: rgba(10, 10, 15, 0.85); /* Matched transparency */
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
         }
@@ -58,17 +65,36 @@
             align-items: center;
         }
 
-        /* Updated Logo Styling */
+        /* Logo Styles - Exact match to Landing Page */
         .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary); /* Removed gradient to allow span colors */
-            text-decoration: none;
             display: flex;
             align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
         }
 
-        /* Branding Classes */
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+            color: white;
+            font-family: var(--font-body);
+        }
+
+        .logo-text {
+            font-family: var(--font-display);
+            font-size: 1.35rem;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        /* Branding Specifics */
         .sigma {
             font-family: 'Times New Roman', serif;
             font-style: italic;
@@ -77,9 +103,9 @@
         
         .return-r {
             color: var(--accent-green);
-            font-size: 0.8em; /* Scaled down to match lowercase height */
+            font-size: 0.8em; 
             font-weight: 700;
-            vertical-align: middle; /* ADDED: Centers the 'R' vertically */
+            vertical-align: middle;
         }
 
         .nav-links {
@@ -93,6 +119,7 @@
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s;
+            font-size: 0.95rem;
         }
 
         .nav-links a:hover {
@@ -101,23 +128,32 @@
 
         .btn {
             padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 8px; /* Slightly tighter radius on pricing cards, sticking to design */
+            font-weight: 700;
             text-decoration: none;
             transition: all 0.2s;
             cursor: pointer;
             border: none;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-links .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px; /* Match landing page button style */
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
             color: white;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 12px 35px rgba(59, 130, 246, 0.30);
         }
 
         .btn-secondary {
@@ -128,6 +164,7 @@
 
         .btn-secondary:hover {
             background: var(--bg-tertiary);
+            border-color: #2a2a3a;
         }
 
         /* Hero Section */
@@ -139,13 +176,11 @@
         }
 
         .hero h1 {
+            font-family: var(--font-display); /* Updated font */
             font-size: 3rem;
-            font-weight: 700;
+            font-weight: 700; /* Regular weight for serif display often looks bold enough, keeping 700 */
             margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }
 
         .hero p {
@@ -213,7 +248,7 @@
 
         .pricing-tier {
             font-size: 1.25rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
@@ -260,6 +295,7 @@
             display: flex;
             align-items: flex-start;
             gap: 0.75rem;
+            font-size: 0.95rem;
         }
 
         .pricing-features li::before {
@@ -281,33 +317,17 @@
 
         .pricing-cta {
             width: 100%;
-            padding: 1rem;
-            border-radius: 8px;
-            font-weight: 600;
-            text-align: center;
-            text-decoration: none;
-            display: block;
-            transition: all 0.2s;
         }
 
         .pricing-cta.primary {
             background: linear-gradient(135deg, var(--accent-green), #059669);
             color: white;
+            box-shadow: none;
         }
 
         .pricing-cta.primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-        }
-
-        .pricing-cta.secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .pricing-cta.secondary:hover {
-            background: var(--border-color);
         }
 
         /* No Refunds Notice */
@@ -324,7 +344,7 @@
         .refund-notice h3 {
             color: var(--warning);
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
@@ -357,6 +377,7 @@
             text-align: center;
             font-size: 2rem;
             margin-bottom: 2rem;
+            font-family: var(--font-display);
         }
 
         .faq-item {
@@ -419,6 +440,7 @@
             text-align: center;
             font-size: 2rem;
             margin-bottom: 2rem;
+            font-family: var(--font-display);
         }
 
         .comparison-table {
@@ -455,7 +477,6 @@
             border-bottom: none;
         }
 
-        /* CHANGED: Increased specificity to override table cell color */
         .comparison-table td.check {
             color: var(--accent-green);
             font-weight: 700;
@@ -490,7 +511,7 @@
 
         .footer-brand .logo {
             margin-bottom: 1rem;
-            display: inline-block;
+            display: inline-flex; /* Ensures alignment */
         }
 
         .footer-brand p {
@@ -506,7 +527,7 @@
         .footer-column h4 {
             color: var(--text-primary);
             font-size: 0.9rem;
-            font-weight: 600;
+            font-weight: 800;
             margin-bottom: 1rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -539,7 +560,10 @@
 <body>
     <nav class="nav">
         <div class="nav-container">
-            <a href="/" class="logo">F<span class="sigma">σ</span>lioFo<span class="return-r">R</span>ecast</a>
+            <a href="/" class="logo">
+                <div class="logo-icon">FF</div>
+                <span class="logo-text">F<span class="sigma">σ</span>lioFo<span class="return-r">R</span>ecast</span>
+            </a>
             <div class="nav-links">
                 <a href="/#features">Features</a>
                 <a href="/pricing">Pricing</a>
@@ -771,7 +795,10 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-brand">
-                <a href="/" class="logo">F<span class="sigma">σ</span>lioFo<span class="return-r">R</span>ecast</a>
+                <a href="/" class="logo">
+                    <div class="logo-icon">FF</div>
+                    <span class="logo-text">F<span class="sigma">σ</span>lioFo<span class="return-r">R</span>ecast</span>
+                </a>
                 <p>Professional-grade portfolio optimization tools for modern investors.</p>
             </div>
             <div class="footer-links">
