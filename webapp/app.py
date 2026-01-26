@@ -1654,13 +1654,13 @@ def admin_control_background_updater():
 # DATA UPDATE ROUTES (Admin)
 # ============================================================================
 # Auto-start background updater in Railway
-#import os
-#if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DATABASE_URL', '').startswith('postgresql://'):
-#    try:
-#        background_updater.start()
-#        logger.info("Background data updater started automatically")
-#    except Exception as e:
-#        logger.error(f"Failed to start background updater: {e}")
+import os
+if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DATABASE_URL', '').startswith('postgresql://'):
+    try:
+        background_updater.start()
+        logger.info("Background data updater started automatically")
+    except Exception as e:
+        logger.error(f"Failed to start background updater: {e}")
 # ============================================================================
 # 5. ENTRY POINT
 # ============================================================================
