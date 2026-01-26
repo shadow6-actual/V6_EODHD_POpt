@@ -79,6 +79,7 @@
             color: var(--accent-green);
             font-size: 0.8em; /* Scaled down to match lowercase height */
             font-weight: 700;
+            vertical-align: middle; /* ADDED: Centers the 'R' vertically */
         }
 
         .nav-links {
@@ -454,8 +455,9 @@
             border-bottom: none;
         }
 
-        .check {
-            color: var(--accent-green); /* Ensures checkmarks are green */
+        /* CHANGED: Increased specificity to override table cell color */
+        .comparison-table td.check {
+            color: var(--accent-green);
             font-weight: 700;
             font-size: 1.1rem;
         }
