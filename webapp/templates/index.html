@@ -5,12 +5,12 @@
     <div class="row">
         
         <!-- LEFT PANEL: Configuration -->
-        <div class="col-md-4 border-end" id="configPanel">
-            <h4 class="mb-4 text-primary"><i class="fas fa-sliders-h me-2"></i>Portfolio Configuration</h4>
+        <div class="col-md-4 border-end" id="configPanel" style="border-color: var(--color-border, #1e293b) !important;">
+            <h4 class="mb-4" style="color: var(--color-primary, #3b82f6);"><i class="fas fa-sliders-h me-2"></i>Portfolio Configuration</h4>
             
             <!-- Time Period -->
             <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light py-2">
+                <div class="card-header py-2">
                     <h6 class="mb-0 small fw-bold">TIME PERIOD</h6>
                 </div>
                 <div class="card-body">
@@ -29,7 +29,7 @@
 
             <!-- Optimization Settings -->
             <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light py-2">
+                <div class="card-header py-2">
                     <h6 class="mb-0 small fw-bold">OPTIMIZATION</h6>
                 </div>
                 <div class="card-body">
@@ -124,9 +124,9 @@
                     <div class="mb-2" id="robustResamplesField" style="display:none;">
                         <label class="form-label small">Robust Resamples</label>
                         <select class="form-select form-select-sm" id="robustResamples">
-                            <option value="50">50 (Fast)</option>
-                            <option value="100" selected>100 (Balanced)</option>
-                            <option value="200">200 (Thorough)</option>
+                            <option value="25">25 (Fast)</option>
+                            <option value="50">50 (Balanced)</option>
+                            <option value="100" selected>100 (Thorough)</option>
                         </select>
                         <small class="text-muted">More resamples = more stable but slower</small>
                     </div>
@@ -135,7 +135,7 @@
             
             <!-- Health Score Settings (Collapsible) -->
             <div class="card mb-3 shadow-sm" id="healthScoreCard" style="display:none;">
-                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 small fw-bold">HEALTH SCORE WEIGHTS</h6>
                     <button class="btn btn-xs btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#healthScoreBody">
                         <i class="fas fa-cog small"></i>
@@ -172,66 +172,57 @@
             </div>
 
             <!-- Assets Table -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 small fw-bold">PORTFOLIO ASSETS</h6>
-                    <button class="btn btn-xs btn-outline-primary py-0 px-2" onclick="addAssetRow()">
-                        <i class="fas fa-plus small"></i> Add
-                    </button>
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 small fw-bold">ASSETS</h6>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary btn-sm py-0" onclick="addAssetRow()"><i class="fas fa-plus me-1"></i>Add</button>
+                        <button class="btn btn-outline-secondary btn-sm py-0" onclick="quickPasteTickers()"><i class="fas fa-paste me-1"></i>Paste</button>
+                        <button class="btn btn-outline-info btn-sm py-0" onclick="importPortfolioCSV()"><i class="fas fa-file-import me-1"></i>CSV</button>
+                        <button class="btn btn-outline-info btn-sm py-0" onclick="exportPortfolioCSV()"><i class="fas fa-file-export me-1"></i>Export</button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
-                        <table class="table table-sm table-hover align-middle mb-0 small" id="assetsTable">
-                            <thead class="table-light sticky-top">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 small" id="assetsTable">
+                            <thead class="table-light">
                                 <tr>
-                                    <th style="width: 35%">Ticker</th>
-                                    <th style="width: 20%">Alloc %</th>
-                                    <th style="width: 18%" class="constraint-col">Min %</th>
-                                    <th style="width: 18%" class="constraint-col">Max %</th>
-                                    <th style="width: 9%"></th>
+                                    <th>Ticker</th>
+                                    <th>Alloc %</th>
+                                    <th class="constraint-col">Min %</th>
+                                    <th class="constraint-col">Max %</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="assetsTableBody"></tbody>
-                            <tfoot class="table-light sticky-bottom">
-                                <tr>
-                                    <td class="text-end">Total:</td>
-                                    <td id="totalAllocation" class="text-primary">0%</td>
-                                    <td colspan="3"></td>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer p-2 bg-white">
-                    <button class="btn btn-primary w-100" id="runOptimizeBtn">
-                        <i class="fas fa-bolt me-2"></i>Run Optimization
-                    </button>
+                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                    <span class="small text-muted">Total:</span>
+                    <span id="totalAllocation" class="fw-bold">0%</span>
                 </div>
             </div>
 
-            <!-- Group Constraints (NEW) -->
-            <div class="card mt-3 shadow-sm" id="groupConstraintsCard" style="display:none;">
-                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+            <!-- Group Constraints Card (Pro Only) -->
+            <div class="card mb-3 shadow-sm" id="groupConstraintsCard" style="display:none;">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 small fw-bold">GROUP CONSTRAINTS</h6>
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" id="useGroupConstraints">
                         <label class="form-check-label small" for="useGroupConstraints">Enable</label>
                     </div>
                 </div>
-                <div class="card-body p-2">
-                    <p class="small text-muted mb-2">
-                        <i class="fas fa-info-circle me-1"></i>Set allocation limits by asset group
-                    </p>
-                    
-                    <div class="table-responsive" style="max-height: 25vh; overflow-y: auto;">
-                        <table class="table table-sm table-hover mb-0 small" id="groupConstraintsTable">
-                            <thead class="table-light sticky-top">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 small">
+                            <thead class="table-light">
                                 <tr>
-                                    <th style="width: 30%">Group</th>
-                                    <th style="width: 12%" class="text-center">Assets</th>
-                                    <th style="width: 16%" class="text-center">Current</th>
-                                    <th style="width: 21%">Min %</th>
-                                    <th style="width: 21%">Max %</th>
+                                    <th>Group</th>
+                                    <th class="text-center">Assets</th>
+                                    <th class="text-center">Current</th>
+                                    <th>Min %</th>
+                                    <th>Max %</th>
                                 </tr>
                             </thead>
                             <tbody id="groupConstraintsBody"></tbody>
@@ -239,255 +230,228 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Save Portfolio -->
-            <div class="card mt-3 shadow-sm">
-                <div class="card-body p-2">
+            
+            <!-- Save/Load Portfolio -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header py-2">
+                    <h6 class="mb-0 small fw-bold">SAVE / LOAD</h6>
+                </div>
+                <div class="card-body">
                     <div class="input-group input-group-sm mb-2">
                         <input type="text" class="form-control" id="portfolioName" placeholder="Portfolio name">
-                        <button class="btn btn-outline-secondary" onclick="savePortfolio()">
-                            <i class="fas fa-save"></i> Save
-                        </button>
-                        <button class="btn btn-outline-secondary" onclick="loadPortfolioModal()">
-                            <i class="fas fa-folder-open"></i> Load
-                        </button>
+                        <button class="btn btn-outline-primary" onclick="savePortfolio()"><i class="fas fa-save"></i></button>
+                        <button class="btn btn-outline-secondary" onclick="loadPortfolioModal()"><i class="fas fa-folder-open"></i></button>
                     </div>
-                    <div class="form-check form-switch mb-2" id="publicPortfolioOption" style="display: none;">
+                    <div class="form-check mb-2" id="publicPortfolioOption" style="display:none;">
                         <input class="form-check-input" type="checkbox" id="makePortfolioPublic">
-                        <label class="form-check-label small" for="makePortfolioPublic">
-                            <i class="fas fa-globe me-1"></i>Share in public rankings
-                        </label>
+                        <label class="form-check-label small" for="makePortfolioPublic">Make portfolio public (show in rankings)</label>
                     </div>
-                    <div class="btn-group btn-group-sm w-100 mb-2" role="group">
-                        <button type="button" class="btn btn-outline-secondary" onclick="exportPortfolioCSV()" title="Export to CSV">
-                            <i class="fas fa-download"></i> Export
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="importPortfolioCSV()" title="Import from CSV">
-                            <i class="fas fa-upload"></i> Import
-                        </button>
-                        <button type="button" class="btn btn-outline-info" onclick="quickPasteTickers()" title="Quick paste tickers">
-                            <i class="fas fa-paste"></i> Paste
-                        </button>
-                    </div>
-                    
-                    <label class="form-label small mb-1">Manage Saved Portfolios</label>
-                    <div class="input-group input-group-sm">
-                        <select class="form-select" id="portfolioManager" onchange="portfolioSelected()">
+                    <div class="d-flex gap-2 align-items-center">
+                        <select class="form-select form-select-sm" id="portfolioManager" onchange="portfolioSelected()">
                             <option value="">Select to manage...</option>
                         </select>
-                        <button class="btn btn-outline-danger" onclick="deleteSelectedPortfolio()" id="deletePortfolioBtn" disabled>
+                        <button class="btn btn-sm btn-outline-danger" id="deletePortfolioBtn" onclick="deleteSelectedPortfolio()" disabled>
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
             </div>
+            
+            <!-- RUN BUTTON -->
+            <div class="d-grid gap-2 mb-4">
+                <button class="btn btn-primary btn-lg" id="runOptimizeBtn">
+                    <i class="fas fa-rocket me-2"></i>Run Optimization
+                </button>
+            </div>
         </div>
-
+        
         <!-- RIGHT PANEL: Results -->
         <div class="col-md-8" id="resultsPanel">
+            <h4 class="mb-4" style="color: var(--color-primary, #3b82f6);"><i class="fas fa-chart-pie me-2"></i>Results</h4>
             
-            <!-- Disclaimer Banner Above Results -->
-            <div class="alert alert-warning py-2 mb-3" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Not investment advice.</strong> Results are hypothetical and based on historical data. Past performance ≠ future results.
-                <a href="/disclaimer" target="_blank" class="ms-1">Full disclaimer</a>
+            <!-- Placeholder -->
+            <div id="resultsPlaceholder" class="text-center py-5">
+                <i class="fas fa-chart-line fa-4x mb-3" style="color: var(--color-text-dim, #64748b);"></i>
+                <p class="text-muted">Configure your portfolio and click "Run Optimization" to see results</p>
             </div>
             
-            <div id="resultsPlaceholder" class="text-center py-5 text-muted">
-                <i class="fas fa-chart-pie fa-4x mb-3 text-light"></i>
-                <h5>Ready to Optimize</h5>
-                <p>Configure your assets and click "Run Optimization"</p>
-            </div>
-
+            <!-- Loading Spinner -->
             <div id="loadingSpinner" class="text-center py-5" style="display:none;">
-                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-                <p class="text-muted mt-3">Optimizing...</p>
+                <div class="spinner-border" style="color: var(--color-primary, #3b82f6);" role="status">
+                    <span class="visually-hidden">Running optimization...</span>
+                </div>
+                <p class="mt-3 text-muted">Running optimization...</p>
             </div>
-
+            
+            <!-- Results Content -->
             <div id="resultsContent" style="display:none;">
-                <h4 class="mb-3">Performance Comparison</h4>
                 
-                <!-- Comparison Table -->
-                <div class="table-responsive mb-4">
-                    <table class="table table-sm table-hover small" id="comparisonTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Metric</th>
-                                <th id="colYour">Your Portfolio</th>
-                                <th id="colOpt">Optimized</th>
-                                <th id="colBench">Benchmark</th>
-                            </tr>
-                        </thead>
-                        <tbody id="comparisonBody"></tbody>
-                    </table>
-                </div>
-
-                <!-- Allocation Tables -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-primary text-white py-2">
-                                <h6 class="mb-0 small" id="optCardTitle">Optimized Portfolio</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-sm table-hover mb-0 small">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Ticker</th>
-                                            <th class="text-end">Weight</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="optTable"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-secondary text-white py-2">
-                                <h6 class="mb-0 small">Your Portfolio</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-sm table-hover mb-0 small">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Ticker</th>
-                                            <th class="text-end">Weight</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="yourTable"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-success text-white py-2">
-                                <h6 class="mb-0 small" id="benchCardTitle">Benchmark</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-sm table-hover mb-0 small">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Ticker</th>
-                                            <th class="text-end">Weight</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="benchTable"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Group Allocations Display (NEW) -->
-                <div class="card mb-4 shadow-sm" id="groupAllocationsSection" style="display:none;">
-                    <div class="card-header bg-info text-white py-2">
-                        <h6 class="mb-0 small"><i class="fas fa-layer-group me-2"></i>Group Allocations</h6>
+                <!-- Performance Comparison Table -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0 small fw-bold">PERFORMANCE COMPARISON</h6>
                     </div>
                     <div class="card-body p-0">
-                        <table class="table table-sm table-hover mb-0 small">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Group</th>
-                                    <th class="text-end">Your Portfolio</th>
-                                    <th class="text-end">Optimized</th>
-                                    <th class="text-center">Constraints</th>
-                                </tr>
-                            </thead>
-                            <tbody id="groupAllocBody"></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Your Portfolio</th>
+                                        <th id="optCardTitle" class="text-primary">Optimized</th>
+                                        <th id="colBench" class="text-muted">Benchmark</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparisonBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Tabs -->
+                
+                <!-- Allocation Tables -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header py-2 bg-primary text-white">
+                                <h6 class="mb-0 small fw-bold" id="optCardTitle">OPTIMIZED</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                    <table class="table table-sm mb-0 small">
+                                        <tbody id="optTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header py-2 bg-secondary text-white">
+                                <h6 class="mb-0 small fw-bold">YOUR PORTFOLIO</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                    <table class="table table-sm mb-0 small">
+                                        <tbody id="yourTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header py-2 bg-success text-white">
+                                <h6 class="mb-0 small fw-bold" id="benchCardTitle">BENCHMARK</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                    <table class="table table-sm mb-0 small">
+                                        <tbody id="benchTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Group Allocations Section -->
+                <div class="card mb-3 shadow-sm" id="groupAllocationsSection" style="display:none;">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0 small fw-bold">GROUP ALLOCATIONS</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Group</th>
+                                        <th class="text-end">Your</th>
+                                        <th class="text-end">Optimized</th>
+                                        <th class="text-center">Constraint</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="groupAllocBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts in Tabs -->
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white">
-                        <ul class="nav nav-tabs card-header-tabs" id="resultTabs">
-                            <li class="nav-item">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#frontier">Efficient Frontier</a>
+                    <div class="card-header py-0">
+                        <ul class="nav nav-tabs card-header-tabs small" id="chartTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active py-2" id="frontier-tab" data-bs-toggle="tab" data-bs-target="#frontier" type="button">Frontier</button>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#drawdown">Drawdown</a>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link py-2" id="drawdown-tab" data-bs-toggle="tab" data-bs-target="#drawdown" type="button">Drawdown</button>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#monthly">Monthly Returns</a>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link py-2" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button">Monthly</button>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#correlation">Correlation</a>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link py-2" id="correlation-tab" data-bs-toggle="tab" data-bs-target="#correlation" type="button">Correlation</button>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#diversification">Diversification</a>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link py-2" id="diversification-tab" data-bs-toggle="tab" data-bs-target="#diversification" type="button">Diversification</button>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#savedPortfolios">Saved Portfolios</a>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link py-2" id="stress-tab" data-bs-toggle="tab" data-bs-target="#stress" type="button">Stress Tests</button>
                             </li>
                         </ul>
                     </div>
                     <div class="card-body">
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="frontier">
-                                <div id="frontierChart" style="height: 500px;"></div>
+                        <div class="tab-content" id="chartTabsContent">
+                            <div class="tab-pane fade show active" id="frontier" role="tabpanel">
+                                <div id="frontierChart" style="height: 400px;"></div>
                             </div>
-                            <div class="tab-pane fade" id="drawdown">
+                            <div class="tab-pane fade" id="drawdown" role="tabpanel">
                                 <div id="drawdownChart" style="height: 400px;"></div>
-                                <h6 class="mt-3 text-muted small">Historical Stress Periods</h6>
-                                <table class="table table-sm" id="stressTable">
-                                    <thead><tr><th>Event</th><th>Start</th><th>End</th><th class="text-end">Return</th></tr></thead>
-                                    <tbody id="stressTableBody"></tbody>
-                                </table>
                             </div>
-                            <div class="tab-pane fade" id="monthly">
-                                <div id="monthlyHeatmap"></div>
+                            <div class="tab-pane fade" id="monthly" role="tabpanel">
+                                <div id="monthlyHeatmap" style="min-height: 450px;"></div>
                             </div>
-                            <div class="tab-pane fade" id="correlation">
+                            <div class="tab-pane fade" id="correlation" role="tabpanel">
                                 <div id="corrHeatmap" style="height: 500px;"></div>
                             </div>
-                            <div class="tab-pane fade" id="diversification">
-                                <div class="row mb-4">
-                                    <div class="col-12">
-                                        <h6 class="text-muted small mb-3"><i class="fas fa-chart-radar me-2"></i>Portfolio Health Comparison</h6>
-                                    </div>
-                                </div>
-                                
+                            <div class="tab-pane fade" id="diversification" role="tabpanel">
                                 <!-- Health Score Cards -->
-                                <div class="row g-3 mb-4" id="healthScoreCards">
+                                <div class="row mb-3">
                                     <div class="col-md-4">
-                                        <div class="card h-100 border-primary">
-                                            <div class="card-body text-center">
-                                                <h6 class="card-subtitle mb-2 text-muted small">Optimized</h6>
-                                                <h2 class="display-4 text-primary mb-0" id="optHealthScore">--</h2>
-                                                <p class="text-muted small mb-0">Health Score</p>
+                                        <div class="card text-center h-100">
+                                            <div class="card-header py-1 bg-primary text-white small">Optimized Health</div>
+                                            <div class="card-body py-2">
+                                                <span class="display-4 mb-0" id="optHealthScore">--</span>
+                                                <p class="small text-muted mb-0">/100</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="card h-100 border-secondary">
-                                            <div class="card-body text-center">
-                                                <h6 class="card-subtitle mb-2 text-muted small">Your Portfolio</h6>
-                                                <h2 class="display-4 text-secondary mb-0" id="userHealthScore">--</h2>
-                                                <p class="text-muted small mb-0">Health Score</p>
+                                        <div class="card text-center h-100">
+                                            <div class="card-header py-1 bg-secondary text-white small">Your Health</div>
+                                            <div class="card-body py-2">
+                                                <span class="display-4 mb-0" id="userHealthScore">--</span>
+                                                <p class="small text-muted mb-0">/100</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="card h-100 border-success">
-                                            <div class="card-body text-center">
-                                                <h6 class="card-subtitle mb-2 text-muted small">Benchmark</h6>
-                                                <h2 class="display-4 text-success mb-0" id="benchHealthScore">--</h2>
-                                                <p class="text-muted small mb-0">Health Score</p>
+                                        <div class="card text-center h-100">
+                                            <div class="card-header py-1 bg-success text-white small">Benchmark Health</div>
+                                            <div class="card-body py-2">
+                                                <span class="display-4 mb-0" id="benchHealthScore">--</span>
+                                                <p class="small text-muted mb-0">/100</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Diversification Metrics Table -->
-                                <div class="table-responsive mb-4">
-                                    <table class="table table-sm table-hover small" id="diversificationTable">
+                                <!-- Metrics Table -->
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm table-hover small">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Metric</th>
-                                                <th class="text-center">Your Portfolio</th>
+                                                <th class="text-center">Your</th>
                                                 <th class="text-center">Optimized</th>
                                                 <th class="text-center">Benchmark</th>
                                                 <th>Interpretation</th>
@@ -496,28 +460,24 @@
                                         <tbody id="diversificationBody"></tbody>
                                     </table>
                                 </div>
-                                
                                 <!-- Radar Chart -->
                                 <div id="radarChart" style="height: 450px;"></div>
                             </div>
-                            <div class="tab-pane fade" id="savedPortfolios">
-                                <div class="row mb-3">
-                                    <div class="col-md-8">
-                                        <h6 class="text-muted small">Compare Saved Portfolios</h6>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="input-group input-group-sm mb-1">
-                                            <select class="form-select form-select-sm" id="portfolioCompareSelect" multiple style="height: 120px;">
-                                                <option value="SPY.US">S&P 500 (SPY)</option>
-                                            </select>
-                                        </div>
-                                        <button class="btn btn-sm btn-primary w-100" onclick="compareSelectedPortfolios()">
-                                            <i class="fas fa-chart-bar me-1"></i>Compare Selected
-                                        </button>
-                                        <small class="text-muted d-block mt-1">Hold Ctrl to select multiple</small>
-                                    </div>
+                            <div class="tab-pane fade" id="stress" role="tabpanel">
+                                <h6 class="mb-3">Historical Stress Test Results</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover small">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Event</th>
+                                                <th>Start</th>
+                                                <th>End</th>
+                                                <th class="text-end">Return</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="stressTableBody"></tbody>
+                                    </table>
                                 </div>
-                                <div id="portfolioComparisonTable"></div>
                             </div>
                         </div>
                     </div>
@@ -527,41 +487,16 @@
     </div>
 </div>
 
-<!-- Footer with Legal Links -->
-<footer class="bg-dark text-light py-3 mt-4 border-top">
-    <div class="container-fluid">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <small class="text-muted">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
-                    FolioForecast is for educational purposes only. Not investment advice.
-                </small>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <a href="/terms" class="text-muted small me-3">Terms</a>
-                <a href="/privacy" class="text-muted small me-3">Privacy</a>
-                <a href="/disclaimer" class="text-muted small me-3">Disclaimer</a>
-                <a href="/pricing" class="text-muted small">Pricing</a>
-            </div>
-        </div>
-        <div class="row mt-2">
-            <div class="col-12 text-center">
-                <small class="text-muted">© 2026 FolioForecast. All rights reserved.</small>
-            </div>
-        </div>
-    </div>
-</footer>
-
 <!-- Load Portfolio Modal -->
 <div class="modal fade" id="loadModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content" style="background: var(--color-bg-card, #1a2235); color: var(--color-text, #f1f5f9); border: 1px solid var(--color-border, #1e293b);">
+            <div class="modal-header" style="border-bottom-color: var(--color-border, #1e293b);">
                 <h5 class="modal-title">Load Portfolio</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="portfolioList" class="list-group"></div>
+                <div class="list-group" id="portfolioList"></div>
             </div>
         </div>
     </div>
@@ -569,5 +504,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/main.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}
