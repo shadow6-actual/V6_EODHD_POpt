@@ -19,9 +19,14 @@ const BASIC_METHODS = [
     'equal_weight', 
     'risk_parity'
 ];
+
+// NEW: Target-based MVO methods (Premium+)
+const TARGET_METHODS = [
+    'min_vol_target_return',    // Minimize Volatility subject to Target Return
+    'max_return_target_vol',    // Maximize Return subject to Target Volatility
+];
+
 const ADVANCED_METHODS = [
-    'min_vol_target_return',
-    'max_return_target_vol',
     'min_cvar', 
     'min_cvar_target_return', 
     'max_return_target_cvar', 
@@ -33,6 +38,7 @@ const ADVANCED_METHODS = [
     'max_omega_target_return', 
     'max_sortino_target_return'
 ];
+
 const ROBUST_METHODS = [
     'robust_max_sharpe',
     'robust_min_volatility',
@@ -258,6 +264,7 @@ function updateOptimizationMethodsDropdown() {
     if (!select) return;
     
     const tier = getUserTier();
+    const canTarget = tier === 'premium' || tier === 'pro' || tier === 'trial';
     const canAdvanced = tier === 'premium' || tier === 'pro' || tier === 'trial';
     const canRobust = tier === 'premium' || tier === 'pro' || tier === 'trial';
     
@@ -267,7 +274,11 @@ function updateOptimizationMethodsDropdown() {
         const originalText = option.getAttribute('data-original-text') || option.text.replace(' 🔒', '').replace(' (Premium)', '').replace(' (Pro)', '');
         option.setAttribute('data-original-text', originalText);
         
-        if (ADVANCED_METHODS.includes(method) && !canAdvanced) {
+        if (TARGET_METHODS.includes(method) && !canTarget) {
+            option.text = originalText + ' 🔒';
+            option.disabled = true;
+            option.style.color = '#6c757d';
+        } else if (ADVANCED_METHODS.includes(method) && !canAdvanced) {
             option.text = originalText + ' 🔒';
             option.disabled = true;
             option.style.color = '#6c757d';
@@ -284,7 +295,8 @@ function updateOptimizationMethodsDropdown() {
     
     // If current selection is locked, switch to max_sharpe
     const currentValue = select.value;
-    if ((ADVANCED_METHODS.includes(currentValue) && !canAdvanced) ||
+    if ((TARGET_METHODS.includes(currentValue) && !canTarget) ||
+        (ADVANCED_METHODS.includes(currentValue) && !canAdvanced) ||
         (ROBUST_METHODS.includes(currentValue) && !canRobust)) {
         select.value = 'max_sharpe';
         updateConditionalFields();
