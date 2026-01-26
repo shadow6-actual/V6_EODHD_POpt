@@ -1471,23 +1471,6 @@ def compare_portfolios():
     except Exception as e:
         logger.error(f"Portfolio comparison error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
-        
-# ============================================================================
-# DATA UPDATER API ROUTES
-# Add these routes to your webapp/app.py file
-# ============================================================================
-
-# Add this import at the top of app.py:
-# from webapp.data_updater import (
-#     background_updater, get_update_statistics, trigger_manual_update,
-#     update_specific_tickers, UPDATE_ENABLED
-# )
-
-# Add these routes after your existing routes:
-
-# ============================================================================
-# DATA UPDATE ROUTES (Admin)
-# ============================================================================
 
 @app.route('/api/admin/data-status')
 @require_auth
@@ -1632,27 +1615,6 @@ def admin_control_background_updater():
         logger.error(f"Background updater control error: {e}")
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================================================
-# AUTO-START BACKGROUND UPDATER (Optional)
-# Add this at the bottom of app.py, before the if __name__ == '__main__': block
-# ============================================================================
-
-# Uncomment to auto-start background updates when the app starts:
-# def start_background_services():
-#     """Start background services when app starts"""
-#     from webapp.data_updater import background_updater, UPDATE_ENABLED
-#     if UPDATE_ENABLED:
-#         background_updater.start()
-# 
-# # Only start in production (not during imports or tests)
-# import os
-# if os.environ.get('RAILWAY_ENVIRONMENT'):
-#     start_background_services()
-
-# ============================================================================
-# DATA UPDATE ROUTES (Admin)
-# ============================================================================
 # Auto-start background updater in Railway
 import os
 if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DATABASE_URL', '').startswith('postgresql://'):
