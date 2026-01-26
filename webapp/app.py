@@ -28,6 +28,11 @@ from webapp.subscription import (
     get_max_assets, can_save_portfolio, get_pricing_data,
     require_feature, require_tier, start_trial, TRIAL_PERIOD_DAYS
 )
+from webapp.data_updater import (
+    background_updater, get_update_statistics, trigger_manual_update,
+    update_specific_tickers
+)
+
 
 # 1. SETUP PATHS & LOGGING
 # ============================================================================
@@ -1645,6 +1650,17 @@ def admin_control_background_updater():
 # if os.environ.get('RAILWAY_ENVIRONMENT'):
 #     start_background_services()
 
+# ============================================================================
+# DATA UPDATE ROUTES (Admin)
+# ============================================================================
+# Auto-start background updater in Railway
+#import os
+#if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DATABASE_URL', '').startswith('postgresql://'):
+#    try:
+#        background_updater.start()
+#        logger.info("Background data updater started automatically")
+#    except Exception as e:
+#        logger.error(f"Failed to start background updater: {e}")
 # ============================================================================
 # 5. ENTRY POINT
 # ============================================================================
