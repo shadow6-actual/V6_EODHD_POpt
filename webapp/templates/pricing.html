@@ -58,14 +58,27 @@
             align-items: center;
         }
 
+        /* Updated Logo Styling */
         .logo {
             font-size: 1.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary); /* Removed gradient to allow span colors */
             text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Branding Classes */
+        .sigma {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--accent-blue);
+        }
+        
+        .return-r {
+            color: var(--accent-green);
+            font-size: 0.8em; /* Scaled down to match lowercase height */
+            font-weight: 700;
         }
 
         .nav-links {
@@ -442,7 +455,7 @@
         }
 
         .check {
-            color: var(--accent-green);
+            color: var(--accent-green); /* Ensures checkmarks are green */
             font-weight: 700;
             font-size: 1.1rem;
         }
@@ -522,10 +535,9 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="nav">
         <div class="nav-container">
-            <a href="/" class="logo">FolioForecast</a>
+            <a href="/" class="logo">F<span class="sigma">σ</span>lioFo<span class="return-r">R</span>ecast</a>
             <div class="nav-links">
                 <a href="/#features">Features</a>
                 <a href="/pricing">Pricing</a>
@@ -534,16 +546,13 @@
         </div>
     </nav>
 
-    <!-- Hero -->
     <section class="hero">
         <h1>Simple, Transparent Pricing</h1>
         <p>Start free, upgrade when you need more power. No hidden fees, no surprises.</p>
     </section>
 
-    <!-- Pricing Cards -->
     <section class="pricing-section">
         <div class="pricing-grid">
-            <!-- Free Tier -->
             <div class="pricing-card">
                 <div class="pricing-tier">Free</div>
                 <div class="pricing-description">Perfect for getting started</div>
@@ -566,7 +575,6 @@
                 <a href="/app" class="pricing-cta secondary">Get Started Free</a>
             </div>
 
-            <!-- Premium Tier -->
             <div class="pricing-card">
                 <div class="pricing-tier">Premium</div>
                 <div class="pricing-description">For serious investors</div>
@@ -590,7 +598,6 @@
                 <a href="/app" class="pricing-cta secondary">Start Premium</a>
             </div>
 
-            <!-- Pro Tier - NOW FEATURED -->
             <div class="pricing-card featured">
                 <div class="pricing-tier">Pro</div>
                 <div class="pricing-description">For professionals & teams</div>
@@ -614,7 +621,6 @@
             </div>
         </div>
 
-        <!-- No Refunds Notice -->
         <div class="refund-notice">
             <h3>⚠️ Important: No Refunds Policy</h3>
             <p>All subscription payments are final and non-refundable. We encourage you to fully evaluate our free tier before subscribing. 
@@ -622,7 +628,6 @@
         </div>
     </section>
 
-    <!-- Feature Comparison -->
     <section class="comparison-section">
         <h2>Feature Comparison</h2>
         <table class="comparison-table">
@@ -699,7 +704,6 @@
         </table>
     </section>
 
-    <!-- FAQ Section -->
     <section class="faq-section">
         <h2>Frequently Asked Questions</h2>
 
@@ -762,11 +766,10 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-brand">
-                <a href="/" class="logo">FolioForecast</a>
+                <a href="/" class="logo">F<span class="sigma">σ</span>lioFo<span class="return-r">R</span>ecast</a>
                 <p>Professional-grade portfolio optimization tools for modern investors.</p>
             </div>
             <div class="footer-links">
