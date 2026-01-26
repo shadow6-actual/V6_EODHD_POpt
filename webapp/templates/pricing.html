@@ -178,8 +178,8 @@
         }
 
         .pricing-card.featured {
-            border-color: var(--accent-blue);
-            background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, var(--bg-secondary) 100%);
+            border-color: var(--accent-green);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, var(--bg-secondary) 100%);
         }
 
         .pricing-card.featured::before {
@@ -188,7 +188,7 @@
             top: -12px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            background: linear-gradient(135deg, var(--accent-green), #059669);
             color: white;
             padding: 0.25rem 1rem;
             border-radius: 20px;
@@ -277,13 +277,13 @@
         }
 
         .pricing-cta.primary {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            background: linear-gradient(135deg, var(--accent-green), #059669);
             color: white;
         }
 
         .pricing-cta.primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
         }
 
         .pricing-cta.secondary {
@@ -444,6 +444,7 @@
         .check {
             color: var(--accent-green);
             font-weight: 700;
+            font-size: 1.1rem;
         }
 
         .cross {
@@ -566,7 +567,7 @@
             </div>
 
             <!-- Premium Tier -->
-            <div class="pricing-card featured">
+            <div class="pricing-card">
                 <div class="pricing-tier">Premium</div>
                 <div class="pricing-description">For serious investors</div>
                 <div class="pricing-amount">
@@ -585,11 +586,11 @@
                     <li class="disabled">Diversification analytics</li>
                     <li class="disabled">API access</li>
                 </ul>
-                <a href="/app" class="pricing-cta primary">Start Premium</a>
+                <a href="/app" class="pricing-cta secondary">Start Premium</a>
             </div>
 
-            <!-- Pro Tier -->
-            <div class="pricing-card">
+            <!-- Pro Tier - NOW FEATURED -->
+            <div class="pricing-card featured">
                 <div class="pricing-tier">Pro</div>
                 <div class="pricing-description">For professionals & teams</div>
                 <div class="pricing-amount">
@@ -608,7 +609,7 @@
                     <li>Diversification analytics</li>
                     <li>Priority support</li>
                 </ul>
-                <a href="/app" class="pricing-cta secondary">Start Pro</a>
+                <a href="/app" class="pricing-cta primary">Start Pro</a>
             </div>
         </div>
 
