@@ -45,6 +45,48 @@ const ROBUST_METHODS = [
     'robust_min_vol_target_return',
     'robust_max_return_target_vol'
 ];
+// ============================================================================
+// DIVERSIFICATION QUALITY LABELS
+// ============================================================================
+
+function getDiversificationLabel(metric, value) {
+    // Returns { label: string, class: string } based on metric thresholds
+    if (metric === 'hhi') {
+        // HHI: Lower is more diversified (0 = perfect diversification, 1 = single asset)
+        if (value > 0.25) return { label: 'Highly Concentrated', class: 'text-danger' };
+        if (value > 0.15) return { label: 'Moderately Concentrated', class: 'text-warning' };
+        return { label: 'Well Diversified', class: 'text-success' };
+    }
+    if (metric === 'effective_num_bets' || metric === 'enb') {
+        // ENB: Higher is more diversified
+        if (value < 3) return { label: 'Few Independent Bets', class: 'text-danger' };
+        if (value < 7) return { label: 'Moderate Diversification', class: 'text-warning' };
+        return { label: 'Well Diversified', class: 'text-success' };
+    }
+    if (metric === 'diversification_ratio' || metric === 'dr') {
+        // DR: Higher means more diversification benefit (1.0 = no benefit)
+        if (value < 1.1) return { label: 'Low Diversification Benefit', class: 'text-danger' };
+        if (value < 1.3) return { label: 'Moderate Benefit', class: 'text-warning' };
+        return { label: 'Good Diversification Benefit', class: 'text-success' };
+    }
+    if (metric === 'health_score') {
+        // Health Score: 0-100, higher is better
+        if (value < 40) return { label: 'Needs Improvement', class: 'text-danger' };
+        if (value < 70) return { label: 'Fair', class: 'text-warning' };
+        return { label: 'Healthy', class: 'text-success' };
+    }
+    return { label: '', class: '' };
+}
+
+function formatDivMetricWithLabel(value, metric, decimals) {
+    if (value === undefined || value === null) return '-';
+    const formatted = value.toFixed(decimals);
+    const labelInfo = getDiversificationLabel(metric, value);
+    if (labelInfo.label) {
+        return `${formatted} <small class="${labelInfo.class}">(${labelInfo.label})</small>`;
+    }
+    return formatted;
+}
 
 // ============================================================================
 // CLERK AUTHENTICATION
@@ -793,8 +835,48 @@ window.updateConditionalFields = function() {
         document.getElementById('targetTEField').style.display = 'block';
     }
     
+    // Update method hint based on selected group
+    updateMethodHint(goal);
+    
     updateGroupConstraintsDisplay();
 };
+// Method category hints for user guidance
+function updateMethodHint(goal) {
+    const hintEl = document.getElementById('methodHint');
+    if (!hintEl) return;
+    
+    const hints = {
+        // Balanced Growth
+        'max_sharpe': 'Balanced growth methods work well for most long-term investors.',
+        'risk_parity': 'Balanced growth methods work well for most long-term investors.',
+        'max_sortino_target_return': 'Balanced growth methods work well for most long-term investors.',
+        // Minimize Downside
+        'min_volatility': 'Downside-focused methods prioritize smoother returns over maximum growth.',
+        'min_cvar': 'Downside-focused methods prioritize smoother returns over maximum growth.',
+        'min_drawdown_target_return': 'Downside-focused methods prioritize smoother returns over maximum growth.',
+        // Target-Based
+        'min_vol_target_return': 'Target-based methods let you specify your desired return or risk level.',
+        'max_return_target_vol': 'Target-based methods let you specify your desired return or risk level.',
+        // Benchmark
+        'min_tracking_error': 'Benchmark methods are useful when you want to stay close to an index.',
+        'max_information_ratio': 'Benchmark methods are useful when you want to stay close to an index.',
+        'max_excess_return_target_te': 'Benchmark methods are useful when you want to stay close to an index.',
+        // Advanced
+        'max_kelly': 'Advanced methods require understanding of their specific trade-offs.',
+        'max_omega_target_return': 'Advanced methods require understanding of their specific trade-offs.',
+        'min_cvar_target_return': 'Advanced methods require understanding of their specific trade-offs.',
+        'max_return_target_cvar': 'Advanced methods require understanding of their specific trade-offs.',
+        // Robust
+        'robust_max_sharpe': 'Robust methods use resampling to reduce sensitivity to specific time periods.',
+        'robust_min_volatility': 'Robust methods use resampling to reduce sensitivity to specific time periods.',
+        'robust_min_vol_target_return': 'Robust methods use resampling to reduce sensitivity to specific time periods.',
+        'robust_max_return_target_vol': 'Robust methods use resampling to reduce sensitivity to specific time periods.',
+        // Baseline
+        'equal_weight': 'Equal weight is a simple baseline—useful for comparison.'
+    };
+    
+    hintEl.textContent = hints[goal] || 'Select an optimization method to see guidance.';
+}
 
 // ============================================================================
 // ASSET TABLE MANAGEMENT
@@ -1499,24 +1581,27 @@ function renderResults(data) {
         tbody.appendChild(sepRow);
         
         const divMetrics = [
-            {label: 'Portfolio Health Score', key: 'health_score', suffix: '/100', decimals: 1},
-            {label: 'HHI (Concentration)', key: 'hhi', suffix: '', decimals: 4},
-            {label: 'Diversification Ratio', key: 'diversification_ratio', suffix: '', decimals: 2},
-            {label: 'Effective # of Bets', key: 'effective_num_bets', suffix: '', decimals: 1}
+            {label: 'Portfolio Health Score', key: 'health_score', suffix: '/100', decimals: 1, showLabel: true},
+            {label: 'HHI (Concentration)', key: 'hhi', suffix: '', decimals: 4, showLabel: true},
+            {label: 'Diversification Ratio', key: 'diversification_ratio', suffix: '', decimals: 2, showLabel: true},
+            {label: 'Effective # of Bets', key: 'effective_num_bets', suffix: '', decimals: 1, showLabel: true}
         ];
         
         divMetrics.forEach(m => {
             const row = document.createElement('tr');
             
-            const formatVal = (divObj) => {
+            const formatVal = (divObj, showQualitative = false) => {
                 if (!divObj || divObj[m.key] === undefined) return '-';
+                if (showQualitative && m.showLabel) {
+                    return formatDivMetricWithLabel(divObj[m.key], m.key, m.decimals) + m.suffix;
+                }
                 return divObj[m.key].toFixed(m.decimals) + m.suffix;
             };
             
             row.innerHTML = `
                 <td>${m.label}</td>
-                <td>${formatVal(userDiv)}</td>
-                <td class="fw-bold text-primary">${formatVal(optDiv)}</td>
+                <td>${formatVal(userDiv, true)}</td>
+                <td class="fw-bold text-primary">${formatVal(optDiv, true)}</td>
                 <td class="text-muted">${formatVal(benchDiv)}</td>
             `;
             tbody.appendChild(row);
