@@ -845,6 +845,18 @@ function updateMethodHint(goal) {
     const hintEl = document.getElementById('methodHint');
     if (!hintEl) return;
     
+    // First, try to get the specific tooltip from the selected option
+    const select = document.getElementById('optGoal');
+    const selectedOption = select?.querySelector(`option[value="${goal}"]`);
+    const specificTooltip = selectedOption?.getAttribute('data-tooltip');
+    
+    // If we have a specific tooltip, use it; otherwise fall back to category hints
+    if (specificTooltip) {
+        hintEl.textContent = specificTooltip;
+        return;
+    }
+    
+    // Fallback category hints
     const hints = {
         // Balanced Growth
         'max_sharpe': 'Balanced growth methods work well for most long-term investors.',
