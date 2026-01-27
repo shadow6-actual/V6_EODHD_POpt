@@ -34,41 +34,49 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <label class="form-label small">Optimization Goal</label>
+                        <label class="form-label small d-flex align-items-center">
+                            Optimization Goal
+                            <span class="ms-1 text-muted" style="cursor: help;" data-bs-toggle="tooltip" data-bs-placement="right" title="Choose how the portfolio is optimized based on historical data. This does not predict future performance.">
+                                <i class="fas fa-info-circle small"></i>
+                            </span>
+                        </label>
                         <select class="form-select form-select-sm" id="optGoal" onchange="updateConditionalFields()">
-                            <optgroup label="Mean-Variance">
-                                <option value="max_sharpe">Maximize Sharpe Ratio</option>
-                                <option value="min_volatility">Minimize Volatility</option>
-                                <option value="min_vol_target_return">Minimize Volatility subject to Target Return</option>
-                                <option value="max_return_target_vol">Maximize Return subject to Target Volatility</option>
+                            <optgroup label="📊 Balanced Growth">
+                                <option value="max_sharpe" selected data-tooltip="Maximizes return per unit of risk based on historical averages. A good starting point for most users.">Max Sharpe Ratio (Recommended)</option>
+                                <option value="risk_parity" data-tooltip="Balances the portfolio so each asset contributes equally to overall risk, rather than equal dollar weights.">Risk Parity</option>
+                                <option value="max_sortino_target_return" data-tooltip="Similar to Sharpe, but focuses only on downside volatility. Useful if you care more about avoiding losses.">Max Sortino Ratio</option>
                             </optgroup>
-                            <optgroup label="Risk Metrics">
-                                <option value="risk_parity">Risk Parity</option>
-                                <option value="min_cvar">CVaR - Minimize Conditional Value-at-Risk</option>
-                                <option value="min_cvar_target_return">CVaR - Min CVaR subject to Target Return</option>
-                                <option value="max_return_target_cvar">CVaR - Max Return subject to Target CVaR</option>
+                            <optgroup label="🛡️ Minimize Downside Risk">
+                                <option value="min_volatility" data-tooltip="Builds the least volatile portfolio possible based on historical data. Typically results in smoother returns.">Min Volatility</option>
+                                <option value="min_cvar" data-tooltip="Minimizes expected losses during the worst historical market scenarios. Focuses on tail-risk protection.">Min CVaR (Tail Risk)</option>
+                                <option value="min_drawdown_target_return" data-tooltip="Attempts to limit the deepest historical peak-to-trough losses. Emphasizes capital preservation.">Min Max Drawdown</option>
                             </optgroup>
-                            <optgroup label="Tracking Error">
-                                <option value="min_tracking_error">Minimize Tracking Error</option>
-                                <option value="max_information_ratio">Maximize Information Ratio</option>
-                                <option value="max_excess_return_target_te">Max Excess Return subject to Target TE</option>
+                            <optgroup label="📈 Maximize Return (Target-Based)">
+                                <option value="min_vol_target_return" data-tooltip="Finds the least volatile portfolio that still achieves your target return.">Min Vol @ Target Return</option>
+                                <option value="max_return_target_vol" data-tooltip="Maximizes historical return while staying within your volatility budget.">Max Return @ Target Vol</option>
                             </optgroup>
-                            <optgroup label="Advanced">
-                                <option value="max_kelly">Maximize Kelly Criterion</option>
-                                <option value="min_drawdown_target_return">Min Max Drawdown subject to Target Return</option>
-                                <option value="max_omega_target_return">Max Omega Ratio subject to Target Return</option>
-                                <option value="max_sortino_target_return">Max Sortino Ratio subject to Target Return</option>
+                            <optgroup label="🎯 Benchmark Tracking">
+                                <option value="min_tracking_error" data-tooltip="Keeps the portfolio closely aligned to a chosen benchmark while making small adjustments.">Min Tracking Error</option>
+                                <option value="max_information_ratio" data-tooltip="Maximizes excess return relative to a benchmark, adjusted for tracking risk.">Max Information Ratio</option>
+                                <option value="max_excess_return_target_te" data-tooltip="Maximizes outperformance vs benchmark while staying within a tracking error budget.">Max Excess Return @ Target TE</option>
                             </optgroup>
-                            <optgroup label="Robust (Monte Carlo)">
-                                <option value="robust_max_sharpe">Robust Max Sharpe Ratio</option>
-                                <option value="robust_min_volatility">Robust Min Volatility</option>
-                                <option value="robust_min_vol_target_return">Robust Min Vol @ Target Return</option>
-                                <option value="robust_max_return_target_vol">Robust Max Return @ Target Vol</option>
+                            <optgroup label="🔬 Advanced Methods">
+                                <option value="max_kelly" data-tooltip="Allocates capital to maximize long-term growth rate. Can be aggressive and volatile.">Kelly Criterion</option>
+                                <option value="max_omega_target_return" data-tooltip="Maximizes the ratio of gains to losses above/below a threshold.">Max Omega Ratio</option>
+                                <option value="min_cvar_target_return" data-tooltip="Minimizes tail risk while achieving a target return.">Min CVaR @ Target Return</option>
+                                <option value="max_return_target_cvar" data-tooltip="Maximizes return while keeping tail risk within limits.">Max Return @ Target CVaR</option>
                             </optgroup>
-                            <optgroup label="Baseline">
-                                <option value="equal_weight">Equal Weight</option>
+                            <optgroup label="🔄 Robust (Monte Carlo)">
+                                <option value="robust_max_sharpe" data-tooltip="Max Sharpe with Monte Carlo resampling for stability. Reduces overfitting to specific time periods.">Robust Max Sharpe</option>
+                                <option value="robust_min_volatility" data-tooltip="Min Volatility with resampling for more stable results across different market conditions.">Robust Min Volatility</option>
+                                <option value="robust_min_vol_target_return" data-tooltip="Target return optimization with resampling for stability.">Robust Min Vol @ Target Return</option>
+                                <option value="robust_max_return_target_vol" data-tooltip="Target volatility optimization with resampling for stability.">Robust Max Return @ Target Vol</option>
+                            </optgroup>
+                            <optgroup label="⚖️ Baseline">
+                                <option value="equal_weight" data-tooltip="Simple equal allocation across all assets. Useful as a comparison baseline.">Equal Weight</option>
                             </optgroup>
                         </select>
+                        <small class="text-muted mt-1 d-block" id="methodHint">Balanced growth methods work well for most long-term investors.</small>
                     </div>
                     
                     <div class="mb-2" id="targetReturnField" style="display:none;">
@@ -285,6 +293,12 @@
             
             <!-- Results Content -->
             <div id="resultsContent" style="display:none;">
+                
+                <!-- Results Disclaimer Banner -->
+                <div class="alert alert-secondary py-2 mb-3 small" role="alert" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Note:</strong> This allocation maximizes the selected metric based on historical data. It is not a recommendation. Past performance does not guarantee future results.
+                </div>
                 
                 <!-- Performance Comparison Table -->
                 <div class="card mb-3 shadow-sm">
