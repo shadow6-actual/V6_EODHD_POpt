@@ -701,8 +701,14 @@ window.toggleConstraints = function() {
 
 window.loadUserBenchmarkOptions = async function() {
     try {
-        const res = await fetch('/api/portfolios');
-        const portfolios = await res.json();
+        // Use authenticated endpoint if user is logged in
+        let portfolios = [];
+        
+        if (currentUser && clerkInstance?.session) {
+            const res = await authenticatedFetch('/api/user/portfolios');
+            const data = await res.json();
+            portfolios = data.portfolios || [];
+        }
         
         const select = document.getElementById('userBenchmark');
         select.innerHTML = '<option value="">Select a saved portfolio...</option>';
@@ -729,11 +735,17 @@ window.deleteSelectedPortfolio = async function() {
     
     if (!portfolioId) return;
     
+    // Require login
+    if (!currentUser || !clerkInstance?.session) {
+        showLoginPrompt('Please sign in to manage portfolios.');
+        return;
+    }
+    
     const portfolioName = select.selectedOptions[0].text;
     if (!confirm(`Delete portfolio "${portfolioName}"?`)) return;
     
     try {
-        const res = await fetch(`/api/portfolios/${portfolioId}`, { method: 'DELETE' });
+        const res = await authenticatedFetch(`/api/user/portfolios/${portfolioId}`, { method: 'DELETE' });
         const data = await res.json();
         
         if (data.error) {
@@ -749,8 +761,14 @@ window.deleteSelectedPortfolio = async function() {
 
 window.refreshPortfolioLists = async function() {
     try {
-        const res = await fetch('/api/portfolios');
-        const portfolios = await res.json();
+        // Use authenticated endpoint if user is logged in
+        let portfolios = [];
+        
+        if (currentUser && clerkInstance?.session) {
+            const res = await authenticatedFetch('/api/user/portfolios');
+            const data = await res.json();
+            portfolios = data.portfolios || [];
+        }
         
         const managerSelect = document.getElementById('portfolioManager');
         managerSelect.innerHTML = '<option value="">Select to manage...</option>';
@@ -1166,14 +1184,21 @@ window.savePortfolio = async function() {
 
 window.loadPortfolioModal = async function() {
     try {
-        const res = await fetch('/api/portfolios');
-        const portfolios = await res.json();
+        // Require login to load portfolios
+        if (!currentUser || !clerkInstance?.session) {
+            showLoginPrompt('Please sign in to access your saved portfolios.');
+            return;
+        }
+        
+        const res = await authenticatedFetch('/api/user/portfolios');
+        const data = await res.json();
+        const portfolios = data.portfolios || [];
         
         const listDiv = document.getElementById('portfolioList');
         listDiv.innerHTML = '';
         
         if (portfolios.length === 0) {
-            listDiv.innerHTML = '<div class="text-muted p-3">No saved portfolios</div>';
+            listDiv.innerHTML = '<div class="text-muted p-3">No saved portfolios. Save a portfolio first!</div>';
         } else {
             portfolios.forEach(p => {
                 const item = document.createElement('button');
@@ -1195,14 +1220,26 @@ window.loadPortfolioModal = async function() {
 
 async function loadPortfolio(id) {
     try {
-        const res = await fetch(`/api/portfolios/${id}`);
-        const portfolio = await res.json();
+        // Use authenticated endpoint
+        const res = await authenticatedFetch(`/api/user/portfolios/${id}`);
+        
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || 'Failed to load portfolio');
+        }
+        
+        const data = await res.json();
+        const portfolio = data.portfolio || data;
         
         document.getElementById('assetsTableBody').innerHTML = '';
         rowCount = 0;
         
-        portfolio.tickers.forEach(ticker => {
-            const weight = (portfolio.weights[ticker] * 100) || 0;
+        // Handle both array and object formats for tickers
+        const tickers = Array.isArray(portfolio.tickers) ? portfolio.tickers : Object.keys(portfolio.weights || {});
+        const weights = portfolio.weights || {};
+        
+        tickers.forEach(ticker => {
+            const weight = (weights[ticker] * 100) || 0;
             const minW = portfolio.constraints?.assets?.[ticker]?.min !== undefined
                 ? (portfolio.constraints.assets[ticker].min * 100) : '';
             const maxW = portfolio.constraints?.assets?.[ticker]?.max !== undefined
