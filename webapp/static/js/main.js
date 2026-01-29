@@ -45,6 +45,112 @@ const ROBUST_METHODS = [
     'robust_min_vol_target_return',
     'robust_max_return_target_vol'
 ];
+
+// ============================================================================
+// STARTER PORTFOLIOS (Educational Examples)
+// ============================================================================
+
+const STARTER_PORTFOLIOS = {
+    classic_60_40: {
+        name: "Classic 60/40",
+        description: "A commonly discussed stock/bond allocation used as a baseline for comparison.",
+        tickers: [
+            { symbol: 'VTI.US', weight: 60, name: 'Total US Stock Market' },
+            { symbol: 'BND.US', weight: 40, name: 'Total US Bond Market' }
+        ]
+    },
+    three_fund: {
+        name: "Three-Fund Portfolio",
+        description: "A simple diversified approach combining US stocks, international stocks, and bonds.",
+        tickers: [
+            { symbol: 'VTI.US', weight: 50, name: 'Total US Stock Market' },
+            { symbol: 'VXUS.US', weight: 30, name: 'Total International Stock' },
+            { symbol: 'BND.US', weight: 20, name: 'Total US Bond Market' }
+        ]
+    },
+    all_weather: {
+        name: "All Weather",
+        description: "A risk-balanced approach inspired by Ray Dalio, designed for various economic environments.",
+        tickers: [
+            { symbol: 'VTI.US', weight: 30, name: 'Total US Stock Market' },
+            { symbol: 'TLT.US', weight: 40, name: 'Long-Term Treasury Bonds' },
+            { symbol: 'IEF.US', weight: 15, name: 'Intermediate Treasury Bonds' },
+            { symbol: 'GLD.US', weight: 7.5, name: 'Gold' },
+            { symbol: 'DBC.US', weight: 7.5, name: 'Commodities' }
+        ]
+    }
+};
+
+window.loadStarterPortfolio = function(portfolioKey) {
+    const portfolio = STARTER_PORTFOLIOS[portfolioKey];
+    if (!portfolio) {
+        console.error('Unknown starter portfolio:', portfolioKey);
+        return;
+    }
+    
+    // Check asset limit
+    const maxAssets = getMaxAssets();
+    const tier = getUserTier();
+    
+    if (portfolio.tickers.length > maxAssets && tier !== 'pro') {
+        showUpgradePrompt('max_assets', `This portfolio has ${portfolio.tickers.length} assets. Your ${tier} plan allows up to ${maxAssets}.`);
+        return;
+    }
+    
+    // Clear existing assets
+    document.getElementById('assetsTableBody').innerHTML = '';
+    rowCount = 0;
+    
+    // Add portfolio assets
+    portfolio.tickers.forEach(asset => {
+        addAssetRow(asset.symbol, asset.weight.toFixed(1), '', '');
+    });
+    
+    // Show confirmation with educational framing
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed bottom-0 end-0 p-3';
+    toast.style.zIndex = '1100';
+    toast.innerHTML = `
+        <div class="toast show" role="alert" style="background: var(--color-bg-card, #1a2235); border: 1px solid var(--color-border, #1e293b);">
+            <div class="toast-header" style="background: var(--color-bg-elevated, #1e293b); border-bottom: 1px solid var(--color-border, #1e293b);">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                <strong class="me-auto" style="color: var(--color-text, #f1f5f9);">Portfolio Loaded</strong>
+                <button type="button" class="btn-close btn-close-white" onclick="this.closest('.position-fixed').remove()"></button>
+            </div>
+            <div class="toast-body" style="color: var(--color-text-muted, #94a3b8);">
+                <strong>${portfolio.name}</strong> loaded for comparison.
+                <div class="small mt-1 text-muted">
+                    <i class="fas fa-info-circle me-1"></i>${portfolio.description}
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-remove toast after 5 seconds
+    setTimeout(() => toast.remove(), 5000);
+    
+    // Dismiss the quick start banner
+    dismissQuickStart();
+    
+    // Update displays
+    updateTotal();
+    updateGroupConstraintsDisplay();
+};
+
+window.dismissQuickStart = function() {
+    // Store preference in localStorage
+    localStorage.setItem('folioforecast_quickstart_dismissed', 'true');
+};
+
+function checkQuickStartBanner() {
+    const dismissed = localStorage.getItem('folioforecast_quickstart_dismissed');
+    const banner = document.getElementById('quickStartBanner');
+    if (banner && dismissed === 'true') {
+        banner.style.display = 'none';
+    }
+}
+
 // ============================================================================
 // DIVERSIFICATION QUALITY LABELS
 // ============================================================================
@@ -1372,6 +1478,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (endInput && !endInput.value) {
         endInput.value = today;
     }
+    
+    // Check if quick start banner should be shown
+    checkQuickStartBanner();
+    
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
     
     // Default assets
     addAssetRow('AAPL.US', 25);
