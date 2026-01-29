@@ -15,7 +15,7 @@ from models_v6 import Base
 class User(Base):
     """
     Local user record synced from Clerk.
-    Stores username and subscription info.
+    Stores username, subscription info, and tracking data.
     """
     __tablename__ = 'users'
     
@@ -23,14 +23,40 @@ class User(Base):
     clerk_user_id = Column(String(50), unique=True, nullable=False, index=True)
     username = Column(String(30), unique=True, nullable=False, index=True)
     
+    # Contact info (synced from Clerk)
+    email = Column(String(255), index=True)
+    email_verified = Column(Boolean, default=False)
+    
+    # Marketing preferences
+    marketing_consent = Column(Boolean, default=False)
+    marketing_consent_at = Column(DateTime)
+    
     # Optional profile info
     display_name = Column(String(100))
     bio = Column(Text)
     
-    # Subscription (for future Stripe integration)
-    subscription_tier = Column(String(20), default='free')  # free, premium, pro
-    stripe_customer_id = Column(String(50))
-    subscription_expires_at = Column(DateTime)
+    # Acquisition tracking (captured at signup)
+    referral_source = Column(String(100))      # utm_source or 'direct', 'organic'
+    referral_campaign = Column(String(100))    # utm_campaign
+    referral_medium = Column(String(100))      # utm_medium
+    signup_ip_address = Column(String(45))     # IPv4 or IPv6
+    signup_user_agent = Column(Text)
+    
+    # Subscription - Stripe integration
+    subscription_tier = Column(String(20), default='free')  # free, premium, pro, trial
+    stripe_customer_id = Column(String(50), index=True)
+    stripe_subscription_id = Column(String(50), index=True)
+    subscription_status = Column(String(20), default='none')  # none, active, past_due, canceled, trialing
+    subscription_expires_at = Column(DateTime)  # current_period_end from Stripe
+    
+    # Trial tracking
+    trial_started_at = Column(DateTime)
+    trial_used = Column(Boolean, default=False)
+    
+    # Engagement metrics
+    first_optimization_at = Column(DateTime)
+    total_optimizations = Column(Integer, default=0)
+    last_active_at = Column(DateTime)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -39,6 +65,7 @@ class User(Base):
     
     # Relationships
     portfolios = relationship("UserPortfolio", back_populates="user", cascade="all, delete-orphan")
+    activity_logs = relationship("UserActivityLog", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(username='{self.username}', tier='{self.subscription_tier}')>"
@@ -47,9 +74,28 @@ class User(Base):
         return {
             'id': self.id,
             'username': self.username,
+            'email': self.email,
             'display_name': self.display_name,
             'subscription_tier': self.subscription_tier,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'subscription_status': self.subscription_status,
+            'trial_used': self.trial_used,
+            'total_optimizations': self.total_optimizations,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_active_at': self.last_active_at.isoformat() if self.last_active_at else None
+        }
+    
+    def to_admin_dict(self):
+        """Extended dict for admin views with all tracking data"""
+        return {
+            **self.to_dict(),
+            'email_verified': self.email_verified,
+            'marketing_consent': self.marketing_consent,
+            'referral_source': self.referral_source,
+            'referral_campaign': self.referral_campaign,
+            'referral_medium': self.referral_medium,
+            'trial_started_at': self.trial_started_at.isoformat() if self.trial_started_at else None,
+            'first_optimization_at': self.first_optimization_at.isoformat() if self.first_optimization_at else None,
+            'last_login_at': self.last_login_at.isoformat() if self.last_login_at else None,
         }
 
 
@@ -211,3 +257,93 @@ def get_user_by_clerk_id(session, clerk_user_id):
 def get_user_by_username(session, username):
     """Get user by username"""
     return session.query(User).filter_by(username=username).first()
+
+
+class UserActivityLog(Base):
+    """
+    Track user actions for analytics, engagement metrics, and churn prediction.
+    """
+    __tablename__ = 'user_activity_logs'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Action details
+    action_type = Column(String(50), nullable=False, index=True)  # login, optimization, portfolio_save, csv_export, etc.
+    action_data = Column(JSONB)  # Context: {method: 'max_sharpe', asset_count: 5, ...}
+    
+    # Request context
+    ip_address = Column(String(45))
+    user_agent = Column(Text)
+    
+    # Timestamp
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationship
+    user = relationship("User", back_populates="activity_logs")
+    
+    def __repr__(self):
+        return f"<UserActivityLog(user_id={self.user_id}, action='{self.action_type}')>"
+
+
+# Activity logging helper functions
+def log_user_activity(session, user_id, action_type, action_data=None, ip_address=None, user_agent=None):
+    """
+    Log a user activity event.
+    
+    Args:
+        session: SQLAlchemy session
+        user_id: User's database ID
+        action_type: Type of action ('login', 'optimization', 'portfolio_save', etc.)
+        action_data: Optional dict with action context
+        ip_address: Optional IP address
+        user_agent: Optional user agent string
+    
+    Returns:
+        UserActivityLog object
+    """
+    log = UserActivityLog(
+        user_id=user_id,
+        action_type=action_type,
+        action_data=action_data,
+        ip_address=ip_address,
+        user_agent=user_agent[:500] if user_agent else None  # Truncate long user agents
+    )
+    session.add(log)
+    
+    # Also update user's last_active_at
+    user = session.query(User).get(user_id)
+    if user:
+        user.last_active_at = datetime.utcnow()
+        
+        # Track first optimization
+        if action_type == 'optimization' and not user.first_optimization_at:
+            user.first_optimization_at = datetime.utcnow()
+        
+        # Increment optimization counter
+        if action_type == 'optimization':
+            user.total_optimizations = (user.total_optimizations or 0) + 1
+    
+    session.commit()
+    return log
+
+
+def get_user_activity_summary(session, user_id, days=30):
+    """
+    Get activity summary for a user over the last N days.
+    
+    Returns:
+        dict with activity counts by type
+    """
+    from sqlalchemy import func
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    
+    results = session.query(
+        UserActivityLog.action_type,
+        func.count(UserActivityLog.id).label('count')
+    ).filter(
+        UserActivityLog.user_id == user_id,
+        UserActivityLog.created_at >= cutoff
+    ).group_by(UserActivityLog.action_type).all()
+    
+    return {r.action_type: r.count for r in results}
