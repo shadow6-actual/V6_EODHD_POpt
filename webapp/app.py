@@ -1333,6 +1333,34 @@ def get_user_portfolios():
         logger.error(f"Get user portfolios error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/user/portfolios/<int:portfolio_id>', methods=['GET'])
+@require_auth
+def get_user_portfolio(portfolio_id):
+    """Get a specific portfolio for the authenticated user"""
+    from webapp.user_models import get_user_by_clerk_id, UserPortfolio
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_user_by_clerk_id(session, g.user_id)
+            
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            portfolio = session.query(UserPortfolio).filter_by(
+                id=portfolio_id,
+                user_id=user.id
+            ).first()
+            
+            if not portfolio:
+                return jsonify({'error': 'Portfolio not found'}), 404
+            
+            return jsonify({
+                'portfolio': portfolio.to_dict(include_allocations=True)
+            })
+            
+    except Exception as e:
+        logger.error(f"Get user portfolio error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/user/portfolios/<int:portfolio_id>', methods=['PUT'])
 @require_auth
