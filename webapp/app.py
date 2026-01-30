@@ -22,6 +22,11 @@ if os.getenv('SENTRY_DSN'):
 from webapp.auth import require_auth, optional_auth, get_clerk_config
 
 # Subscription imports
+from webapp.stripe_integration import (
+    get_stripe_publishable_key, create_checkout_session,
+    create_customer_portal_session, handle_webhook_event,
+    PRICE_TO_TIER
+)
 from webapp.subscription import (
     get_user_tier, get_user_tier_info, get_tier_config,
     can_access_feature, can_use_optimization_method,
@@ -1651,6 +1656,234 @@ if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DATABASE_URL', '').s
         logger.info("Background data updater started automatically")
     except Exception as e:
         logger.error(f"Failed to start background updater: {e}")
+
+# =============================================================================
+# STRIPE PAYMENT ROUTES
+# =============================================================================
+
+@app.route('/api/stripe/config')
+def stripe_config():
+    """Return Stripe publishable key for frontend"""
+    return jsonify({
+        'publishableKey': get_stripe_publishable_key()
+    })
+
+
+@app.route('/api/stripe/create-checkout-session', methods=['POST'])
+@require_auth
+def create_stripe_checkout():
+    """Create a Stripe Checkout session for subscription"""
+    from webapp.user_models import get_or_create_user
+    
+    try:
+        data = request.json
+        tier = data.get('tier')
+        
+        if tier not in ['premium', 'pro']:
+            return jsonify({'error': 'Invalid tier'}), 400
+        
+        with data_manager._get_session() as session:
+            user = get_or_create_user(session, g.user_id, g.username)
+            
+            # Check if already subscribed
+            if user.subscription_tier in ['premium', 'pro']:
+                return jsonify({
+                    'error': 'already_subscribed',
+                    'message': 'You already have an active subscription. Use the customer portal to manage it.'
+                }), 400
+            
+            # Get user email from Clerk metadata if available, otherwise use username
+            user_email = data.get('email') or f"{g.username}@user.folioforecast.com"
+            
+            # Build URLs
+            base_url = request.host_url.rstrip('/')
+            success_url = f"{base_url}/app?subscription=success"
+            cancel_url = f"{base_url}/pricing?subscription=cancelled"
+            
+            checkout_session = create_checkout_session(
+                user_id=str(user.id),
+                user_email=user_email,
+                tier=tier,
+                success_url=success_url,
+                cancel_url=cancel_url
+            )
+            
+            return jsonify({'url': checkout_session.url})
+            
+    except Exception as e:
+        logger.error(f"Checkout session error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stripe/customer-portal', methods=['POST'])
+@require_auth
+def stripe_customer_portal():
+    """Create a Stripe Customer Portal session for subscription management"""
+    from webapp.user_models import get_or_create_user
+    
+    try:
+        with data_manager._get_session() as session:
+            user = get_or_create_user(session, g.user_id, g.username)
+            
+            if not user.stripe_customer_id:
+                return jsonify({
+                    'error': 'no_subscription',
+                    'message': 'No active subscription found. Subscribe first!'
+                }), 400
+            
+            base_url = request.host_url.rstrip('/')
+            return_url = f"{base_url}/app"
+            
+            portal_session = create_customer_portal_session(
+                user.stripe_customer_id,
+                return_url
+            )
+            
+            return jsonify({'url': portal_session.url})
+            
+    except Exception as e:
+        logger.error(f"Customer portal error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """Handle Stripe webhook events"""
+    from webapp.user_models import get_user_by_id, User
+    
+    payload = request.get_data()
+    sig_header = request.headers.get('Stripe-Signature')
+    
+    try:
+        event = handle_webhook_event(payload, sig_header)
+    except ValueError:
+        return jsonify({'error': 'Invalid payload'}), 400
+    except Exception as e:
+        logger.error(f"Webhook signature verification failed: {e}")
+        return jsonify({'error': 'Invalid signature'}), 400
+    
+    # Handle the event
+    try:
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            handle_checkout_completed(session)
+            
+        elif event['type'] == 'customer.subscription.updated':
+            subscription = event['data']['object']
+            handle_subscription_updated(subscription)
+            
+        elif event['type'] == 'customer.subscription.deleted':
+            subscription = event['data']['object']
+            handle_subscription_deleted(subscription)
+            
+        elif event['type'] == 'invoice.payment_failed':
+            invoice = event['data']['object']
+            handle_payment_failed(invoice)
+        
+        return jsonify({'status': 'success'})
+        
+    except Exception as e:
+        logger.error(f"Webhook handling error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def handle_checkout_completed(session):
+    """Handle successful checkout - activate subscription"""
+    from webapp.user_models import User
+    
+    user_id = session.get('metadata', {}).get('user_id')
+    tier = session.get('metadata', {}).get('tier')
+    customer_id = session.get('customer')
+    subscription_id = session.get('subscription')
+    
+    if not user_id or not tier:
+        logger.error(f"Missing metadata in checkout session: {session.get('id')}")
+        return
+    
+    logger.info(f"Processing checkout completion for user {user_id}, tier {tier}")
+    
+    try:
+        with data_manager._get_session() as db_session:
+            user = db_session.query(User).filter_by(id=int(user_id)).first()
+            
+            if user:
+                user.subscription_tier = tier
+                user.stripe_customer_id = customer_id
+                user.stripe_subscription_id = subscription_id
+                user.subscription_expires_at = None  # Managed by Stripe
+                db_session.commit()
+                logger.info(f"Activated {tier} subscription for user {user_id}")
+            else:
+                logger.error(f"User not found: {user_id}")
+                
+    except Exception as e:
+        logger.error(f"Error updating user subscription: {e}")
+
+
+def handle_subscription_updated(subscription):
+    """Handle subscription changes (upgrades, downgrades, renewals)"""
+    from webapp.user_models import User
+    
+    customer_id = subscription.get('customer')
+    status = subscription.get('status')
+    
+    # Get the tier from the price
+    items = subscription.get('items', {}).get('data', [])
+    if items:
+        price_id = items[0].get('price', {}).get('id')
+        tier = PRICE_TO_TIER.get(price_id, 'free')
+    else:
+        tier = 'free'
+    
+    try:
+        with data_manager._get_session() as db_session:
+            user = db_session.query(User).filter_by(stripe_customer_id=customer_id).first()
+            
+            if user:
+                if status == 'active':
+                    user.subscription_tier = tier
+                    logger.info(f"Updated subscription to {tier} for customer {customer_id}")
+                elif status in ['past_due', 'unpaid']:
+                    # Keep tier but flag the issue
+                    logger.warning(f"Payment issue for customer {customer_id}: {status}")
+                elif status == 'canceled':
+                    user.subscription_tier = 'free'
+                    user.stripe_subscription_id = None
+                    logger.info(f"Subscription cancelled for customer {customer_id}")
+                
+                db_session.commit()
+                
+    except Exception as e:
+        logger.error(f"Error handling subscription update: {e}")
+
+
+def handle_subscription_deleted(subscription):
+    """Handle subscription cancellation"""
+    from webapp.user_models import User
+    
+    customer_id = subscription.get('customer')
+    
+    try:
+        with data_manager._get_session() as db_session:
+            user = db_session.query(User).filter_by(stripe_customer_id=customer_id).first()
+            
+            if user:
+                user.subscription_tier = 'free'
+                user.stripe_subscription_id = None
+                db_session.commit()
+                logger.info(f"Subscription deleted, reverted to free for customer {customer_id}")
+                
+    except Exception as e:
+        logger.error(f"Error handling subscription deletion: {e}")
+
+
+def handle_payment_failed(invoice):
+    """Handle failed payment - could send notification or flag account"""
+    customer_id = invoice.get('customer')
+    logger.warning(f"Payment failed for customer {customer_id}")
+    # Future: Send email notification, flag account, etc.
+
+
 # ============================================================================
 # 5. ENTRY POINT
 # ============================================================================
