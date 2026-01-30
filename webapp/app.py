@@ -336,8 +336,31 @@ def auth_sync():
     from webapp.user_models import get_or_create_user
     
     try:
+        # Get request context for tracking
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()  # Get first IP if multiple
+        user_agent = request.headers.get('User-Agent', '')
+        
+        # Get UTM parameters from request body (frontend should send these)
+        data = request.json or {}
+        referral_source = data.get('utm_source') or data.get('referral_source')
+        referral_campaign = data.get('utm_campaign') or data.get('referral_campaign')
+        referral_medium = data.get('utm_medium') or data.get('referral_medium')
+        
         with data_manager._get_session() as session:
-            user = get_or_create_user(session, g.user_id, g.username)
+            user = get_or_create_user(
+                session, 
+                g.user_id, 
+                g.username,
+                email=getattr(g, 'email', None),
+                email_verified=getattr(g, 'email_verified', False),
+                ip_address=ip_address,
+                user_agent=user_agent,
+                referral_source=referral_source,
+                referral_campaign=referral_campaign,
+                referral_medium=referral_medium
+            )
             g.user_obj = user
             tier_info = get_user_tier_info(user)
             
@@ -349,6 +372,7 @@ def auth_sync():
     except Exception as e:
         logger.error(f"Auth sync error: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 
 @app.route('/api/subscription/start-trial', methods=['POST'])
