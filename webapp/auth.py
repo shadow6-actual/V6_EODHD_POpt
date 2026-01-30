@@ -105,7 +105,7 @@ def require_auth(f):
     """
     Decorator to require authentication for a route.
     
-    Sets g.user_id and g.username if authenticated.
+    Sets g.user_id, g.username, g.email, g.email_verified if authenticated.
     Returns 401 if no valid token.
     
     Usage:
@@ -114,6 +114,7 @@ def require_auth(f):
         def protected_route():
             user_id = g.user_id
             username = g.username
+            email = g.email
             ...
     """
     @wraps(f)
@@ -136,15 +137,26 @@ def require_auth(f):
         g.user_id = payload.get('sub')  # Clerk user ID
         g.session_id = payload.get('sid')  # Session ID
         
-        # Get username from token metadata or fetch from Clerk
-        # Clerk stores username in the token if configured
+        # Get user data from token (if custom claims configured) or fetch from Clerk
         g.username = payload.get('username')
+        g.email = payload.get('email')
+        g.email_verified = payload.get('email_verified', False)
         
-        # If username not in token, fetch from Clerk API
-        if not g.username and g.user_id:
+        # If data not in token, fetch from Clerk API
+        if (not g.username or not g.email) and g.user_id:
             user_data = get_user_from_clerk(g.user_id)
             if user_data:
-                g.username = user_data.get('username')
+                g.username = g.username or user_data.get('username')
+                # Clerk API returns email in primary_email_address_id or email_addresses array
+                if not g.email and user_data.get('email_addresses'):
+                    primary_email = next(
+                        (e for e in user_data['email_addresses'] 
+                         if e['id'] == user_data.get('primary_email_address_id')),
+                        user_data['email_addresses'][0] if user_data['email_addresses'] else None
+                    )
+                    if primary_email:
+                        g.email = primary_email.get('email_address')
+                        g.email_verified = primary_email.get('verification', {}).get('status') == 'verified'
         
         return f(*args, **kwargs)
     
@@ -155,7 +167,7 @@ def optional_auth(f):
     """
     Decorator for routes that work with or without authentication.
     
-    Sets g.user_id and g.username if authenticated, None otherwise.
+    Sets g.user_id, g.username, g.email, g.email_verified if authenticated, None otherwise.
     Never returns 401.
     
     Usage:
@@ -171,6 +183,8 @@ def optional_auth(f):
     def decorated_function(*args, **kwargs):
         g.user_id = None
         g.username = None
+        g.email = None
+        g.email_verified = False
         g.session_id = None
         
         auth_header = request.headers.get('Authorization', '')
@@ -183,15 +197,28 @@ def optional_auth(f):
                 g.user_id = payload.get('sub')
                 g.session_id = payload.get('sid')
                 g.username = payload.get('username')
+                g.email = payload.get('email')
+                g.email_verified = payload.get('email_verified', False)
                 
-                if not g.username and g.user_id:
+                # If data not in token, fetch from Clerk API
+                if (not g.username or not g.email) and g.user_id:
                     user_data = get_user_from_clerk(g.user_id)
                     if user_data:
-                        g.username = user_data.get('username')
+                        g.username = g.username or user_data.get('username')
+                        if not g.email and user_data.get('email_addresses'):
+                            primary_email = next(
+                                (e for e in user_data['email_addresses'] 
+                                 if e['id'] == user_data.get('primary_email_address_id')),
+                                user_data['email_addresses'][0] if user_data['email_addresses'] else None
+                            )
+                            if primary_email:
+                                g.email = primary_email.get('email_address')
+                                g.email_verified = primary_email.get('verification', {}).get('status') == 'verified'
         
         return f(*args, **kwargs)
     
     return decorated_function
+
 
 
 def get_clerk_config():
