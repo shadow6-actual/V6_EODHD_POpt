@@ -291,10 +291,43 @@ function handleSignedOut() {
     console.log('Signed out');
 }
 
+// Helper function to get UTM parameters from URL
+function getUtmParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        utm_source: params.get('utm_source') || sessionStorage.getItem('utm_source'),
+        utm_campaign: params.get('utm_campaign') || sessionStorage.getItem('utm_campaign'),
+        utm_medium: params.get('utm_medium') || sessionStorage.getItem('utm_medium')
+    };
+}
+
+// Store UTM params in sessionStorage when page loads (so they persist through signup flow)
+function storeUtmParams() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('utm_source')) sessionStorage.setItem('utm_source', params.get('utm_source'));
+    if (params.get('utm_campaign')) sessionStorage.setItem('utm_campaign', params.get('utm_campaign'));
+    if (params.get('utm_medium')) sessionStorage.setItem('utm_medium', params.get('utm_medium'));
+}
+
+// Call this on page load
+storeUtmParams();
+
 async function syncUserToBackend() {
     try {
         const token = await clerkInstance.session.getToken();
+        const utmParams = getUtmParams();
         
+        // First sync with UTM data (POST to sync endpoint)
+        await fetch('/api/auth/sync', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(utmParams)
+        });
+        
+        // Then get user data
         const response = await fetch('/api/auth/me', {
             headers: {
                 'Authorization': `Bearer ${token}`,
