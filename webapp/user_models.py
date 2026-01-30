@@ -234,14 +234,24 @@ class UserPortfolio(Base):
 
 # Helper functions for user management
 
-def get_or_create_user(session, clerk_user_id, username):
+def get_or_create_user(session, clerk_user_id, username, email=None, email_verified=False, 
+                       ip_address=None, user_agent=None, referral_source=None, 
+                       referral_campaign=None, referral_medium=None):
     """
     Get existing user or create new one from Clerk data.
+    Syncs user data and tracks acquisition info for new users.
     
     Args:
         session: SQLAlchemy session
         clerk_user_id: Clerk's user ID
         username: Username from Clerk
+        email: Email from Clerk (optional, synced on each call)
+        email_verified: Whether email is verified in Clerk
+        ip_address: Client IP (captured for new users only)
+        user_agent: Client user agent (captured for new users only)
+        referral_source: UTM source parameter
+        referral_campaign: UTM campaign parameter
+        referral_medium: UTM medium parameter
     
     Returns:
         User object
@@ -249,18 +259,39 @@ def get_or_create_user(session, clerk_user_id, username):
     user = session.query(User).filter_by(clerk_user_id=clerk_user_id).first()
     
     if not user:
+        # New user - capture all acquisition data
         user = User(
             clerk_user_id=clerk_user_id,
-            username=username
+            username=username,
+            email=email,
+            email_verified=email_verified,
+            signup_ip_address=ip_address,
+            signup_user_agent=user_agent[:500] if user_agent else None,
+            referral_source=referral_source,
+            referral_campaign=referral_campaign,
+            referral_medium=referral_medium,
+            last_login_at=datetime.utcnow(),
+            last_active_at=datetime.utcnow()
         )
         session.add(user)
         session.commit()
     else:
-        # Update last login
+        # Existing user - update login timestamp and sync mutable fields
         user.last_login_at = datetime.utcnow()
-        # Update username if changed in Clerk
-        if user.username != username:
+        user.last_active_at = datetime.utcnow()
+        
+        # Sync username if changed in Clerk
+        if username and user.username != username:
             user.username = username
+        
+        # Sync email if changed in Clerk (always update to latest)
+        if email and user.email != email:
+            user.email = email
+        
+        # Update email verification status
+        if email_verified and not user.email_verified:
+            user.email_verified = True
+        
         session.commit()
     
     return user
