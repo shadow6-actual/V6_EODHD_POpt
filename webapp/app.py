@@ -1907,6 +1907,108 @@ def handle_payment_failed(invoice):
     logger.warning(f"Payment failed for customer {customer_id}")
     # Future: Send email notification, flag account, etc.
 
+# ============================================================================
+# CLERK WEBHOOKS
+# ============================================================================
+
+@app.route('/api/webhooks/clerk', methods=['POST'])
+def clerk_webhook():
+    """
+    Handle Clerk webhooks for user events.
+    This ensures users are created in our database even if they never load the app.
+    """
+    from webapp.user_models import get_or_create_user
+    import hmac
+    import hashlib
+    
+    # Get the webhook payload
+    payload = request.get_data(as_text=True)
+    
+    # Verify webhook signature (optional but recommended)
+    # webhook_secret = os.getenv('CLERK_WEBHOOK_SECRET')
+    # if webhook_secret:
+    #     signature = request.headers.get('svix-signature')
+    #     # Verify signature here...
+    
+    try:
+        data = request.json
+        event_type = data.get('type')
+        
+        logger.info(f"Clerk webhook received: {event_type}")
+        
+        if event_type == 'user.created':
+            user_data = data.get('data', {})
+            clerk_user_id = user_data.get('id')
+            username = user_data.get('username')
+            
+            # Get email from email_addresses array
+            email = None
+            email_verified = False
+            email_addresses = user_data.get('email_addresses', [])
+            primary_email_id = user_data.get('primary_email_address_id')
+            
+            if email_addresses:
+                primary_email = next(
+                    (e for e in email_addresses if e['id'] == primary_email_id),
+                    email_addresses[0]
+                )
+                email = primary_email.get('email_address')
+                email_verified = primary_email.get('verification', {}).get('status') == 'verified'
+            
+            if clerk_user_id and username:
+                with data_manager._get_session() as session:
+                    user = get_or_create_user(
+                        session,
+                        clerk_user_id,
+                        username,
+                        email=email,
+                        email_verified=email_verified
+                    )
+                    logger.info(f"Webhook: Created/updated user {username} (clerk_id: {clerk_user_id})")
+            
+        elif event_type == 'user.updated':
+            user_data = data.get('data', {})
+            clerk_user_id = user_data.get('id')
+            username = user_data.get('username')
+            
+            # Get email
+            email = None
+            email_verified = False
+            email_addresses = user_data.get('email_addresses', [])
+            primary_email_id = user_data.get('primary_email_address_id')
+            
+            if email_addresses:
+                primary_email = next(
+                    (e for e in email_addresses if e['id'] == primary_email_id),
+                    email_addresses[0]
+                )
+                email = primary_email.get('email_address')
+                email_verified = primary_email.get('verification', {}).get('status') == 'verified'
+            
+            if clerk_user_id:
+                with data_manager._get_session() as session:
+                    user = get_or_create_user(
+                        session,
+                        clerk_user_id,
+                        username,
+                        email=email,
+                        email_verified=email_verified
+                    )
+                    logger.info(f"Webhook: Updated user {username}")
+        
+        elif event_type == 'user.deleted':
+            user_data = data.get('data', {})
+            clerk_user_id = user_data.get('id')
+            
+            # Optionally handle user deletion
+            # For now, just log it - you may want to soft-delete or keep the record
+            logger.info(f"Webhook: User deleted in Clerk: {clerk_user_id}")
+        
+        return jsonify({'received': True}), 200
+        
+    except Exception as e:
+        logger.error(f"Clerk webhook error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # ============================================================================
 # 5. ENTRY POINT
