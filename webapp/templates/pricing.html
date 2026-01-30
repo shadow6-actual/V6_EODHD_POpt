@@ -315,7 +315,10 @@
             color: var(--text-muted);
         }
 
-        .pricing-cta {
+        .pricing-cta,
+        button.pricing-cta {
+            cursor: pointer;
+            font-family: inherit;
             width: 100%;
         }
 
@@ -621,7 +624,7 @@
                     <li class="disabled">Group constraints</li>
                     <li class="disabled">API access</li>
                 </ul>
-                <a href="/app" class="pricing-cta secondary">Start Premium</a>
+                <button onclick="subscribeToTier('premium')" class="pricing-cta secondary">Start Premium</button>
             </div>
 
             <div class="pricing-card featured">
@@ -643,7 +646,7 @@
                     <li>Diversification analytics</li>
                     <li>Priority support</li>
                 </ul>
-                <a href="/app" class="pricing-cta primary">Start Pro</a>
+                <button onclick="subscribeToTier('pro')" class="pricing-cta primary">Start Free Trial</button>
             </div>
         </div>
 
@@ -837,6 +840,168 @@
                 }
             });
         });
-    </script>
+    // Stripe checkout handler
+    async function subscribeToTier(tier) {
+        // Check if user is logged in
+        const user = await window.Clerk?.user;
+        
+        if (!user) {
+            // Redirect to sign up with return URL
+            window.location.href = `/app?redirect_after_login=/pricing&subscribe=${tier}`;
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/stripe/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await window.Clerk.session.getToken()}`
+                },
+                body: JSON.stringify({ 
+                    tier: tier,
+                    email: user.primaryEmailAddress?.emailAddress
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                if (data.error === 'already_subscribed') {
+                    alert(data.message);
+                    // Optionally redirect to customer portal
+                } else {
+                    alert('Error: ' + data.message);
+                }
+                return;
+            }
+            
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+            
+        } catch (error) {
+            console.error('Subscription error:', error);
+            alert('Failed to start checkout. Please try again.');
+        }
+    }
+    
+    // Manage subscription handler
+    async function manageSubscription() {
+        try {
+            const response = await fetch('/api/stripe/customer-portal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await window.Clerk.session.getToken()}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                alert(data.message);
+                return;
+            }
+            
+            window.location.href = data.url;
+            
+        } catch (error) {
+            console.error('Portal error:', error);
+            alert('Failed to open subscription portal. Please try again.');
+        }
+    }
+<script>
+// Stripe subscription handlers
+async function subscribeToTier(tier) {
+    // Check if Clerk is loaded and user is signed in
+    if (typeof Clerk !== 'undefined') {
+        await Clerk.load();
+        const user = Clerk.user;
+        
+        if (!user) {
+            // Not signed in - redirect to app which will show sign-in
+            window.location.href = `/app?subscribe=${tier}`;
+            return;
+        }
+        
+        // User is signed in - create checkout session
+        try {
+            const token = await Clerk.session.getToken();
+            const response = await fetch('/api/stripe/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    tier: tier,
+                    email: user.primaryEmailAddress?.emailAddress
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                if (data.error === 'already_subscribed') {
+                    if (confirm(data.message + '\n\nWould you like to manage your subscription?')) {
+                        manageSubscription();
+                    }
+                } else {
+                    alert('Error: ' + (data.message || data.error));
+                }
+                return;
+            }
+            
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+            
+        } catch (error) {
+            console.error('Subscription error:', error);
+            alert('Failed to start checkout. Please try again.');
+        }
+    } else {
+        // Clerk not loaded - redirect to app
+        window.location.href = `/app?subscribe=${tier}`;
+    }
+}
+
+async function manageSubscription() {
+    if (typeof Clerk === 'undefined') {
+        window.location.href = '/app';
+        return;
+    }
+    
+    await Clerk.load();
+    if (!Clerk.user) {
+        window.location.href = '/app';
+        return;
+    }
+    
+    try {
+        const token = await Clerk.session.getToken();
+        const response = await fetch('/api/stripe/customer-portal', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            alert(data.message || 'Unable to open subscription portal.');
+            return;
+        }
+        
+        window.location.href = data.url;
+        
+    } catch (error) {
+        console.error('Portal error:', error);
+        alert('Failed to open subscription portal. Please try again.');
+    }
+}
+</script>
 </body>
+</html></body>
 </html>
