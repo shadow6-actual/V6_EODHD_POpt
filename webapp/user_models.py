@@ -44,12 +44,10 @@ class User(Base):
     
     # Subscription - Stripe integration
     subscription_tier = Column(String(20), default='free')  # free, premium, pro, trial
-    stripe_customer_id = Column(String(50), index=True)
-    stripe_subscription_id = Column(String(50), index=True)
+    stripe_customer_id = Column(String(255), nullable=True, index=True)
+    stripe_subscription_id = Column(String(255), nullable=True, index=True)
     subscription_status = Column(String(20), default='none')  # none, active, past_due, canceled, trialing
     subscription_expires_at = Column(DateTime, nullable=True)
-    stripe_customer_id = Column(String(255), nullable=True, index=True)
-    stripe_subscription_id = Column(String(255), nullable=True)
     
     # Trial tracking
     trial_started_at = Column(DateTime)
