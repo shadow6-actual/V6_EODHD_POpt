@@ -25,7 +25,7 @@ from webapp.auth import require_auth, optional_auth, get_clerk_config
 from webapp.stripe_integration import (
     get_stripe_publishable_key, create_checkout_session,
     create_customer_portal_session, handle_webhook_event,
-    PRICE_TO_TIER
+    get_tier_from_subscription
 )
 from webapp.subscription import (
     get_user_tier, get_user_tier_info, get_tier_config,
@@ -1851,13 +1851,8 @@ def handle_subscription_updated(subscription):
     customer_id = subscription.get('customer')
     status = subscription.get('status')
     
-    # Get the tier from the price
-    items = subscription.get('items', {}).get('data', [])
-    if items:
-        price_id = items[0].get('price', {}).get('id')
-        tier = PRICE_TO_TIER.get(price_id, 'free')
-    else:
-        tier = 'free'
+    # Get the tier from the subscription using our helper function
+    tier = get_tier_from_subscription(subscription)
     
     try:
         with data_manager._get_session() as db_session:
@@ -1866,12 +1861,15 @@ def handle_subscription_updated(subscription):
             if user:
                 if status == 'active':
                     user.subscription_tier = tier
+                    user.subscription_status = 'active'
                     logger.info(f"Updated subscription to {tier} for customer {customer_id}")
                 elif status in ['past_due', 'unpaid']:
                     # Keep tier but flag the issue
+                    user.subscription_status = status
                     logger.warning(f"Payment issue for customer {customer_id}: {status}")
                 elif status == 'canceled':
                     user.subscription_tier = 'free'
+                    user.subscription_status = 'canceled'
                     user.stripe_subscription_id = None
                     logger.info(f"Subscription cancelled for customer {customer_id}")
                 
