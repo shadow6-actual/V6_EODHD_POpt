@@ -114,7 +114,6 @@
         }
         .return-r {
             color: var(--color-accent);
-            /* Make R height similar to lowercase letters */
             font-size: 0.8em; 
             font-weight: 700;
         }
@@ -202,6 +201,21 @@
             border-color: var(--color-border);
         }
         
+        /* Tier badge in dropdown */
+        .tier-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
+        }
+        .tier-badge.free { background: var(--color-text-dim); color: #fff; }
+        .tier-badge.premium { background: var(--color-primary); color: #fff; }
+        .tier-badge.pro { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: #fff; }
+        .tier-badge.trial { background: var(--color-accent-secondary); color: #000; }
+        
         /* Main content area */
         .main-content {
             padding-top: 1rem;
@@ -247,43 +261,31 @@
             background: var(--color-accent) !important;
         }
         
-        .card-header.bg-info {
-            background: #0ea5e9 !important;
-        }
-        
         .card-body {
             color: var(--color-text);
         }
         
-        .card-footer {
-            background: var(--color-bg-elevated);
-            border-top: 1px solid var(--color-border);
-        }
-        
-        /* Form controls dark theme */
+        /* Form inputs dark theme */
         .form-control, .form-select {
-            background: var(--color-bg-elevated);
-            border: 1px solid var(--color-border);
+            background-color: var(--color-bg-elevated);
+            border-color: var(--color-border);
             color: var(--color-text);
         }
         
         .form-control:focus, .form-select:focus {
-            background: var(--color-bg-elevated);
+            background-color: var(--color-bg-elevated);
             border-color: var(--color-primary);
             color: var(--color-text);
-            box-shadow: 0 0 0 3px var(--color-primary-glow);
+            box-shadow: 0 0 0 0.25rem var(--color-primary-glow);
         }
         
         .form-control::placeholder {
             color: var(--color-text-dim);
         }
         
-        .form-label {
-            color: var(--color-text-muted);
-        }
-        
-        .form-check-label {
-            color: var(--color-text-muted);
+        .form-control:disabled, .form-select:disabled {
+            background-color: var(--color-bg);
+            color: var(--color-text-dim);
         }
         
         .form-check-input {
@@ -296,44 +298,26 @@
             border-color: var(--color-primary);
         }
         
+        .form-label, .form-check-label {
+            color: var(--color-text-muted);
+        }
+        
         /* Table dark theme */
         .table {
             color: var(--color-text);
             --bs-table-bg: transparent;
+            --bs-table-striped-bg: var(--color-bg-elevated);
+            --bs-table-hover-bg: var(--color-bg-elevated);
             --bs-table-border-color: var(--color-border);
         }
         
-        .table td,
-        .table th {
-            color: var(--color-text) !important;
-            border-color: var(--color-border) !important;
+        .table > :not(caption) > * > * {
+            background-color: transparent;
+            border-color: var(--color-border);
+            color: var(--color-text);
         }
         
-        .table tbody td {
-            color: var(--color-text-muted) !important;
-        }
-        
-        .table tbody td.text-primary,
-        .table tbody td.fw-bold.text-primary {
-            color: var(--color-primary) !important;
-        }
-        
-        .table tbody td.text-muted {
-            color: var(--color-text-dim) !important;
-        }
-        
-        .table tbody td.text-success {
-            color: var(--color-accent) !important;
-        }
-        
-        .table tbody td.text-danger {
-            color: #ef4444 !important;
-        }
-        
-        .table-light,
-        .table-light th,
-        .table-light td {
-            --bs-table-bg: var(--color-bg-elevated) !important;
+        .table-striped > tbody > tr:nth-of-type(odd) > * {
             background-color: var(--color-bg-elevated) !important;
             color: var(--color-text-muted) !important;
         }
@@ -533,11 +517,11 @@
             background: var(--color-text-dim);
         }
         
-        /* Footer */
+        /* Footer styling */
         .footer-custom {
-            background: var(--color-bg-elevated);
+            background: var(--color-bg-card);
             border-top: 1px solid var(--color-border);
-            padding: 2rem 1.5rem 1rem;
+            padding: 2rem;
             margin-top: 3rem;
         }
         
@@ -548,31 +532,31 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 1.5rem;
         }
         
         .footer-logo {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
         
         .footer-logo-icon {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             color: white;
         }
         
         .footer-logo-text {
             font-family: var(--font-display);
-            font-size: 1rem;
+            font-size: 1.1rem;
             color: var(--color-text);
         }
         
@@ -585,26 +569,25 @@
         .footer-link {
             color: var(--color-text-muted);
             text-decoration: none;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             transition: color 0.2s;
         }
         
         .footer-link:hover {
-            color: var(--color-primary);
+            color: var(--color-text);
         }
         
         .footer-disclaimer {
-            max-width: 1200px;
-            margin: 1.5rem auto 0;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--color-border);
+            width: 100%;
             text-align: center;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+            border-top: 1px solid var(--color-border);
         }
         
         .footer-disclaimer p {
             color: var(--color-text-dim);
-            font-size: 0.75rem;
-            line-height: 1.7;
+            font-size: 0.8rem;
             max-width: 800px;
             margin: 0 auto;
         }
@@ -614,11 +597,10 @@
             justify-content: center;
             gap: 1.5rem;
             margin-top: 1rem;
-            flex-wrap: wrap;
         }
         
         .footer-legal-links a {
-            color: var(--color-text-muted);
+            color: var(--color-text-dim);
             text-decoration: none;
             font-size: 0.8rem;
             transition: color 0.2s;
@@ -632,6 +614,94 @@
             color: var(--color-text-dim);
             font-size: 0.75rem;
             margin-top: 1rem;
+        }
+        
+        /* Subscription Modal Styles */
+        .subscription-modal .modal-header {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+            border-bottom: none;
+        }
+        
+        .subscription-modal .modal-title {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .subscription-modal .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        
+        .subscription-card {
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .subscription-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+        
+        .subscription-card.current {
+            border-color: var(--color-accent);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .subscription-card .tier-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .subscription-card .tier-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .subscription-card .tier-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        
+        .subscription-card .tier-price span {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--color-text-muted);
+        }
+        
+        .subscription-card .tier-features {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+            text-align: left;
+        }
+        
+        .subscription-card .tier-features li {
+            padding: 0.4rem 0;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .subscription-card .tier-features li i {
+            color: var(--color-accent);
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+        
+        .current-plan-badge {
+            display: inline-block;
+            background: var(--color-accent);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
         
         /* Responsive */
@@ -690,19 +760,18 @@
                             <span class="text-light small">
                                 <i class="fas fa-user me-1" style="color: var(--color-accent);"></i>
                                 <span id="usernameDisplay">User</span>
+                                <span id="userTierBadge" class="tier-badge free">Free</span>
                             </span>
                             <div class="dropdown">
                                 <button class="btn-nav-outline dropdown-toggle" type="button" data-bs-toggle="dropdown" style="padding: 0.4rem 0.75rem;">
                                     <i class="fas fa-cog"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="#" onclick="openUserProfile()"><i class="fas fa-user-cog me-2"></i>Profile</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="openSubscriptionModal()"><i class="fas fa-crown me-2" style="color: #f59e0b;"></i>Subscription</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="showMyPortfolios()"><i class="fas fa-folder me-2"></i>My Portfolios</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="openUserProfile(); return false;"><i class="fas fa-user-cog me-2"></i>Profile</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showSubscriptionModal(); return false;"><i class="fas fa-crown me-2"></i>Subscription</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showMyPortfolios(); return false;"><i class="fas fa-folder me-2"></i>My Portfolios</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/pricing"><i class="fas fa-tags me-2"></i>View Plans</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="#" onclick="clerkSignOut()"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="clerkSignOut(); return false;"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -715,6 +784,109 @@
             </div>
         </div>
     </nav>
+
+    <!-- Subscription Modal -->
+    <div class="modal fade subscription-modal" id="subscriptionModal" tabindex="-1" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subscriptionModalLabel">
+                        <i class="fas fa-crown me-2"></i>Manage Subscription
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Current Plan Info -->
+                    <div id="currentPlanInfo" class="mb-4 p-3 rounded" style="background: var(--color-bg-elevated);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted small">Current Plan:</span>
+                                <h5 class="mb-0" id="currentPlanName">Free</h5>
+                            </div>
+                            <div id="subscriptionStatus" class="text-end">
+                                <!-- Status will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Plan Options -->
+                    <div class="row g-3" id="planOptions">
+                        <!-- Free Plan -->
+                        <div class="col-md-4">
+                            <div class="subscription-card" id="planCardFree">
+                                <div class="tier-icon">🆓</div>
+                                <div class="tier-name">Free</div>
+                                <div class="tier-price">$0<span>/month</span></div>
+                                <ul class="tier-features">
+                                    <li><i class="fas fa-check"></i>10 assets per portfolio</li>
+                                    <li><i class="fas fa-check"></i>1 saved portfolio</li>
+                                    <li><i class="fas fa-check"></i>Basic optimization</li>
+                                    <li><i class="fas fa-times text-muted"></i>No CSV export</li>
+                                </ul>
+                                <button class="btn btn-outline-secondary btn-sm w-100" id="btnFreePlan" disabled>
+                                    Current Plan
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Premium Plan -->
+                        <div class="col-md-4">
+                            <div class="subscription-card" id="planCardPremium">
+                                <div class="tier-icon">⭐</div>
+                                <div class="tier-name">Premium</div>
+                                <div class="tier-price">$14<span>/month</span></div>
+                                <ul class="tier-features">
+                                    <li><i class="fas fa-check"></i>25 assets per portfolio</li>
+                                    <li><i class="fas fa-check"></i>3 saved portfolios</li>
+                                    <li><i class="fas fa-check"></i>All optimization methods</li>
+                                    <li><i class="fas fa-check"></i>CSV import/export</li>
+                                </ul>
+                                <button class="btn btn-primary btn-sm w-100" id="btnPremiumPlan" onclick="subscribeFromModal('premium')">
+                                    Upgrade to Premium
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Pro Plan -->
+                        <div class="col-md-4">
+                            <div class="subscription-card" id="planCardPro">
+                                <span class="current-plan-badge" style="background: var(--color-accent-secondary); display: none;" id="popularBadge">Most Popular</span>
+                                <div class="tier-icon">🚀</div>
+                                <div class="tier-name">Pro</div>
+                                <div class="tier-price">$29<span>/month</span></div>
+                                <ul class="tier-features">
+                                    <li><i class="fas fa-check"></i>Unlimited assets</li>
+                                    <li><i class="fas fa-check"></i>Unlimited portfolios</li>
+                                    <li><i class="fas fa-check"></i>Diversification analytics</li>
+                                    <li><i class="fas fa-check"></i>Group constraints</li>
+                                </ul>
+                                <button class="btn btn-primary btn-sm w-100" id="btnProPlan" onclick="subscribeFromModal('pro')">
+                                    Upgrade to Pro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Manage Subscription Button (for existing subscribers) -->
+                    <div id="manageSubscriptionSection" class="mt-4 text-center" style="display: none;">
+                        <hr class="my-3" style="border-color: var(--color-border);">
+                        <button class="btn btn-outline-primary" onclick="openCustomerPortal()">
+                            <i class="fas fa-credit-card me-2"></i>Manage Billing & Payment
+                        </button>
+                        <p class="small text-muted mt-2">
+                            Update payment method, view invoices, or cancel subscription
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <a href="/pricing" class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>View full pricing details
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="main-content">
         <div class="container-fluid">
@@ -745,12 +917,248 @@
                 <a href="/privacy">Privacy Policy</a>
                 <a href="/disclaimer">Investment Disclaimer</a>
             </div>
-            <p class="footer-copyright">© 2026 FolioForecast. All rights reserved.</p>
+            <p class="footer-copyright">
+                © 2024-2026 FolioForecast. All rights reserved. Not financial advice.
+            </p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    
+    <script>
+        // =====================================================================
+        // SUBSCRIPTION MODAL FUNCTIONS (Global scope for layout.html)
+        // =====================================================================
+        
+        // Show subscription modal
+        window.showSubscriptionModal = function() {
+            // Update modal with current subscription info
+            updateSubscriptionModal();
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('subscriptionModal'));
+            modal.show();
+        };
+        
+        // Update subscription modal with current tier info
+        function updateSubscriptionModal() {
+            // Get current tier from global userSubscription (set by main.js)
+            const tier = window.userSubscription?.tier || 'free';
+            const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+            
+            // Update current plan display
+            document.getElementById('currentPlanName').textContent = tierName;
+            
+            // Reset all cards
+            document.querySelectorAll('.subscription-card').forEach(card => {
+                card.classList.remove('current');
+            });
+            
+            // Highlight current plan card
+            const currentCard = document.getElementById('planCard' + tierName);
+            if (currentCard) {
+                currentCard.classList.add('current');
+            }
+            
+            // Update buttons based on current tier
+            const btnFree = document.getElementById('btnFreePlan');
+            const btnPremium = document.getElementById('btnPremiumPlan');
+            const btnPro = document.getElementById('btnProPlan');
+            const manageSection = document.getElementById('manageSubscriptionSection');
+            const popularBadge = document.getElementById('popularBadge');
+            
+            // Show popular badge on Pro if user is on Free
+            if (tier === 'free') {
+                popularBadge.style.display = 'inline-block';
+            } else {
+                popularBadge.style.display = 'none';
+            }
+            
+            // Reset buttons
+            btnFree.textContent = 'Current Plan';
+            btnFree.className = 'btn btn-outline-secondary btn-sm w-100';
+            btnFree.disabled = true;
+            btnFree.onclick = null;
+            
+            btnPremium.textContent = 'Upgrade to Premium';
+            btnPremium.className = 'btn btn-primary btn-sm w-100';
+            btnPremium.disabled = false;
+            btnPremium.onclick = () => subscribeFromModal('premium');
+            
+            btnPro.textContent = 'Upgrade to Pro';
+            btnPro.className = 'btn btn-primary btn-sm w-100';
+            btnPro.disabled = false;
+            btnPro.onclick = () => subscribeFromModal('pro');
+            
+            // Customize based on current tier
+            if (tier === 'free' || tier === 'trial') {
+                manageSection.style.display = 'none';
+                
+                if (tier === 'trial') {
+                    btnFree.textContent = 'Trial Active';
+                    document.getElementById('subscriptionStatus').innerHTML = `
+                        <span class="badge bg-warning text-dark">Trial</span>
+                        <div class="small text-muted mt-1">Expires in ${window.userSubscription?.days_until_expiry || '?'} days</div>
+                    `;
+                }
+            } else if (tier === 'premium') {
+                btnPremium.textContent = 'Current Plan';
+                btnPremium.className = 'btn btn-outline-success btn-sm w-100';
+                btnPremium.disabled = true;
+                btnPremium.onclick = null;
+                
+                btnFree.textContent = 'Downgrade';
+                btnFree.disabled = false;
+                btnFree.onclick = () => openCustomerPortal();
+                
+                manageSection.style.display = 'block';
+                document.getElementById('subscriptionStatus').innerHTML = `
+                    <span class="badge bg-primary">Active</span>
+                `;
+            } else if (tier === 'pro') {
+                btnPro.textContent = 'Current Plan';
+                btnPro.className = 'btn btn-outline-success btn-sm w-100';
+                btnPro.disabled = true;
+                btnPro.onclick = null;
+                
+                btnPremium.textContent = 'Downgrade';
+                btnPremium.disabled = false;
+                btnPremium.onclick = () => openCustomerPortal();
+                
+                btnFree.textContent = 'Downgrade';
+                btnFree.disabled = false;
+                btnFree.onclick = () => openCustomerPortal();
+                
+                manageSection.style.display = 'block';
+                document.getElementById('subscriptionStatus').innerHTML = `
+                    <span class="badge bg-success">Active</span>
+                `;
+            }
+        }
+        
+        // Subscribe from modal
+        window.subscribeFromModal = async function(tier) {
+            const btn = document.getElementById('btn' + tier.charAt(0).toUpperCase() + tier.slice(1) + 'Plan');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+            
+            try {
+                // Get auth token
+                if (!window.clerkInstance || !window.clerkInstance.session) {
+                    alert('Please sign in to subscribe.');
+                    return;
+                }
+                
+                const token = await window.clerkInstance.session.getToken();
+                
+                if (!token) {
+                    alert('Authentication error. Please try signing in again.');
+                    return;
+                }
+                
+                // Get user email if available
+                const email = window.clerkInstance.user?.primaryEmailAddress?.emailAddress || null;
+                
+                // Create checkout session
+                const response = await fetch('/api/stripe/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ 
+                        tier: tier,
+                        email: email
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    if (data.error === 'already_subscribed') {
+                        if (confirm(data.message + '\n\nWould you like to manage your subscription?')) {
+                            await openCustomerPortal();
+                        }
+                    } else {
+                        alert('Error: ' + (data.message || data.error));
+                    }
+                    return;
+                }
+                
+                if (data.url) {
+                    // Close modal and redirect to Stripe Checkout
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'));
+                    if (modal) modal.hide();
+                    
+                    window.location.href = data.url;
+                } else {
+                    alert('Failed to create checkout session. Please try again.');
+                }
+                
+            } catch (error) {
+                console.error('Subscription error:', error);
+                alert('Failed to start checkout. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        };
+        
+        // Open Stripe Customer Portal
+        window.openCustomerPortal = async function() {
+            try {
+                if (!window.clerkInstance || !window.clerkInstance.session) {
+                    alert('Please sign in to manage your subscription.');
+                    return;
+                }
+                
+                const token = await window.clerkInstance.session.getToken();
+                
+                const response = await fetch('/api/stripe/customer-portal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    if (data.error === 'no_subscription') {
+                        alert('You don\'t have an active subscription to manage. Please subscribe first!');
+                    } else {
+                        alert(data.message || 'Unable to open subscription portal.');
+                    }
+                    return;
+                }
+                
+                if (data.url) {
+                    // Close modal and redirect to Stripe Portal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'));
+                    if (modal) modal.hide();
+                    
+                    window.location.href = data.url;
+                }
+                
+            } catch (error) {
+                console.error('Portal error:', error);
+                alert('Failed to open subscription portal. Please try again.');
+            }
+        };
+        
+        // Update tier badge in navbar
+        window.updateTierBadge = function(tier) {
+            const badge = document.getElementById('userTierBadge');
+            if (!badge) return;
+            
+            badge.className = 'tier-badge ' + (tier || 'free');
+            badge.textContent = (tier || 'free').charAt(0).toUpperCase() + (tier || 'free').slice(1);
+        };
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>
