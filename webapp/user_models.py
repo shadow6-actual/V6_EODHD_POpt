@@ -43,10 +43,10 @@ class User(Base):
     signup_user_agent = Column(Text)
     
     # Subscription - Stripe integration
-    subscription_tier = Column(String(20), default='free')  # free, premium, pro, trial
+    subscription_tier = Column(String(20), default='free')
     stripe_customer_id = Column(String(255), nullable=True, index=True)
     stripe_subscription_id = Column(String(255), nullable=True, index=True)
-    subscription_status = Column(String(20), default='none')  # none, active, past_due, canceled, trialing
+    subscription_status = Column(String(20), default='none')
     subscription_expires_at = Column(DateTime, nullable=True)
     
     # Trial tracking
