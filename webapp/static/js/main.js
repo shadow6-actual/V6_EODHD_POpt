@@ -226,6 +226,7 @@ function waitForClerk() {
 async function initializeClerk() {
     try {
         clerkInstance = window.Clerk;
+        window.clerkInstance = clerkInstance; // Expose globally for layout.html
         
         if (!clerkInstance) {
             console.warn('Clerk not available');
