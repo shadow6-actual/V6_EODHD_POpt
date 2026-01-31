@@ -30,29 +30,30 @@ else:
 
 # Price IDs from Stripe Dashboard - these map our tier names to Stripe price IDs
 # Set these in Railway environment variables after creating products in Stripe
-PRICE_IDS = {
-    'premium': os.environ.get('STRIPE_PREMIUM_PRICE_ID'),
-    'pro': os.environ.get('STRIPE_PRO_PRICE_ID')
-}
+# NOTE: We use functions to read at runtime, not import time, to handle delayed env var loading
 
-# Reverse mapping: Stripe price ID -> our tier name
-# This is used when processing webhooks to determine which tier was purchased
-def _build_price_to_tier_map():
-    """Build reverse mapping of price IDs to tier names"""
+def get_price_ids():
+    """Get price IDs at runtime (not cached at import time)"""
+    return {
+        'premium': os.environ.get('STRIPE_PREMIUM_PRICE_ID'),
+        'pro': os.environ.get('STRIPE_PRO_PRICE_ID')
+    }
+
+def get_price_to_tier_map():
+    """Build reverse mapping of price IDs to tier names at runtime"""
     mapping = {}
-    for tier, price_id in PRICE_IDS.items():
+    for tier, price_id in get_price_ids().items():
         if price_id:
             mapping[price_id] = tier
     return mapping
 
-PRICE_TO_TIER = _build_price_to_tier_map()
-
-# Log configuration status
-for tier, price_id in PRICE_IDS.items():
+# Log configuration status at startup (may show as not set if env vars load later)
+_startup_price_ids = get_price_ids()
+for tier, price_id in _startup_price_ids.items():
     if price_id:
         logger.info(f"Stripe {tier} price ID configured: {price_id[:20]}...")
     else:
-        logger.warning(f"STRIPE_{tier.upper()}_PRICE_ID not set")
+        logger.warning(f"STRIPE_{tier.upper()}_PRICE_ID not set - will check again at runtime")
 
 
 # =============================================================================
@@ -77,18 +78,19 @@ def is_stripe_configured():
     Returns:
         dict: Configuration status for each required setting
     """
+    price_ids = get_price_ids()
     return {
         'secret_key': bool(os.environ.get('STRIPE_SECRET_KEY')),
         'publishable_key': bool(os.environ.get('STRIPE_PUBLISHABLE_KEY')),
         'webhook_secret': bool(os.environ.get('STRIPE_WEBHOOK_SECRET')),
-        'premium_price_id': bool(PRICE_IDS.get('premium')),
-        'pro_price_id': bool(PRICE_IDS.get('pro')),
+        'premium_price_id': bool(price_ids.get('premium')),
+        'pro_price_id': bool(price_ids.get('pro')),
         'fully_configured': all([
             os.environ.get('STRIPE_SECRET_KEY'),
             os.environ.get('STRIPE_PUBLISHABLE_KEY'),
             os.environ.get('STRIPE_WEBHOOK_SECRET'),
-            PRICE_IDS.get('premium'),
-            PRICE_IDS.get('pro')
+            price_ids.get('premium'),
+            price_ids.get('pro')
         ])
     }
 
@@ -114,11 +116,13 @@ def create_checkout_session(user_id, user_email, tier, success_url, cancel_url):
         ValueError: If tier is invalid or price ID not configured
         stripe.error.StripeError: If Stripe API call fails
     """
-    # Validate tier
-    if tier not in PRICE_IDS:
-        raise ValueError(f"Invalid tier: {tier}. Must be one of: {list(PRICE_IDS.keys())}")
     
-    price_id = PRICE_IDS[tier]
+    # Validate tier and get price ID at runtime
+    price_ids = get_price_ids()
+    if tier not in price_ids:
+        raise ValueError(f"Invalid tier: {tier}. Must be one of: {list(price_ids.keys())}")
+    
+    price_id = price_ids[tier]
     if not price_id:
         raise ValueError(
             f"Price ID not configured for tier: {tier}. "
@@ -408,9 +412,10 @@ def get_tier_from_subscription(subscription):
             else:
                 price_id = items[0].price.id if hasattr(items[0], 'price') else None
             
-            if price_id and price_id in PRICE_TO_TIER:
-                return PRICE_TO_TIER[price_id]
-        
+            price_to_tier = get_price_to_tier_map()
+            if price_id and price_id in price_to_tier:
+                return price_to_tier[price_id]
+                        
         # Fallback: check metadata
         metadata = subscription.get('metadata', {}) if hasattr(subscription, 'get') else getattr(subscription, 'metadata', {})
         if metadata and 'tier' in metadata:
