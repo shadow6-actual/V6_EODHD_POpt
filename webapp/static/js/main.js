@@ -278,6 +278,12 @@ async function handleSignedIn(user) {
 function handleSignedOut() {
     currentUser = null;
     userSubscription = null;
+    window.userSubscription = null; // Clear global reference
+    
+    // Reset tier badge to free
+    if (typeof window.updateTierBadge === 'function') {
+        window.updateTierBadge('free');
+    }
     
     document.getElementById('authLoading').style.display = 'none';
     document.getElementById('signedOutButtons').style.display = 'block';
@@ -312,6 +318,71 @@ function storeUtmParams() {
 // Call this on page load
 storeUtmParams();
 
+// ============================================================================
+// SUBSCRIPTION REDIRECT HANDLERS
+// ============================================================================
+
+function checkSubscriptionRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Handle successful subscription
+    if (params.get('subscription') === 'success') {
+        // Clean up URL
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        // Show success message
+        setTimeout(() => {
+            showSubscriptionSuccessMessage();
+        }, 500);
+    }
+    
+    // Handle subscribe redirect from pricing page (user wasn't logged in)
+    const subscribeTier = params.get('subscribe');
+    if (subscribeTier && (subscribeTier === 'premium' || subscribeTier === 'pro')) {
+        // Clean up URL
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        // User is now logged in, trigger subscription flow
+        setTimeout(() => {
+            if (typeof window.subscribeFromModal === 'function') {
+                window.subscribeFromModal(subscribeTier);
+            } else if (typeof window.showSubscriptionModal === 'function') {
+                window.showSubscriptionModal();
+            }
+        }, 1000);
+    }
+}
+
+function showSubscriptionSuccessMessage() {
+    const tier = userSubscription?.tier || 'premium';
+    const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+    
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-4';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="alert alert-success d-flex align-items-center shadow-lg" role="alert" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white;">
+            <i class="fas fa-check-circle me-3 fs-4"></i>
+            <div>
+                <strong>Welcome to ${tierName}!</strong><br>
+                <small>Your subscription is now active. Enjoy all the premium features!</small>
+            </div>
+            <button type="button" class="btn-close btn-close-white ms-3" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 8000);
+}
+
 async function syncUserToBackend() {
     try {
         const token = await clerkInstance.session.getToken();
@@ -337,9 +408,18 @@ async function syncUserToBackend() {
         
         const data = await response.json();
         userSubscription = data.subscription;
+        window.userSubscription = userSubscription; // Expose globally for layout.html modal
         console.log('User subscription:', userSubscription);
         
+        // Update tier badge in navbar
+        if (typeof window.updateTierBadge === 'function') {
+            window.updateTierBadge(userSubscription?.tier || 'free');
+        }
+        
         applyTierRestrictions();
+        
+        // Check for subscription success redirect
+        checkSubscriptionRedirect();
         
     } catch (error) {
         console.error('Failed to sync user:', error);
