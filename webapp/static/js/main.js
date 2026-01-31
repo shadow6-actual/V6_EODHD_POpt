@@ -2850,4 +2850,4 @@ function renderDiversificationMetrics(divData) {
             }, 1500);
         }
     }
-}
+
