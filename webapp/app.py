@@ -2008,6 +2008,19 @@ def clerk_webhook():
         logger.error(f"Clerk webhook error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/debug/stripe-config')
+def debug_stripe_config():
+    """Temporary debug endpoint - REMOVE BEFORE PRODUCTION"""
+    import os
+    return jsonify({
+        'STRIPE_SECRET_KEY_SET': bool(os.environ.get('STRIPE_SECRET_KEY')),
+        'STRIPE_PUBLISHABLE_KEY_SET': bool(os.environ.get('STRIPE_PUBLISHABLE_KEY')),
+        'STRIPE_PREMIUM_PRICE_ID': os.environ.get('STRIPE_PREMIUM_PRICE_ID', 'NOT SET'),
+        'STRIPE_PRO_PRICE_ID': os.environ.get('STRIPE_PRO_PRICE_ID', 'NOT SET'),
+        'STRIPE_WEBHOOK_SECRET_SET': bool(os.environ.get('STRIPE_WEBHOOK_SECRET')),
+        'all_env_keys_with_stripe': [k for k in os.environ.keys() if 'STRIPE' in k.upper()]
+    })
+
 # ============================================================================
 # 5. ENTRY POINT
 # ============================================================================
