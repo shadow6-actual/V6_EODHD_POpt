@@ -2021,6 +2021,31 @@ def debug_stripe_config():
         'all_env_keys_with_stripe': [k for k in os.environ.keys() if 'STRIPE' in k.upper()]
     })
 
+@app.route('/api/debug/env-check')
+def debug_env_check():
+    """Temporary debug endpoint - shows what env vars the app can see"""
+    import os
+    
+    # Get all environment variable names (not values for security)
+    all_env_keys = list(os.environ.keys())
+    stripe_keys = [k for k in all_env_keys if 'STRIPE' in k.upper()]
+    
+    # Check specific values (masked)
+    premium_id = os.environ.get('STRIPE_PREMIUM_PRICE_ID', '')
+    pro_id = os.environ.get('STRIPE_PRO_PRICE_ID', '')
+    secret = os.environ.get('STRIPE_SECRET_KEY', '')
+    
+    return jsonify({
+        'total_env_vars': len(all_env_keys),
+        'stripe_related_keys': stripe_keys,
+        'STRIPE_PREMIUM_PRICE_ID': f"{premium_id[:10]}..." if premium_id else "NOT SET",
+        'STRIPE_PRO_PRICE_ID': f"{pro_id[:10]}..." if pro_id else "NOT SET",
+        'STRIPE_SECRET_KEY': f"{secret[:10]}..." if secret else "NOT SET",
+        'STRIPE_PUBLISHABLE_KEY': f"{os.environ.get('STRIPE_PUBLISHABLE_KEY', '')[:15]}..." if os.environ.get('STRIPE_PUBLISHABLE_KEY') else "NOT SET",
+        'DATABASE_URL_SET': bool(os.environ.get('DATABASE_URL')),
+        'CLERK_SECRET_KEY_SET': bool(os.environ.get('CLERK_SECRET_KEY')),
+    })
+
 # ============================================================================
 # 5. ENTRY POINT
 # ============================================================================
