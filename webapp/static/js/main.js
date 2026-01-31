@@ -2247,4 +2247,525 @@ function renderDiversificationMetrics(divData) {
             font: { color: chartTextColor }
         });
     }
+    // ============================================================================
+    // MAIN.JS ADDITIONS FOR SUBSCRIPTION MANAGEMENT
+    // ============================================================================
+    //
+    
+    
+    /**
+     * Open the subscription management modal
+     * This is called from the dropdown menu
+     */
+    window.openSubscriptionModal = async function() {
+        // Get current subscription info
+        const tier = userSubscription?.tier || 'free';
+        const tierName = userSubscription?.tier_name || 'Free';
+        const maxAssets = userSubscription?.max_assets || 10;
+        const maxPortfolios = userSubscription?.max_portfolios || 1;
+        const features = userSubscription?.features || {};
+        const daysUntilExpiry = userSubscription?.days_until_expiry;
+        
+        // Check if user has a Stripe subscription (for showing Manage Billing button)
+        let hasStripeSubscription = false;
+        if (currentUser && clerkInstance?.session) {
+            try {
+                const token = await getAuthToken();
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                hasStripeSubscription = !!data.local_user?.stripe_customer_id;
+            } catch (e) {
+                console.error('Failed to check Stripe status:', e);
+            }
+        }
+        
+        // Build feature list HTML
+        const featureList = `
+            <div class="subscription-features">
+                <div class="feature-item">
+                    <i class="fas fa-chart-pie text-primary"></i>
+                    <span>Up to <strong>${maxAssets === 999 ? 'Unlimited' : maxAssets}</strong> assets per portfolio</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-folder text-primary"></i>
+                    <span><strong>${maxPortfolios === 999 ? 'Unlimited' : maxPortfolios}</strong> saved portfolios</span>
+                </div>
+                <div class="feature-item ${features.advanced_optimization ? '' : 'disabled'}">
+                    <i class="fas ${features.advanced_optimization ? 'fa-check text-success' : 'fa-lock text-muted'}"></i>
+                    <span>Advanced Optimization</span>
+                </div>
+                <div class="feature-item ${features.robust_optimization ? '' : 'disabled'}">
+                    <i class="fas ${features.robust_optimization ? 'fa-check text-success' : 'fa-lock text-muted'}"></i>
+                    <span>Robust Optimization</span>
+                </div>
+                <div class="feature-item ${features.diversification_analytics ? '' : 'disabled'}">
+                    <i class="fas ${features.diversification_analytics ? 'fa-check text-success' : 'fa-lock text-muted'}"></i>
+                    <span>Diversification Analytics</span>
+                </div>
+                <div class="feature-item ${features.csv_import_export ? '' : 'disabled'}">
+                    <i class="fas ${features.csv_import_export ? 'fa-check text-success' : 'fa-lock text-muted'}"></i>
+                    <span>CSV Import/Export</span>
+                </div>
+                <div class="feature-item ${features.group_constraints ? '' : 'disabled'}">
+                    <i class="fas ${features.group_constraints ? 'fa-check text-success' : 'fa-lock text-muted'}"></i>
+                    <span>Group Constraints</span>
+                </div>
+            </div>
+        `;
+        
+        // Build expiry notice if applicable
+        let expiryNotice = '';
+        if (daysUntilExpiry !== null && daysUntilExpiry !== undefined && tier !== 'free') {
+            if (daysUntilExpiry > 0) {
+                expiryNotice = `<div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    ${tier === 'trial' ? 'Trial' : 'Subscription'} expires in <strong>${daysUntilExpiry}</strong> days
+                </div>`;
+            } else if (daysUntilExpiry <= 0) {
+                expiryNotice = `<div class="alert alert-warning mt-3 mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Your subscription has expired. Please renew to keep your features.
+                </div>`;
+            }
+        }
+        
+        // Build action buttons based on current tier
+        let actionButtons = '';
+        
+        if (tier === 'free') {
+            actionButtons = `
+                <div class="subscription-actions">
+                    <h6 class="mb-3">Upgrade Your Plan</h6>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="upgrade-card" onclick="subscribeToTier('premium')">
+                                <div class="upgrade-tier">Premium</div>
+                                <div class="upgrade-price">$14<span>/mo</span></div>
+                                <ul class="upgrade-features">
+                                    <li>25 assets</li>
+                                    <li>3 portfolios</li>
+                                    <li>Advanced methods</li>
+                                </ul>
+                                <button class="btn btn-outline-primary btn-sm w-100">Choose Premium</button>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="upgrade-card featured" onclick="subscribeToTier('pro')">
+                                <div class="upgrade-badge">BEST VALUE</div>
+                                <div class="upgrade-tier">Pro</div>
+                                <div class="upgrade-price">$29<span>/mo</span></div>
+                                <ul class="upgrade-features">
+                                    <li>Unlimited assets</li>
+                                    <li>Unlimited portfolios</li>
+                                    <li>All features</li>
+                                </ul>
+                                <button class="btn btn-success btn-sm w-100">Start Free Trial</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (tier === 'trial') {
+            actionButtons = `
+                <div class="subscription-actions">
+                    <div class="alert alert-success">
+                        <i class="fas fa-star me-2"></i>
+                        You're on a <strong>Pro Trial</strong>! Enjoying it?
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="subscribeToTier('premium')">
+                                Get Premium - $14/mo
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-success w-100" onclick="subscribeToTier('pro')">
+                                Get Pro - $29/mo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (tier === 'premium') {
+            actionButtons = `
+                <div class="subscription-actions">
+                    <div class="d-flex gap-2 mb-3">
+                        <button class="btn btn-success flex-grow-1" onclick="subscribeToTier('pro')">
+                            <i class="fas fa-arrow-up me-2"></i>Upgrade to Pro - $29/mo
+                        </button>
+                    </div>
+                    ${hasStripeSubscription ? `
+                    <button class="btn btn-outline-secondary w-100" onclick="openCustomerPortal()">
+                        <i class="fas fa-credit-card me-2"></i>Manage Billing
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+        } else if (tier === 'pro') {
+            actionButtons = `
+                <div class="subscription-actions">
+                    <div class="alert alert-success mb-3">
+                        <i class="fas fa-crown me-2"></i>
+                        You have full access to all features!
+                    </div>
+                    ${hasStripeSubscription ? `
+                    <button class="btn btn-outline-secondary w-100" onclick="openCustomerPortal()">
+                        <i class="fas fa-credit-card me-2"></i>Manage Billing & Subscription
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Get badge class for tier
+        const getTierBadgeClass = (t) => {
+            switch(t) {
+                case 'pro': return 'bg-success';
+                case 'premium': return 'bg-primary';
+                case 'trial': return 'bg-warning text-dark';
+                default: return 'bg-secondary';
+            }
+        };
+        
+        // Remove existing modal if present
+        const existingModal = document.getElementById('subscriptionModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'subscriptionModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content" style="background: var(--color-bg-card, #1a2235); color: var(--color-text, #f1f5f9); border: 1px solid var(--color-border, #1e293b);">
+                    <div class="modal-header" style="border-bottom-color: var(--color-border, #1e293b);">
+                        <h5 class="modal-title">
+                            <i class="fas fa-crown me-2" style="color: #f59e0b;"></i>
+                            Subscription
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="current-plan-header mb-4">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted">Current Plan</span>
+                                    <h3 class="mb-0">${tierName} <span class="badge ${getTierBadgeClass(tier)}">${tier.toUpperCase()}</span></h3>
+                                </div>
+                                <a href="/pricing" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-external-link-alt me-1"></i>View All Plans
+                                </a>
+                            </div>
+                            ${expiryNotice}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-5">
+                                <h6 class="text-muted mb-3">Your Features</h6>
+                                ${featureList}
+                            </div>
+                            <div class="col-md-7">
+                                ${actionButtons}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top-color: var(--color-border, #1e293b);">
+                        <small class="text-muted">
+                            <i class="fas fa-lock me-1"></i>
+                            Payments secured by Stripe. <a href="/terms" target="_blank">Terms</a> apply.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add styles if not already present
+        if (!document.getElementById('subscriptionModalStyles')) {
+            const style = document.createElement('style');
+            style.id = 'subscriptionModalStyles';
+            style.textContent = `
+                .subscription-features {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+                .subscription-features .feature-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.5rem;
+                    border-radius: 6px;
+                    background: rgba(255,255,255,0.03);
+                }
+                .subscription-features .feature-item.disabled {
+                    opacity: 0.5;
+                }
+                .subscription-features .feature-item i {
+                    width: 20px;
+                    text-align: center;
+                }
+                .subscription-actions {
+                    padding: 1rem;
+                    background: rgba(255,255,255,0.02);
+                    border-radius: 8px;
+                }
+                .upgrade-card {
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid var(--color-border, #1e293b);
+                    border-radius: 12px;
+                    padding: 1.25rem;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    position: relative;
+                }
+                .upgrade-card:hover {
+                    border-color: var(--color-primary, #3b82f6);
+                    transform: translateY(-2px);
+                }
+                .upgrade-card.featured {
+                    border-color: var(--color-accent, #10b981);
+                    background: rgba(16, 185, 129, 0.1);
+                }
+                .upgrade-badge {
+                    position: absolute;
+                    top: -10px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: var(--color-accent, #10b981);
+                    color: white;
+                    font-size: 0.65rem;
+                    font-weight: 700;
+                    padding: 0.2rem 0.6rem;
+                    border-radius: 10px;
+                }
+                .upgrade-tier {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                }
+                .upgrade-price {
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: var(--color-text, #f1f5f9);
+                }
+                .upgrade-price span {
+                    font-size: 0.9rem;
+                    font-weight: 400;
+                    color: var(--color-text-muted, #94a3b8);
+                }
+                .upgrade-features {
+                    list-style: none;
+                    padding: 0;
+                    margin: 1rem 0;
+                    font-size: 0.85rem;
+                    color: var(--color-text-muted, #94a3b8);
+                }
+                .upgrade-features li {
+                    padding: 0.25rem 0;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(modal);
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    };
+    
+    /**
+     * Subscribe to a tier - creates Stripe checkout session
+     */
+    window.subscribeToTier = async function(tier) {
+        console.log('subscribeToTier called:', tier);
+        
+        // Close any open modals
+        const openModals = document.querySelectorAll('.modal.show');
+        openModals.forEach(m => {
+            const instance = bootstrap.Modal.getInstance(m);
+            if (instance) instance.hide();
+        });
+        
+        // Check if user is logged in
+        if (!currentUser || !clerkInstance?.session) {
+            showLoginPrompt('Please sign in to subscribe to ' + tier.charAt(0).toUpperCase() + tier.slice(1));
+            return;
+        }
+        
+        const token = await getAuthToken();
+        if (!token) {
+            showLoginPrompt('Please sign in to subscribe');
+            return;
+        }
+        
+        // Show loading
+        const loadingModal = showStripeLoadingModal('Creating checkout session...');
+        
+        try {
+            const response = await fetch('/api/stripe/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    tier: tier,
+                    email: clerkInstance?.user?.primaryEmailAddress?.emailAddress || null
+                })
+            });
+            
+            const data = await response.json();
+            
+            hideStripeLoadingModal(loadingModal);
+            
+            if (data.error) {
+                if (data.error === 'already_subscribed') {
+                    alert(data.message + '\n\nUse "Manage Billing" to change your subscription.');
+                    openSubscriptionModal();
+                } else {
+                    alert('Error: ' + (data.message || data.error));
+                }
+                return;
+            }
+            
+            if (data.url) {
+                console.log('Redirecting to Stripe Checkout');
+                window.location.href = data.url;
+            } else {
+                alert('Failed to create checkout session. Please try again.');
+            }
+            
+        } catch (error) {
+            hideStripeLoadingModal(loadingModal);
+            console.error('Subscription error:', error);
+            alert('Failed to start checkout. Please try again.');
+        }
+    };
+    
+    /**
+     * Open Stripe Customer Portal for billing management
+     */
+    window.openCustomerPortal = async function() {
+        if (!currentUser || !clerkInstance?.session) {
+            showLoginPrompt('Please sign in to manage your subscription');
+            return;
+        }
+        
+        const token = await getAuthToken();
+        if (!token) {
+            showLoginPrompt('Please sign in to manage your subscription');
+            return;
+        }
+        
+        const loadingModal = showStripeLoadingModal('Opening billing portal...');
+        
+        try {
+            const response = await fetch('/api/stripe/customer-portal', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            hideStripeLoadingModal(loadingModal);
+            
+            if (data.error) {
+                if (data.error === 'no_subscription') {
+                    alert('No active subscription found. Subscribe first to access billing management.');
+                    openSubscriptionModal();
+                } else {
+                    alert('Error: ' + (data.message || data.error));
+                }
+                return;
+            }
+            
+            if (data.url) {
+                window.location.href = data.url;
+            }
+            
+        } catch (error) {
+            hideStripeLoadingModal(loadingModal);
+            console.error('Portal error:', error);
+            alert('Failed to open billing portal. Please try again.');
+        }
+    };
+    
+    /**
+     * Show a loading modal for Stripe operations
+     */
+    function showStripeLoadingModal(message) {
+        const modal = document.createElement('div');
+        modal.className = 'stripe-loading-modal';
+        modal.id = 'stripeLoadingModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        modal.innerHTML = `
+            <div style="background:var(--color-bg-card,#1a2235);padding:2rem;border-radius:12px;text-align:center;border:1px solid var(--color-border,#1e293b);">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p style="color:var(--color-text,#f1f5f9);margin:0;">${message}</p>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return modal;
+    }
+    
+    /**
+     * Hide the Stripe loading modal
+     */
+    function hideStripeLoadingModal(modal) {
+        if (modal && modal.parentNode) {
+            modal.remove();
+        }
+    }
+    
+    /**
+     * Check URL parameters for subscription status (after Stripe redirect)
+     * Call this on page load
+     */
+    function checkSubscriptionUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const subscriptionStatus = urlParams.get('subscription');
+        
+        if (subscriptionStatus === 'success') {
+            // Remove the parameter from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Show success message after a short delay
+            setTimeout(async () => {
+                alert('🎉 Subscription activated successfully! Welcome to FolioForecast!');
+                // Refresh user data
+                if (currentUser && clerkInstance?.session) {
+                    await syncUserData();
+                    applyTierRestrictions();
+                }
+            }, 500);
+        } else if (subscriptionStatus === 'cancelled') {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        // Check for subscribe parameter (from pricing page redirect)
+        const subscribeTier = urlParams.get('subscribe');
+        if (subscribeTier && (subscribeTier === 'premium' || subscribeTier === 'pro')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            // Wait for auth to initialize, then subscribe
+            setTimeout(() => {
+                if (currentUser) {
+                    subscribeToTier(subscribeTier);
+                } else {
+                    showLoginPrompt('Please sign in to subscribe to ' + subscribeTier.charAt(0).toUpperCase() + subscribeTier.slice(1));
+                }
+            }, 1500);
+        }
 }
