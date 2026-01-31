@@ -9,6 +9,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Clerk for authentication -->
+    <script
+        async
+        crossorigin="anonymous"
+        data-clerk-publishable-key="{{ clerk_config.publishable_key }}"
+        src="https://{{ clerk_config.frontend_api }}/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+        type="text/javascript"
+    ></script>
+    
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -37,21 +46,21 @@
         }
 
         body {
-            font-family: var(--font-body); /* Updated to DM Sans to match app feel */
+            font-family: var(--font-body);
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
         }
 
-        /* Navigation - Synced with Landing Page for "No Pop" */
+        /* Navigation */
         .nav {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
-            background: rgba(10, 10, 15, 0.85); /* Matched transparency */
+            background: rgba(10, 10, 15, 0.85);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
         }
@@ -65,7 +74,7 @@
             align-items: center;
         }
 
-        /* Logo Styles - Exact match to Landing Page */
+        /* Logo Styles */
         .logo {
             display: flex;
             align-items: center;
@@ -128,7 +137,7 @@
 
         .btn {
             padding: 0.75rem 1.5rem;
-            border-radius: 8px; /* Slightly tighter radius on pricing cards, sticking to design */
+            border-radius: 8px;
             font-weight: 700;
             text-decoration: none;
             transition: all 0.2s;
@@ -142,7 +151,7 @@
 
         .nav-links .btn {
             padding: 0.8rem 1.5rem;
-            border-radius: 10px; /* Match landing page button style */
+            border-radius: 10px;
         }
 
         .btn-primary {
@@ -176,9 +185,9 @@
         }
 
         .hero h1 {
-            font-family: var(--font-display); /* Updated font */
+            font-family: var(--font-display);
             font-size: 3rem;
-            font-weight: 700; /* Regular weight for serif display often looks bold enough, keeping 700 */
+            font-weight: 700;
             margin-bottom: 1.5rem;
             color: var(--text-primary);
         }
@@ -315,22 +324,61 @@
             color: var(--text-muted);
         }
 
-        .pricing-cta,
-        button.pricing-cta {
-            cursor: pointer;
-            font-family: inherit;
+        /* Pricing CTA Button Styles */
+        .pricing-cta {
+            display: block;
             width: 100%;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
+        }
+
+        .pricing-cta.secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .pricing-cta.secondary:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
         }
 
         .pricing-cta.primary {
             background: linear-gradient(135deg, var(--accent-green), #059669);
             color: white;
-            box-shadow: none;
+            border: none;
         }
 
         .pricing-cta.primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Loading state for buttons */
+        .pricing-cta.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .pricing-cta.loading::after {
+            content: '...';
+            animation: dots 1s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
         }
 
         /* No Refunds Notice */
@@ -514,7 +562,7 @@
 
         .footer-brand .logo {
             margin-bottom: 1rem;
-            display: inline-flex; /* Ensures alignment */
+            display: inline-flex;
         }
 
         .footer-brand p {
@@ -582,6 +630,7 @@
 
     <section class="pricing-section">
         <div class="pricing-grid">
+            <!-- FREE TIER -->
             <div class="pricing-card">
                 <div class="pricing-tier">Free</div>
                 <div class="pricing-description">Perfect for getting started</div>
@@ -604,6 +653,7 @@
                 <a href="/app" class="pricing-cta secondary">Get Started Free</a>
             </div>
 
+            <!-- PREMIUM TIER -->
             <div class="pricing-card">
                 <div class="pricing-tier">Premium</div>
                 <div class="pricing-description">For serious investors</div>
@@ -624,9 +674,10 @@
                     <li class="disabled">Group constraints</li>
                     <li class="disabled">API access</li>
                 </ul>
-                <a href="javascript:void(0)" onclick="subscribeToTier('premium')" class="pricing-cta secondary">Start Premium</a>
+                <button type="button" id="btn-premium" onclick="subscribeToTier('premium')" class="pricing-cta secondary">Start Premium</button>
             </div>
 
+            <!-- PRO TIER -->
             <div class="pricing-card featured">
                 <div class="pricing-tier">Pro</div>
                 <div class="pricing-description">For professionals & teams</div>
@@ -646,7 +697,7 @@
                     <li>Diversification analytics</li>
                     <li>Priority support</li>
                 </ul>
-                <a href="javascript:void(0)" onclick="subscribeToTier('pro')" class="pricing-cta primary">Start Free Trial</a>
+                <button type="button" id="btn-pro" onclick="subscribeToTier('pro')" class="pricing-cta primary">Start Free Trial</button>
             </div>
         </div>
 
@@ -825,7 +876,9 @@
     </footer>
 
     <script>
-        // FAQ Accordion
+        // =====================================================================
+        // FAQ ACCORDION
+        // =====================================================================
         document.querySelectorAll('.faq-question').forEach(question => {
             question.addEventListener('click', () => {
                 const item = question.parentElement;
@@ -840,168 +893,147 @@
                 }
             });
         });
-    // Stripe checkout handler
-    async function subscribeToTier(tier) {
-        // Check if user is logged in
-        const user = await window.Clerk?.user;
-        
-        if (!user) {
-            // Redirect to sign up with return URL
-            window.location.href = `/app?redirect_after_login=/pricing&subscribe=${tier}`;
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/stripe/create-checkout-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await window.Clerk.session.getToken()}`
-                },
-                body: JSON.stringify({ 
-                    tier: tier,
-                    email: user.primaryEmailAddress?.emailAddress
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                if (data.error === 'already_subscribed') {
-                    alert(data.message);
-                    // Optionally redirect to customer portal
-                } else {
-                    alert('Error: ' + data.message);
-                }
-                return;
-            }
-            
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
-            
-        } catch (error) {
-            console.error('Subscription error:', error);
-            alert('Failed to start checkout. Please try again.');
-        }
-    }
-    
-    // Manage subscription handler
-    async function manageSubscription() {
-        try {
-            const response = await fetch('/api/stripe/customer-portal', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await window.Clerk.session.getToken()}`
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                alert(data.message);
-                return;
-            }
-            
-            window.location.href = data.url;
-            
-        } catch (error) {
-            console.error('Portal error:', error);
-            alert('Failed to open subscription portal. Please try again.');
-        }
-    }
-<script>
-// Stripe subscription handlers
-async function subscribeToTier(tier) {
-    // Check if Clerk is loaded and user is signed in
-    if (typeof Clerk !== 'undefined') {
-        await Clerk.load();
-        const user = Clerk.user;
-        
-        if (!user) {
-            // Not signed in - redirect to app which will show sign-in
-            window.location.href = `/app?subscribe=${tier}`;
-            return;
-        }
-        
-        // User is signed in - create checkout session
-        try {
-            const token = await Clerk.session.getToken();
-            const response = await fetch('/api/stripe/create-checkout-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    tier: tier,
-                    email: user.primaryEmailAddress?.emailAddress
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                if (data.error === 'already_subscribed') {
-                    if (confirm(data.message + '\n\nWould you like to manage your subscription?')) {
-                        manageSubscription();
-                    }
-                } else {
-                    alert('Error: ' + (data.message || data.error));
-                }
-                return;
-            }
-            
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
-            
-        } catch (error) {
-            console.error('Subscription error:', error);
-            alert('Failed to start checkout. Please try again.');
-        }
-    } else {
-        // Clerk not loaded - redirect to app
-        window.location.href = `/app?subscribe=${tier}`;
-    }
-}
 
-async function manageSubscription() {
-    if (typeof Clerk === 'undefined') {
-        window.location.href = '/app';
-        return;
-    }
-    
-    await Clerk.load();
-    if (!Clerk.user) {
-        window.location.href = '/app';
-        return;
-    }
-    
-    try {
-        const token = await Clerk.session.getToken();
-        const response = await fetch('/api/stripe/customer-portal', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+        // =====================================================================
+        // STRIPE SUBSCRIPTION HANDLERS
+        // =====================================================================
+        
+        /**
+         * Subscribe to a tier (Premium or Pro)
+         * Handles authentication check and Stripe checkout session creation
+         */
+        async function subscribeToTier(tier) {
+            console.log('subscribeToTier called with tier:', tier);
+            
+            const button = document.getElementById('btn-' + tier);
+            if (button) {
+                button.classList.add('loading');
+                button.disabled = true;
             }
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            alert(data.message || 'Unable to open subscription portal.');
-            return;
+            
+            try {
+                // Wait for Clerk to load
+                if (typeof Clerk === 'undefined') {
+                    console.log('Clerk not defined, redirecting to app');
+                    window.location.href = '/app?subscribe=' + tier;
+                    return;
+                }
+                
+                // Ensure Clerk is fully loaded
+                await Clerk.load();
+                
+                const user = Clerk.user;
+                
+                if (!user) {
+                    // User not signed in - redirect to app which will show sign-in modal
+                    console.log('User not signed in, redirecting to app');
+                    window.location.href = '/app?subscribe=' + tier;
+                    return;
+                }
+                
+                console.log('User signed in:', user.username || user.id);
+                
+                // Get auth token
+                const token = await Clerk.session.getToken();
+                
+                if (!token) {
+                    console.error('Failed to get auth token');
+                    alert('Authentication error. Please try signing in again.');
+                    return;
+                }
+                
+                // Create checkout session
+                const response = await fetch('/api/stripe/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ 
+                        tier: tier,
+                        email: user.primaryEmailAddress ? user.primaryEmailAddress.emailAddress : null
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Checkout session response:', data);
+                
+                if (data.error) {
+                    if (data.error === 'already_subscribed') {
+                        if (confirm(data.message + '\n\nWould you like to manage your subscription?')) {
+                            await manageSubscription();
+                        }
+                    } else {
+                        alert('Error: ' + (data.message || data.error));
+                    }
+                    return;
+                }
+                
+                if (data.url) {
+                    // Redirect to Stripe Checkout
+                    console.log('Redirecting to Stripe Checkout:', data.url);
+                    window.location.href = data.url;
+                } else {
+                    alert('Failed to create checkout session. Please try again.');
+                }
+                
+            } catch (error) {
+                console.error('Subscription error:', error);
+                alert('Failed to start checkout. Please try again.');
+            } finally {
+                if (button) {
+                    button.classList.remove('loading');
+                    button.disabled = false;
+                }
+            }
         }
-        
-        window.location.href = data.url;
-        
-    } catch (error) {
-        console.error('Portal error:', error);
-        alert('Failed to open subscription portal. Please try again.');
-    }
-}
-</script>
+
+        /**
+         * Open Stripe Customer Portal for subscription management
+         */
+        async function manageSubscription() {
+            console.log('manageSubscription called');
+            
+            try {
+                if (typeof Clerk === 'undefined') {
+                    window.location.href = '/app';
+                    return;
+                }
+                
+                await Clerk.load();
+                
+                if (!Clerk.user) {
+                    window.location.href = '/app';
+                    return;
+                }
+                
+                const token = await Clerk.session.getToken();
+                
+                const response = await fetch('/api/stripe/customer-portal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('Customer portal response:', data);
+                
+                if (data.error) {
+                    alert(data.message || 'Unable to open subscription portal.');
+                    return;
+                }
+                
+                if (data.url) {
+                    window.location.href = data.url;
+                }
+                
+            } catch (error) {
+                console.error('Portal error:', error);
+                alert('Failed to open subscription portal. Please try again.');
+            }
+        }
+    </script>
 </body>
-</html></body>
 </html>
