@@ -8,6 +8,8 @@ import stripe
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
+# Force redeploy - env vars updated 2026-01-31
+
 
 # =============================================================================
 # STRIPE INITIALIZATION
