@@ -2827,7 +2827,7 @@ function renderDiversificationMetrics(divData) {
                 alert('🎉 Subscription activated successfully! Welcome to FolioForecast!');
                 // Refresh user data
                 if (currentUser && clerkInstance?.session) {
-                    await syncUserData();
+                    await syncUserToBackend();
                     applyTierRestrictions();
                 }
             }, 500);
@@ -2848,4 +2848,5 @@ function renderDiversificationMetrics(divData) {
                 }
             }, 1500);
         }
+    }
 }
