@@ -43,10 +43,10 @@ class User(Base):
     signup_user_agent = Column(Text)
     
     # Subscription - Stripe integration
-    subscription_tier = Column(String(20), default='free')
+    subscription_tier = Column(String(20), default='free')  # free, premium, pro, trial
     stripe_customer_id = Column(String(255), nullable=True, index=True)
     stripe_subscription_id = Column(String(255), nullable=True, index=True)
-    subscription_status = Column(String(20), default='none')
+    subscription_status = Column(String(20), default='none')  # none, active, past_due, canceled, trialing
     subscription_expires_at = Column(DateTime, nullable=True)
     
     # Trial tracking
@@ -78,6 +78,8 @@ class User(Base):
             'display_name': self.display_name,
             'subscription_tier': self.subscription_tier,
             'subscription_status': self.subscription_status,
+            'stripe_customer_id': self.stripe_customer_id,
+            'stripe_subscription_id': self.stripe_subscription_id,
             'trial_used': self.trial_used,
             'total_optimizations': self.total_optimizations,
             'created_at': self.created_at.isoformat() if self.created_at else None,
@@ -97,6 +99,7 @@ class User(Base):
             'trial_started_at': self.trial_started_at.isoformat() if self.trial_started_at else None,
             'first_optimization_at': self.first_optimization_at.isoformat() if self.first_optimization_at else None,
             'last_login_at': self.last_login_at.isoformat() if self.last_login_at else None,
+            'subscription_expires_at': self.subscription_expires_at.isoformat() if self.subscription_expires_at else None,
         }
     
     def get_days_inactive(self):
@@ -113,6 +116,15 @@ class User(Base):
             self.subscription_tier in ['premium', 'pro'] and
             self.get_days_inactive() > inactive_threshold_days
         )
+    
+    def has_active_subscription(self):
+        """Check if user has an active paid subscription"""
+        return (
+            self.subscription_tier in ['premium', 'pro'] and
+            self.subscription_status == 'active' and
+            self.stripe_subscription_id is not None
+        )
+
 
 class UserPortfolio(Base):
     """
@@ -230,7 +242,41 @@ class UserPortfolio(Base):
         return data
 
 
-# Helper functions for user management
+class UserActivityLog(Base):
+    """
+    Track user actions for analytics, engagement metrics, and churn prediction.
+    """
+    __tablename__ = 'user_activity_logs'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Action details
+    action_type = Column(String(50), nullable=False, index=True)  # login, optimization, portfolio_save, csv_export, etc.
+    action_details = Column(JSONB)  # Flexible storage for action-specific data
+    
+    # Context
+    ip_address = Column(String(45))
+    user_agent = Column(Text)
+    
+    # Timestamp
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="activity_logs")
+    
+    __table_args__ = (
+        Index('idx_activity_user_type', 'user_id', 'action_type'),
+        Index('idx_activity_created', 'created_at'),
+    )
+    
+    def __repr__(self):
+        return f"<UserActivityLog(user_id={self.user_id}, action='{self.action_type}')>"
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
 
 def get_or_create_user(session, clerk_user_id, username, email=None, email_verified=False, 
                        ip_address=None, user_agent=None, referral_source=None, 
@@ -300,164 +346,52 @@ def get_user_by_clerk_id(session, clerk_user_id):
     return session.query(User).filter_by(clerk_user_id=clerk_user_id).first()
 
 
+def get_user_by_id(session, user_id):
+    """Get user by internal database ID"""
+    return session.query(User).filter_by(id=user_id).first()
+
+
 def get_user_by_username(session, username):
     """Get user by username"""
     return session.query(User).filter_by(username=username).first()
 
 
-class UserActivityLog(Base):
-    """
-    Track user actions for analytics, engagement metrics, and churn prediction.
-    """
-    __tablename__ = 'user_activity_logs'
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
-    
-    # Action details
-    action_type = Column(String(50), nullable=False, index=True)  # login, optimization, portfolio_save, csv_export, etc.
-    action_data = Column(JSONB)  # Context: {method: 'max_sharpe', asset_count: 5, ...}
-    
-    # Request context
-    ip_address = Column(String(45))
-    user_agent = Column(Text)
-    
-    # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    # Relationship
-    user = relationship("User", back_populates="activity_logs")
-    
-    def __repr__(self):
-        return f"<UserActivityLog(user_id={self.user_id}, action='{self.action_type}')>"
+def get_user_by_stripe_customer_id(session, stripe_customer_id):
+    """Get user by Stripe customer ID"""
+    return session.query(User).filter_by(stripe_customer_id=stripe_customer_id).first()
 
 
-# Activity logging helper functions
-def log_user_activity(session, user_id, action_type, action_data=None, ip_address=None, user_agent=None):
+def log_user_activity(session, user_id, action_type, action_details=None, ip_address=None, user_agent=None):
     """
-    Log a user activity event.
+    Log a user activity for analytics.
     
     Args:
         session: SQLAlchemy session
-        user_id: User's database ID
-        action_type: Type of action ('login', 'optimization', 'portfolio_save', etc.)
-        action_data: Optional dict with action context
-        ip_address: Optional IP address
-        user_agent: Optional user agent string
-    
-    Returns:
-        UserActivityLog object
+        user_id: Internal user ID
+        action_type: Type of action (login, optimization, portfolio_save, etc.)
+        action_details: Optional dict of action-specific data
+        ip_address: Client IP
+        user_agent: Client user agent
     """
     log = UserActivityLog(
         user_id=user_id,
         action_type=action_type,
-        action_data=action_data,
+        action_details=action_details,
         ip_address=ip_address,
-        user_agent=user_agent[:500] if user_agent else None  # Truncate long user agents
+        user_agent=user_agent[:500] if user_agent else None
     )
     session.add(log)
     
     # Also update user's last_active_at
-    user = session.query(User).get(user_id)
+    user = session.query(User).filter_by(id=user_id).first()
     if user:
         user.last_active_at = datetime.utcnow()
-        
-        # Track first optimization
-        if action_type == 'optimization' and not user.first_optimization_at:
-            user.first_optimization_at = datetime.utcnow()
-        
-        # Increment optimization counter
-        if action_type == 'optimization':
-            user.total_optimizations = (user.total_optimizations or 0) + 1
     
     session.commit()
     return log
 
 
-def get_user_activity_summary(session, user_id, days=30):
-    """
-    Get activity summary for a user over the last N days.
-    
-    Returns:
-        dict with activity counts by type
-    """
-    from sqlalchemy import func
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    
-    results = session.query(
-        UserActivityLog.action_type,
-        func.count(UserActivityLog.id).label('count')
-    ).filter(
-        UserActivityLog.user_id == user_id,
-        UserActivityLog.created_at >= cutoff
-    ).group_by(UserActivityLog.action_type).all()
-    
-    return {r.action_type: r.count for r in results}
-
-
-def get_user_engagement_metrics(session, user_id):
-    """
-    Calculate comprehensive engagement metrics for a user.
-    
-    Returns:
-        dict with:
-        - active_months: Number of months with at least one optimization
-        - months_since_signup: Total months since user created account
-        - engagement_rate: Percentage of months user was active
-        - first_active_month: First month with activity
-        - last_active_month: Most recent month with activity
-        - monthly_breakdown: List of {month: count} for each active month
-    """
-    from sqlalchemy import func, text
-    from dateutil.relativedelta import relativedelta
-    
-    user = session.query(User).get(user_id)
-    if not user:
-        return None
-    
-    # Calculate months since signup
-    now = datetime.utcnow()
-    signup_date = user.created_at or now
-    months_since_signup = (
-        (now.year - signup_date.year) * 12 + 
-        (now.month - signup_date.month) + 1
-    )
-    
-    # Get monthly optimization counts
-    monthly_data = session.query(
-        func.date_trunc('month', UserActivityLog.created_at).label('month'),
-        func.count(UserActivityLog.id).label('count')
-    ).filter(
-        UserActivityLog.user_id == user_id,
-        UserActivityLog.action_type == 'optimization'
-    ).group_by(
-        func.date_trunc('month', UserActivityLog.created_at)
-    ).order_by('month').all()
-    
-    active_months = len(monthly_data)
-    engagement_rate = round((active_months / max(months_since_signup, 1)) * 100, 1)
-    
-    monthly_breakdown = [
-        {
-            'month': m.month.strftime('%Y-%m') if m.month else None,
-            'count': m.count
-        }
-        for m in monthly_data
-    ]
-    
-    return {
-        'active_months': active_months,
-        'months_since_signup': months_since_signup,
-        'engagement_rate': engagement_rate,
-        'first_active_month': monthly_breakdown[0]['month'] if monthly_breakdown else None,
-        'last_active_month': monthly_breakdown[-1]['month'] if monthly_breakdown else None,
-        'monthly_breakdown': monthly_breakdown,
-        'is_superuser': engagement_rate >= 70 and active_months >= 3,
-        'at_risk': engagement_rate < 30 and months_since_signup >= 2
-    }
-
-
-def get_inactive_paying_users(session, inactive_days=60):
+def get_inactive_paying_users(session, inactive_days=30):
     """
     Find paying users who haven't been active recently.
     Useful for identifying users who may have forgotten to unsubscribe
@@ -492,58 +426,41 @@ def get_engagement_leaderboard(session, min_active_months=2, limit=50):
     """
     Get top engaged users ranked by engagement rate.
     
+    Args:
+        session: SQLAlchemy session
+        min_active_months: Minimum months of activity to qualify
+        limit: Maximum number of users to return
+    
     Returns:
-        List of dicts with user info and engagement metrics
+        List of users with engagement metrics
     """
-    from sqlalchemy import func, text
+    from sqlalchemy import func
     
-    # Raw SQL for complex aggregation
-    sql = text("""
-        WITH user_engagement AS (
-            SELECT 
-                u.id,
-                u.username,
-                u.email,
-                u.subscription_tier,
-                u.created_at,
-                u.total_optimizations,
-                COUNT(DISTINCT DATE_TRUNC('month', ual.created_at)) as active_months,
-                EXTRACT(MONTH FROM AGE(CURRENT_TIMESTAMP, u.created_at)) + 
-                EXTRACT(YEAR FROM AGE(CURRENT_TIMESTAMP, u.created_at)) * 12 + 1 as total_months
-            FROM users u
-            LEFT JOIN user_activity_logs ual ON u.id = ual.user_id 
-                AND ual.action_type = 'optimization'
-            GROUP BY u.id
-        )
-        SELECT 
-            id,
-            username,
-            email,
-            subscription_tier,
-            created_at,
-            total_optimizations,
-            active_months,
-            total_months,
-            ROUND(active_months::numeric / NULLIF(total_months, 0) * 100, 1) as engagement_rate
-        FROM user_engagement
-        WHERE active_months >= :min_months
-        ORDER BY engagement_rate DESC, active_months DESC
-        LIMIT :limit
-    """)
+    # Calculate engagement based on activity logs
+    cutoff = datetime.utcnow() - timedelta(days=min_active_months * 30)
     
-    result = session.execute(sql, {'min_months': min_active_months, 'limit': limit})
+    results = session.query(
+        User,
+        func.count(UserActivityLog.id).label('total_actions'),
+        func.count(func.distinct(func.date(UserActivityLog.created_at))).label('active_days')
+    ).join(
+        UserActivityLog, User.id == UserActivityLog.user_id
+    ).filter(
+        UserActivityLog.created_at >= cutoff
+    ).group_by(
+        User.id
+    ).having(
+        func.count(func.distinct(func.date(UserActivityLog.created_at))) >= min_active_months * 4  # ~1 visit/week
+    ).order_by(
+        func.count(UserActivityLog.id).desc()
+    ).limit(limit).all()
     
     return [
         {
-            'id': row.id,
-            'username': row.username,
-            'email': row.email,
-            'subscription_tier': row.subscription_tier,
-            'signup_date': row.created_at.isoformat() if row.created_at else None,
-            'total_optimizations': row.total_optimizations or 0,
-            'active_months': row.active_months,
-            'months_since_signup': row.total_months,
-            'engagement_rate': float(row.engagement_rate) if row.engagement_rate else 0
+            'user': user,
+            'total_actions': total_actions,
+            'active_days': active_days,
+            'engagement_rate': round(active_days / (min_active_months * 30) * 100, 1)
         }
-        for row in result
+        for user, total_actions, active_days in results
     ]
